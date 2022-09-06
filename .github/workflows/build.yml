@@ -1,0 +1,43 @@
+name: CI
+on: [push]
+
+env:
+  BUILD_TYPE: Release
+
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      # explicit include-based build matrix, of known valid options
+      matrix:
+        include:
+          # 20.04 supports CUDA 11.0+
+          - os: ubuntu-20.04
+            cuda: "11.4"
+            gcc: 9
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install CUDA
+        env:
+          cuda: ${{ matrix.cuda }}
+        run: |
+          ${{ github.workspace }}/.github/scripts/install_cuda_ubuntu.sh
+        shell: bash
+
+      - name: Configure CMake & build
+        run: |
+          cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+          cmake --build ${{ github.workspace }}/build --config ${{ env.BUILD_TYPE }}
+
+      - name: Copy test data
+        run: |
+          cp ${{ github.workspace }}/data/gcd/gcd.gds ${{ github.workspace }}/build/tests/
+
+      - name: Test
+        run: |
+          cd ${{ github.workspace }}/build/tests && ./tests
