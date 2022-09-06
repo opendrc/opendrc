@@ -4,6 +4,7 @@
 #include <exception>
 #include <fstream>
 #include <vector>
+#include <cstring>
 
 namespace odrc {
 void gdsii_library::read(const std::filesystem::path& file_path) {
