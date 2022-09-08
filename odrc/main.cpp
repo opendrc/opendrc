@@ -11,7 +11,7 @@ int main(int argc, char* argv[]) {
     help();
     return 2;
   }
-  odrc::gdsii_library lib;
+  odrc::gdsii::library lib;
   try {
     lib.read(argv[1]);
   } catch (std::exception& e) {
