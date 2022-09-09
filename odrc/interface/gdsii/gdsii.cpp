@@ -1,6 +1,7 @@
 #include <odrc/interface/gdsii/gdsii.hpp>
 
 #include <cassert>
+#include <cmath>
 #include <cstddef>
 #include <cstring>
 #include <exception>
@@ -23,10 +24,11 @@ double parse_real64(const std::byte* bytes) {
     data = (data << 8) + std::to_integer<uint64_t>(bytes[i]);
   }
 
-  int    exponent = ((data & 0x7f00'0000'0000'0000) >> 56) - 64;
-  double mantissa =
-      (data & 0x00ff'ffff'ffff'ffff) / static_cast<double>(1ll << 56);
-  double result = mantissa * (1 << (exponent * 4));  // m*16^e
+  // 64 is due to exponent excess-format
+  // 14 is due to mantissa shift: 2^56 == 16^14
+  int    exponent = ((data & 0x7f00'0000'0000'0000) >> 56) - (64 + 14);
+  double mantissa = data & 0x00ff'ffff'ffff'ffff;
+  double result   = mantissa * std::exp2(exponent * 4);  // m*16^e
   return (data & 0x8000'0000'0000'0000) > 0 ? -result : result;
 }
 
