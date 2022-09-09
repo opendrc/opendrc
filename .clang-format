@@ -1,2 +1,5 @@
 BasedOnStyle: Chromium
 Standard: c++17
+
+AlignConsecutiveAssignments: Consecutive
+AlignConsecutiveDeclarations: Consecutive
