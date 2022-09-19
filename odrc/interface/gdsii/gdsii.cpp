@@ -35,7 +35,7 @@ double parse_real64(const std::byte* bytes) {
 std::string parse_string(const std::byte* begin, const std::byte* end) {
   const char* b = reinterpret_cast<const char*>(begin);
   const char* e = reinterpret_cast<const char*>(end);
-  return std::string(b, *(e - 1) == char{0} ? e : e - 1);
+  return std::string(b, *(e - 1) == char{0} ? e - 1 : e);
 }
 
 void library::read(const std::filesystem::path& file_path) {
@@ -65,10 +65,7 @@ void library::read(const std::filesystem::path& file_path) {
         break;
       case record_type::LIBNAME:
         assert(dtype == data_type::ascii_string);
-        name.assign(reinterpret_cast<char*>(&buffer[4]),
-                    std::to_integer<int>(buffer[record_length - 1]) == 0
-                        ? record_length
-                        : record_length - 1);
+        name.assign(parse_string(&buffer[4], &buffer[record_length]));
         break;
       case record_type::UNITS:
         assert(dtype == data_type::real64);
