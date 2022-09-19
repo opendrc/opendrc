@@ -32,6 +32,12 @@ double parse_real64(const std::byte* bytes) {
   return (data & 0x8000'0000'0000'0000) > 0 ? -result : result;
 }
 
+std::string parse_string(const std::byte* begin, const std::byte* end) {
+  const char* b = reinterpret_cast<const char*>(begin);
+  const char* e = reinterpret_cast<const char*>(end);
+  return std::string(b, *(e - 1) == char{0} ? e - 1 : e);
+}
+
 void library::read(const std::filesystem::path& file_path) {
   std::vector<std::byte> buffer(65536);
   std::ifstream          ifs(file_path, std::ios::in | std::ios::binary);
@@ -54,25 +60,12 @@ void library::read(const std::filesystem::path& file_path) {
         break;
       case record_type::BGNLIB:
         assert(dtype == data_type::int16);
-        mtime.year   = parse_int16(&buffer[4]);
-        mtime.month  = parse_int16(&buffer[6]);
-        mtime.day    = parse_int16(&buffer[8]);
-        mtime.hour   = parse_int16(&buffer[10]);
-        mtime.minute = parse_int16(&buffer[12]);
-        mtime.second = parse_int16(&buffer[14]);
-        atime.year   = parse_int16(&buffer[16]);
-        atime.month  = parse_int16(&buffer[18]);
-        atime.day    = parse_int16(&buffer[20]);
-        atime.hour   = parse_int16(&buffer[22]);
-        atime.minute = parse_int16(&buffer[24]);
-        atime.second = parse_int16(&buffer[26]);
+        mtime = _read_time(&buffer[4]);
+        atime = _read_time(&buffer[16]);
         break;
       case record_type::LIBNAME:
         assert(dtype == data_type::ascii_string);
-        name.assign(reinterpret_cast<char*>(&buffer[4]),
-                    std::to_integer<int>(buffer[record_length - 1]) == 0
-                        ? record_length
-                        : record_length - 1);
+        name.assign(parse_string(&buffer[4], &buffer[record_length]));
         break;
       case record_type::UNITS:
         assert(dtype == data_type::real64);
@@ -89,5 +82,15 @@ void library::read(const std::filesystem::path& file_path) {
       break;
     }
   }
+}
+library::datetime library::_read_time(const std::byte* bytes) {
+  datetime dt;
+  dt.year   = parse_int16(&bytes[0]);
+  dt.month  = parse_int16(&bytes[2]);
+  dt.day    = parse_int16(&bytes[4]);
+  dt.hour   = parse_int16(&bytes[6]);
+  dt.minute = parse_int16(&bytes[8]);
+  dt.second = parse_int16(&bytes[10]);
+  return dt;
 }
 }  // namespace odrc::gdsii
