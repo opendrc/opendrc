@@ -113,6 +113,26 @@ TEST_SUITE("[OpenDRC] odrc::gdsii data parser tests") {
                B{0x67}, B{0x5e}, B{0xf6}, B{0xec}};
     CHECK_EQ(odrc::gdsii::parse_real64(bytes), doctest::Approx(double{1e-10}));
   }
+  TEST_CASE("parse_string of 'hello world'") {
+    B           bytes[11];
+    std::string golden_str = "hello world";
+    for (int i = 0; i < 11; ++i) {
+      bytes[i] = std::byte{static_cast<unsigned char>(golden_str[i])};
+    }
+    std::string str = odrc::gdsii::parse_string(bytes, bytes + 11);
+    CHECK_EQ(str, golden_str);
+  }
+  TEST_CASE("parse_string of 'hello world' with padded zero") {
+    B           bytes[12];
+    std::string golden_str = "hello world";
+    for (int i = 0; i < 11; ++i) {
+      bytes[i] = std::byte{static_cast<unsigned char>(golden_str[i])};
+    }
+    bytes[11]       = {B{0x00}};
+    std::string str = odrc::gdsii::parse_string(bytes, bytes + 12);
+    CHECK_EQ(str.length(), 11);
+    CHECK_EQ(str, golden_str);
+  }
 }
 
 TEST_SUITE("[OpenDRC] odrc::gdsii library tests") {
