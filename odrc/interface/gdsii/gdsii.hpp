@@ -23,8 +23,9 @@ enum class data_type : std::underlying_type_t<std::byte> {
 };
 
 // Data parsers
-int16_t parse_int16(const std::byte* bytes);
-double  parse_real64(const std::byte* bytes);
+int16_t     parse_int16(const std::byte* bytes);
+double      parse_real64(const std::byte* bytes);
+std::string parse_string(const std::byte* begin, const std::byte* end);
 
 class library {
  public:
@@ -44,5 +45,8 @@ class library {
   std::string name;
   double      dbu_in_user_unit;
   double      dbu_in_meter;
+
+ private:
+  datetime _read_time(const std::byte* bytes);
 };
 }  // namespace odrc::gdsii
