@@ -16,6 +16,13 @@ int16_t parse_int16(const std::byte* bytes) {
          std::to_integer<int16_t>(bytes[1]);
 }
 
+int32_t parse_int32(const std::byte* bytes) {
+  return (std::to_integer<int32_t>(bytes[0]) << 24) |
+         (std::to_integer<int32_t>(bytes[1]) << 16) |
+         (std::to_integer<int32_t>(bytes[2]) << 8) |
+         std::to_integer<int32_t>(bytes[3]);
+}
+
 // SEEE EEEE MMMM MMMM MMMM MMMM MMMM MMMM
 double parse_real64(const std::byte* bytes) {
   // intepret bytes as big-endian
@@ -45,6 +52,7 @@ void library::read(const std::filesystem::path& file_path) {
     throw std::runtime_error("Cannot open " + file_path.string() + ": " +
                              std::strerror(errno));
   }
+  record_type current_stream;
   while (true) {
     // read record header
     ifs.read(reinterpret_cast<char*>(buffer.data()), 4);
@@ -75,6 +83,73 @@ void library::read(const std::filesystem::path& file_path) {
       case record_type::ENDLIB:
         assert(dtype == data_type::no_data);
         break;
+      case record_type::BGNSTR:
+        assert(dtype == data_type::int16);
+        structs.emplace_back();
+        structs.back().mtime = _read_time(&buffer[4]);
+        structs.back().atime = _read_time(&buffer[16]);
+        break;
+      case record_type::STRNAME:
+        assert(dtype == data_type::ascii_string);
+        structs.back().name.assign(
+            parse_string(&buffer[4], &buffer[record_length]));
+        break;
+      case record_type::ENDSTR:
+        assert(dtype == data_type::no_data);
+        break;
+      case record_type::BOUNDARY:
+        assert(dtype == data_type::no_data);
+        current_stream = rtype;
+        structs.back().elements.emplace_back();
+        structs.back().elements.back().rtype = rtype;
+        break;
+      case record_type::PATH:
+        assert(dtype == data_type::no_data);
+        current_stream = rtype;
+        structs.back().elements.emplace_back();
+        structs.back().elements.back().rtype = rtype;
+        break;
+      case record_type::SREF:
+        assert(dtype == data_type::no_data);
+        current_stream = rtype;
+        break;
+      case record_type::LAYER:
+        assert(dtype == data_type::int16);
+        structs.back().elements.back().layer = parse_int16(&buffer[4]);
+        break;
+      case record_type::DATATYPE:
+        assert(dtype == data_type::int16);
+        structs.back().elements.back().datatype = parse_int16(&buffer[4]);
+        break;
+      case record_type::XY:
+        assert(dtype == data_type::int32);
+        if (current_stream == record_type::SREF) {
+          int x                   = parse_int32(&buffer[4]);
+          int y                   = parse_int32(&buffer[8]);
+          instances.back().second = xy{x, y};
+        } else {
+          int num_coors = (record_length - 4) / 8;
+          for (int i = 0; i < num_coors; ++i) {
+            int x = parse_int32(&buffer[4 + i * 8]);
+            int y = parse_int32(&buffer[8 + i * 8]);
+            structs.back().elements.back().points.emplace_back(xy{x, y});
+          }
+        }
+        break;
+      case record_type::ENDEL:
+        assert(dtype == data_type::no_data);
+        break;
+      case record_type::SNAME: {
+        assert(dtype == data_type::ascii_string);
+        std::string sname = parse_string(&buffer[4], &buffer[record_length]);
+        for (auto&& s : structs) {
+          if (s.name == sname) {
+            instances.emplace_back(std::make_pair(&s, xy{}));
+            break;
+          }
+        }
+      } break;
+
       default:
         break;
     }
