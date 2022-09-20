@@ -27,6 +27,31 @@ TEST_SUITE("[OpenDRC] odrc::gdsii data parser tests") {
     B bytes[2]{B{0xff}, B{0x77}};
     CHECK_EQ(odrc::gdsii::parse_int16(bytes), int16_t{-137});
   }
+  TEST_CASE("parse_int32 of 0x00000001") {
+    B bytes[4]{B{0x00}, B{0x00}, B{0x00}, B{0x01}};
+    CHECK_EQ(odrc::gdsii::parse_int32(bytes), int32_t{1});
+  }
+  TEST_CASE("parse_int32 of 0x00000002") {
+    B bytes[4]{B{0x00}, B{0x00}, B{0x00}, B{0x02}};
+    CHECK_EQ(odrc::gdsii::parse_int32(bytes), int32_t{2});
+  }
+  TEST_CASE("parse_int32 of 0x00000089") {
+    B bytes[4]{B{0x00}, B{0x00}, B{0x00}, B{0x89}};
+    CHECK_EQ(odrc::gdsii::parse_int32(bytes), int32_t{137});
+  }
+  TEST_CASE("parse_int32 of 0xffffffff") {
+    B bytes[4]{B{0xff}, B{0xff}, B{0xff}, B{0xff}};
+    CHECK_EQ(odrc::gdsii::parse_int32(bytes), int32_t{-1});
+  }
+  TEST_CASE("parse_int32 of 0xfffffffe") {
+    B bytes[4]{B{0xff}, B{0xff}, B{0xff}, B{0xfe}};
+    CHECK_EQ(odrc::gdsii::parse_int32(bytes), int32_t{-2});
+  }
+  TEST_CASE("parse_int32 of 0xffffff77") {
+    B bytes[4]{B{0xff}, B{0xff}, B{0xff}, B{0x77}};
+    CHECK_EQ(odrc::gdsii::parse_int32(bytes), int32_t{-137});
+  }
+
   TEST_CASE("parse_real64 of 0x41100000") {
     B bytes[8]{B{0x41}, B{0x10}, B{0x00}, B{0x00}};
     CHECK_EQ(odrc::gdsii::parse_real64(bytes), doctest::Approx(double{1}));
@@ -136,11 +161,13 @@ TEST_SUITE("[OpenDRC] odrc::gdsii data parser tests") {
 }
 
 TEST_SUITE("[OpenDRC] odrc::gdsii library tests") {
-  TEST_CASE("read normal gdsii file") {
+  TEST_CASE("read normal gdsii file") {  // results are from gdstk or klayout
     odrc::gdsii::library lib;
     lib.read("./gcd.gds");
     CHECK_EQ(lib.version, 600);
     CHECK_EQ(lib.dbu_in_meter / lib.dbu_in_user_unit, doctest::Approx(1e-6));
+    CHECK_EQ(lib.structs.size(), 53);
+    CHECK_EQ(lib.instances.size(), 4182);
   }
   TEST_CASE("open gdsii file error") {
     odrc::gdsii::library lib;
