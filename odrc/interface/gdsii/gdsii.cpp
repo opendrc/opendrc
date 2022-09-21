@@ -4,8 +4,8 @@
 #include <cmath>
 #include <cstddef>
 #include <cstring>
-#include <exception>
 #include <fstream>
+#include <stdexcept>
 #include <vector>
 
 namespace odrc::gdsii {
