@@ -22,6 +22,11 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - name: Run clang-format style check for C/C++ programs.
+        uses: jidicula/clang-format-action@v4.2.0
+        with:
+          clang-format-version: '13'
+
       - name: Install CUDA
         env:
           cuda: ${{ matrix.cuda }}
