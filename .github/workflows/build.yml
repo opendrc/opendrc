@@ -7,7 +7,7 @@ env:
 
 jobs:
   build:
-    runs-on: ${{ matrix.os }}
+    runs-on: [self-hosted, linux, x64, gpu]
 
     strategy:
       fail-fast: false
@@ -22,18 +22,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Run clang-format style check for C/C++ programs.
-        uses: jidicula/clang-format-action@v4.2.0
-        with:
-          clang-format-version: '13'
-
-      - name: Install CUDA
-        env:
-          cuda: ${{ matrix.cuda }}
-        run: |
-          ${{ github.workspace }}/.github/scripts/install_cuda_ubuntu.sh
-        shell: bash
-
       - name: Configure CMake & build
         run: |
           cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
@@ -45,4 +33,4 @@ jobs:
 
       - name: Test
         run: |
-          cd ${{ github.workspace }}/build/tests && ./tests
+          cd ${{ github.workspace }}/build/tests && srun -p AIEDA --gres=gpu:1 ./tests
