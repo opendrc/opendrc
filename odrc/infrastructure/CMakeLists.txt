@@ -1,3 +1,2 @@
-add_subdirectory(exception)
 add_subdirectory(logger)
 add_subdirectory(sweepline)
