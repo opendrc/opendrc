@@ -21,15 +21,15 @@ std::size_t count_lines(const std::string& filename) {
 void require_message_count(const std::string& filename,
                            const std::size_t  messages) {
   if (strlen(spdlog::details::os::default_eol) == 0) {
-    REQUIRE(count_lines(filename) == 1);
+    CHECK(count_lines(filename) == 1);
   } else {
-    REQUIRE(count_lines(filename) == messages);
+    CHECK(count_lines(filename) == messages);
   }
 }
 
 TEST_SUITE("[OpenDRC] odrc::logger tests") {
-  const std::string  log_filename = "log_test.txt";
-  odrc::core::logger logger(log_filename, odrc::core::log_level::TRACE);
+  const std::string     log_filename = "log_test.txt";
+  odrc::utility::logger logger(log_filename, odrc::utility::log_level::trace);
   TEST_CASE("test info level") {
     logger.trace("doctest", "Test message level {}", "TRACE");
     logger.debug("doctest", "Test message level {}", "DEBUG");

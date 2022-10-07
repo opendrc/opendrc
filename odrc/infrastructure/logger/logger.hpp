@@ -8,16 +8,8 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 
-namespace odrc::core {
-enum class log_level : std::underlying_type_t<std::byte> {
-  TRACE    = 0x00,
-  DEBUG    = 0x01,
-  INFO     = 0x02,
-  WARN     = 0x03,
-  ERROR    = 0x04,
-  CRITICAL = 0x05,
-  OFF      = 0x06
-};
+namespace odrc::utility {
+enum class log_level { trace, debug, info, warn, error, critical, off };
 
 class logger {
  public:
@@ -88,13 +80,13 @@ class logger {
   std::vector<spdlog::sink_ptr>   _sinks;
 
   const std::map<log_level, spdlog::level::level_enum> _log_level_map{
-      {log_level::TRACE, spdlog::level::level_enum::trace},
-      {log_level::DEBUG, spdlog::level::level_enum::debug},
-      {log_level::INFO, spdlog::level::level_enum::info},
-      {log_level::WARN, spdlog::level::level_enum::warn},
-      {log_level::ERROR, spdlog::level::level_enum::err},
-      {log_level::CRITICAL, spdlog::level::level_enum::critical},
-      {log_level::OFF, spdlog::level::level_enum::off},
+      {log_level::trace, spdlog::level::level_enum::trace},
+      {log_level::debug, spdlog::level::level_enum::debug},
+      {log_level::info, spdlog::level::level_enum::info},
+      {log_level::warn, spdlog::level::level_enum::warn},
+      {log_level::error, spdlog::level::level_enum::err},
+      {log_level::critical, spdlog::level::level_enum::critical},
+      {log_level::off, spdlog::level::level_enum::off},
   };
 };
-}  // namespace odrc::core
+}  // namespace odrc::utility
