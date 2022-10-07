@@ -48,7 +48,7 @@ std::string parse_string(const std::byte* begin, const std::byte* end) {
 void library::read(const std::filesystem::path& file_path) {
   std::vector<std::byte> buffer(65536);
   std::ifstream          ifs(file_path, std::ios::in | std::ios::binary);
-  if (not ifs) {
+  if (!ifs) {
     throw std::runtime_error("Cannot open " + file_path.string() + ": " +
                              std::strerror(errno));
   }
@@ -149,7 +149,136 @@ void library::read(const std::filesystem::path& file_path) {
           }
         }
       } break;
-
+      case record_type::COLROW:
+        assert(dtype == data_type::int16);
+        int x                   = parse_int16(&buffer[4]);
+        int y                   = parse_int16(&buffer[8]);
+        instances.back().second = xy{x, y};
+        break;
+      case record_type::TEXTNODE:
+        assert(dtype == data_type::no_data);
+        current_stream = rtype;
+        structs.back().elements.emplace_back();
+        structs.back().elements.back().rtype = rtype;
+        break;
+      case record_type::NODE:
+        assert(dtype == data_type::no_data);
+        current_stream = rtype;
+        structs.back().elements.emplace_back();
+        structs.back().elements.back().rtype = rtype;
+        break;
+      case record_type::TEXTTYPE:
+        assert(dtype == data_type::int16);
+        structs.back().elements.back().textbodys.back().texttype =
+            parse_int16(&buffer[4]);
+        break;
+      case record_type::PRESENTATION:
+        assert(dtype == data_type::int16);
+        structs.back().elements.back().textbodys.back().presentation =
+            parse_int16(&buffer[4]);
+        break;
+      case record_type::STRING:
+        assert(dtype == data_type::ascii_string);
+        structs.back().elements.back().textbodys.back().strings.assign(
+            parse_string(&buffer[4], &buffer[record_length]));
+        break;
+      case record_type::STRANS:
+        assert(dtype == data_type::int16);
+        structs.back().elements.back().textbodys.back().strans.back().srtrans =
+            parse_int16(&buffer[4]);
+        break;
+      case record_type::MAG:
+        assert(dtype == data_type::real64);
+        structs.back().elements.back().textbodys.back().strans.back().mag =
+            parse_real64(&buffer[4]);
+        break;
+      case record_type::ANGLE:
+        assert(dtype == data_type::real64);
+        structs.back().elements.back().textbodys.back().strans.back().angle =
+            parse_real64(&buffer[4]);
+        break;
+      case record_type::REFLIBS:
+        assert(dtype == data_type::ascii_string);
+        reflibs.assign(parse_string(&buffer[4], &buffer[record_length]));
+        break;
+      case record_type::FONTS:
+        assert(dtype == data_type::ascii_string);
+        fonts.assign(parse_string(&buffer[4], &buffer[record_length]));
+        break;
+      case record_type::PATHTYPE:
+        assert(dtype == data_type::int16);
+        structs.back().elements.back().textbodys.back().pathtype =
+            parse_real64(&buffer[4]);
+        break;
+      case record_type::GENERATIONS:
+        assert(dtype == data_type::int16);
+        generations = parse_real64(&buffer[4]);
+        break;
+      case record_type::ATTRTABLE:
+        assert(dtype == data_type::ascii_string);
+        attrtable.assign(parse_string(&buffer[4], &buffer[record_length]));
+        break;
+      case record_type::ELFLAGS:
+        assert(dtype == data_type::int16);
+        structs.back().elements.back().elflags = parse_int16(&buffer[4]);
+        break;
+      case  record_type::NODETYPE: 
+        assert(dtype == data_type::int16);
+        structs.back().elements.back().nodetype = parse_int16(&buffer[4]);
+        break;
+      case  record_type::PROPATTR: 
+        assert(dtype == data_type::int16);
+        structs.back().elements.back().propertys.back().propatter = parse_int16(&buffer[4]);
+        break;
+      case record_type::PROPVALUE:
+        assert(dtype == data_type::ascii_string);
+        structs.back().elements.back().propertys.back().propvalue.assign(parse_string(&buffer[4], &buffer[record_length]));
+        break;
+      case record_type::BOX:
+        assert(dtype == data_type::no_data);
+        current_stream = rtype;
+        structs.back().elements.emplace_back();
+        structs.back().elements.back().rtype = rtype;
+        break;
+      case record_type::BOXTYPE:
+        assert(dtype == data_type::int16);
+        structs.back().elements.back().boxtype = parse_int16(&buffer[4]);
+        break;
+      case record_type::PLEX:
+        assert(dtype == data_type::int32);
+        structs.back().elements.back().plex = parse_int32(&buffer[4]);
+        break;
+      case record_type::BGNEXTN:
+        assert(dtype == data_type::int32);
+        structs.back().elements.back().bgnextn = parse_int32(&buffer[4]);
+        break;
+      case record_type::ENDEXTN:
+        assert(dtype == data_type::int32);
+        structs.back().elements.back().endextn = parse_int32(&buffer[4]);
+        break;
+      case record_type::FORMAT:
+        assert(dtype == data_type::int16);
+        formats.back().format = parse_int16(&buffer[4]);
+        break;
+      case record_type::MASK:
+        assert(dtype == data_type::ascii_string);
+        formats.back().mask.assign(parse_string(&buffer[4], &buffer[record_length]));
+        break;
+      case record_type::ENDMASKS:
+        assert(dtype == data_type::no_data);
+        break;
+      case record_type::LIBDIRSIZE:
+        assert(dtype == data_type::int16);
+        libdirsize = parse_int16(&buffer[4]);
+        break;
+      case record_type::SRFNAME:
+        assert(dtype == data_type::ascii_string);
+        srfname.assign(parse_string(&buffer[4], &buffer[record_length]));
+        break;
+      case record_type::LIBSECUR:
+        assert(dtype == data_type::int16);
+        libsecur = parse_int16(&buffer[4]);
+        break;
       default:
         break;
     }
