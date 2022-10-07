@@ -151,9 +151,12 @@ void library::read(const std::filesystem::path& file_path) {
       } break;
       case record_type::COLROW:
         assert(dtype == data_type::int16);
-        int x                   = parse_int16(&buffer[4]);
-        int y                   = parse_int16(&buffer[8]);
-        instances.back().second = xy{x, y};
+        {
+        int columns = parse_int16(&buffer[4]);
+        int rows    = parse_int16(&buffer[8]);
+        structs.back().elements.back().colrows.emplace_back(
+            colrow{columns, rows});
+        }
         break;
       case record_type::TEXTNODE:
         assert(dtype == data_type::no_data);
@@ -208,11 +211,11 @@ void library::read(const std::filesystem::path& file_path) {
       case record_type::PATHTYPE:
         assert(dtype == data_type::int16);
         structs.back().elements.back().textbodys.back().pathtype =
-            parse_real64(&buffer[4]);
+            parse_int16(&buffer[4]);
         break;
       case record_type::GENERATIONS:
         assert(dtype == data_type::int16);
-        generations = parse_real64(&buffer[4]);
+        generations = parse_int16(&buffer[4]);
         break;
       case record_type::ATTRTABLE:
         assert(dtype == data_type::ascii_string);
