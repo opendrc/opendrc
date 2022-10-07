@@ -1,5 +1,6 @@
 #include <iostream>
 
+#include <odrc/algorithm/width-check.hpp>
 #include <odrc/interface/gdsii/gdsii.hpp>
 
 void help() {
@@ -14,6 +15,7 @@ int main(int argc, char* argv[]) {
   odrc::gdsii::library lib;
   try {
     lib.read(argv[1]);
+    odrc::width_check(lib, 11, 650);
   } catch (std::exception& e) {
     std::cerr << e.what() << std::endl;
     return 1;
