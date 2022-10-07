@@ -31,7 +31,6 @@ class logger {
 
     _logger->set_pattern("[%D %H:%M:%S] [%n] [%L] [thread %t] %v");
     _logger->set_level(_log_level_map.at(log_level));
-    _logger->flush_on(spdlog::level::level_enum::trace);
   }
 
   ~logger() {}
