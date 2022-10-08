@@ -28,7 +28,7 @@ enum class record_type : std::underlying_type_t<std::byte> {
   ENDEL    = 0x11,
   SNAME    = 0x12,//
   COLROW   = 0x13,    
-  TEXTNODE = 0x14,//
+  TEXTNODE = 0x14,
   NODE     = 0x15,
   TEXTTYPE = 0x16,
   PRESENTATION = 0x17,
@@ -53,10 +53,10 @@ enum class record_type : std::underlying_type_t<std::byte> {
   PLEX      = 0x2F,
   BGNEXTN   = 0x30,
   ENDEXTN   = 0x31,
-  TAPENUM   = 0x32,///
-  TAPECODE  = 0x33,///
-  STRCLASS  = 0x34,///
-  RESERVED  = 0x35,///
+  TAPENUM   = 0x32,/// not used
+  TAPECODE  = 0x33,
+  STRCLASS  = 0x34,
+  RESERVED  = 0x35,
   FORMAT    = 0x36,
   MASK      = 0x37,
   ENDMASKS  = 0x38,
@@ -182,6 +182,3 @@ class library {
   datetime _read_time(const std::byte* bytes);
 };
 }  // namespace odrc::gdsii
-
-//运行新的代码
-//写验证程序
