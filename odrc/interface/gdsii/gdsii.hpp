@@ -20,13 +20,15 @@ enum class record_type : std::underlying_type_t<std::byte> {
   BOUNDARY = 0x08,
   PATH     = 0x09,
   SREF     = 0x0A,
+  AREF     = 0x0B,
+  TEXT     = 0x0C,
   LAYER    = 0x0D,
   DATATYPE = 0x0E,
   XY       = 0x10,
   ENDEL    = 0x11,
   SNAME    = 0x12,//
   COLROW   = 0x13,    
-  TEXTNODE = 0x14,///
+  TEXTNODE = 0x14,//
   NODE     = 0x15,
   TEXTTYPE = 0x16,
   PRESENTATION = 0x17,
@@ -64,6 +66,7 @@ enum class record_type : std::underlying_type_t<std::byte> {
 };
 enum class data_type : std::underlying_type_t<std::byte> {
   no_data      = 0x00,
+  bit_array    = 0x01,
   int16        = 0x02,
   int32        = 0x03,
   real32       = 0x04,
@@ -76,6 +79,7 @@ int16_t     parse_int16(const std::byte* bytes);
 int32_t     parse_int32(const std::byte* bytes);
 double      parse_real64(const std::byte* bytes);
 std::string parse_string(const std::byte* begin, const std::byte* end);
+int8_t      parse_bitarray(const std::byte* bytes);
 
 class library {
  public:
@@ -132,6 +136,7 @@ class library {
     long            bgnextn;
     long            endextn;
     std::string     sname;
+    std::vector<stran> strans;
     std::vector<textbody> textbodys;
     std::vector<colrow> colrows;
     std::vector<xy> points;

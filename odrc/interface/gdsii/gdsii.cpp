@@ -45,6 +45,10 @@ std::string parse_string(const std::byte* begin, const std::byte* end) {
   return std::string(b, *(e - 1) == char{0} ? e - 1 : e);
 }
 
+int8_t parse_bitarray(const std::byte* bytes) {
+  return (std::to_integer<int8_t>(bytes[1]));
+}
+
 void library::read(const std::filesystem::path& file_path) {
   std::vector<std::byte> buffer(65536);
   std::ifstream          ifs(file_path, std::ios::in | std::ios::binary);
@@ -112,6 +116,20 @@ void library::read(const std::filesystem::path& file_path) {
       case record_type::SREF:
         assert(dtype == data_type::no_data);
         current_stream = rtype;
+        structs.back().elements.emplace_back();
+        structs.back().elements.back().rtype = rtype;
+        break;
+      case record_type::AREF:
+        assert(dtype == data_type::no_data);
+        current_stream = rtype;
+        structs.back().elements.emplace_back();
+        structs.back().elements.back().rtype = rtype;
+        break;
+      case record_type::TEXT:
+        assert(dtype == data_type::no_data);
+        current_stream = rtype;
+        structs.back().elements.emplace_back();
+        structs.back().elements.back().rtype = rtype;
         break;
       case record_type::LAYER:
         assert(dtype == data_type::int16);
@@ -121,7 +139,7 @@ void library::read(const std::filesystem::path& file_path) {
         assert(dtype == data_type::int16);
         structs.back().elements.back().datatype = parse_int16(&buffer[4]);
         break;
-      case record_type::XY:
+      case record_type::XY://bugs
         assert(dtype == data_type::int32);
         if (current_stream == record_type::SREF) {
           int x                   = parse_int32(&buffer[4]);
@@ -152,10 +170,10 @@ void library::read(const std::filesystem::path& file_path) {
       case record_type::COLROW:
         assert(dtype == data_type::int16);
         {
-        int columns = parse_int16(&buffer[4]);
-        int rows    = parse_int16(&buffer[8]);
-        structs.back().elements.back().colrows.emplace_back(
-            colrow{columns, rows});
+          int columns = parse_int16(&buffer[4]);
+          int rows    = parse_int16(&buffer[8]);
+          structs.back().elements.back().colrows.emplace_back(
+              colrow{columns, rows});
         }
         break;
       case record_type::TEXTNODE:
@@ -172,34 +190,53 @@ void library::read(const std::filesystem::path& file_path) {
         break;
       case record_type::TEXTTYPE:
         assert(dtype == data_type::int16);
+        structs.back().elements.back().textbodys.emplace_back(textbody{});
         structs.back().elements.back().textbodys.back().texttype =
             parse_int16(&buffer[4]);
         break;
       case record_type::PRESENTATION:
-        assert(dtype == data_type::int16);
+        assert(dtype == data_type::bit_array);
         structs.back().elements.back().textbodys.back().presentation =
-            parse_int16(&buffer[4]);
+              parse_bitarray(&buffer[4]);
         break;
       case record_type::STRING:
         assert(dtype == data_type::ascii_string);
         structs.back().elements.back().textbodys.back().strings.assign(
-            parse_string(&buffer[4], &buffer[record_length]));
+              parse_string(&buffer[4], &buffer[record_length]));
         break;
       case record_type::STRANS:
-        assert(dtype == data_type::int16);
-        structs.back().elements.back().textbodys.back().strans.back().srtrans =
-            parse_int16(&buffer[4]);
+        assert(dtype == data_type::bit_array);
+        if (current_stream == record_type::TEXTTYPE) {
+          structs.back().elements.back().textbodys.back().strans.emplace_back(stran{});
+          structs.back().elements.back().textbodys.back().strans.back().srtrans=parse_bitarray(&buffer[4]);
+        } else {
+          structs.back().elements.back().strans.emplace_back(stran{});
+          structs.back().elements.back().strans.back().srtrans=parse_bitarray(&buffer[4]);
+        }
         break;
+      
       case record_type::MAG:
         assert(dtype == data_type::real64);
-        structs.back().elements.back().textbodys.back().strans.back().mag =
+        if (current_stream == record_type::TEXTTYPE) {
+          structs.back().elements.back().textbodys.back().strans.back().mag =
             parse_real64(&buffer[4]);
+        } else {
+          structs.back().elements.back().strans.back().mag =
+            parse_real64(&buffer[4]);
+        }
         break;
       case record_type::ANGLE:
         assert(dtype == data_type::real64);
-        structs.back().elements.back().textbodys.back().strans.back().angle =
+        if (current_stream == record_type::TEXTTYPE) {
+          structs.back().elements.back().textbodys.back().strans.back().angle =
             parse_real64(&buffer[4]);
+        } else {
+          structs.back().elements.back().strans.back().angle =
+            parse_real64(&buffer[4]);
+        }
         break;
+
+      
       case record_type::REFLIBS:
         assert(dtype == data_type::ascii_string);
         reflibs.assign(parse_string(&buffer[4], &buffer[record_length]));
@@ -208,15 +245,19 @@ void library::read(const std::filesystem::path& file_path) {
         assert(dtype == data_type::ascii_string);
         fonts.assign(parse_string(&buffer[4], &buffer[record_length]));
         break;
+      /*
       case record_type::PATHTYPE:
         assert(dtype == data_type::int16);
         structs.back().elements.back().textbodys.back().pathtype =
             parse_int16(&buffer[4]);
         break;
+      */
       case record_type::GENERATIONS:
         assert(dtype == data_type::int16);
         generations = parse_int16(&buffer[4]);
         break;
+      
+      /*
       case record_type::ATTRTABLE:
         assert(dtype == data_type::ascii_string);
         attrtable.assign(parse_string(&buffer[4], &buffer[record_length]));
@@ -225,18 +266,18 @@ void library::read(const std::filesystem::path& file_path) {
         assert(dtype == data_type::int16);
         structs.back().elements.back().elflags = parse_int16(&buffer[4]);
         break;
-      case  record_type::NODETYPE: 
+      case  record_type::NODETYPE:
         assert(dtype == data_type::int16);
         structs.back().elements.back().nodetype = parse_int16(&buffer[4]);
         break;
-      case  record_type::PROPATTR: 
+      case  record_type::PROPATTR:
         assert(dtype == data_type::int16);
-        structs.back().elements.back().propertys.back().propatter = parse_int16(&buffer[4]);
-        break;
-      case record_type::PROPVALUE:
-        assert(dtype == data_type::ascii_string);
-        structs.back().elements.back().propertys.back().propvalue.assign(parse_string(&buffer[4], &buffer[record_length]));
-        break;
+        structs.back().elements.back().propertys.back().propatter =
+      parse_int16(&buffer[4]); break; case record_type::PROPVALUE: assert(dtype
+      == data_type::ascii_string);
+        structs.back().elements.back().propertys.back().propvalue.assign(parse_string(&buffer[4],
+      &buffer[record_length])); break;
+      */
       case record_type::BOX:
         assert(dtype == data_type::no_data);
         current_stream = rtype;
@@ -265,7 +306,8 @@ void library::read(const std::filesystem::path& file_path) {
         break;
       case record_type::MASK:
         assert(dtype == data_type::ascii_string);
-        formats.back().mask.assign(parse_string(&buffer[4], &buffer[record_length]));
+        formats.back().mask.assign(
+            parse_string(&buffer[4], &buffer[record_length]));
         break;
       case record_type::ENDMASKS:
         assert(dtype == data_type::no_data);

@@ -1,0 +1,10 @@
+{
+    "files.associations": {
+        "*.out": "gcode",
+        "utility": "cpp",
+        "list": "cpp",
+        "vector": "cpp",
+        "xstring": "cpp",
+        "xutility": "cpp"
+    }
+}
