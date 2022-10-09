@@ -2,53 +2,54 @@
 
 #include <exception>
 
-namespace odrc::utility {
+namespace odrc {
 
-typedef enum odrc_error {
-  ERROR_NONE            = 0,
-  ERROR_NOT_IMPLEMENTED = 10,
-  ERROR_INVALID_FILE    = 20
-} odrc_error;
+enum class error {
+  no_error              = 0,
+  not_implemented_error = 10,
+  invalid_file_error    = 20
+};
 
-class odrc_exception : public std::exception {
+class exception : public std::exception {
  public:
-  odrc_exception(odrc_error err) throw() { _error = err; }
+  exception(error err) throw() { _error = err; }
 
   virtual const char* what() const throw() { return "OpenDRC Exception"; }
 
-  odrc_error error_code() const throw() { return _error; }
+  error error_code() const throw() { return _error; }
 
  private:
-  odrc_error _error;
+  error _error;
 };
 
-class not_implemented_exception : public odrc_exception {
+class not_implemented_exception : public exception {
  public:
-  not_implemented_exception(const char* message = 0) throw()
-      : odrc_exception(ERROR_NOT_IMPLEMENTED) {
+  not_implemented_exception(const char* message = nullptr) throw()
+      : exception(error::not_implemented_error) {
     _message = message;
   }
 
   const char* what() const throw() {
-    return (_message == 0 ? "ERROR_NOT_IMPLEMENTED" : _message);
+    return (_message == nullptr ? "NOT_IMPLEMENTED_ERROR" : _message);
   }
 
  private:
   const char* _message;
 };
 
-class invaild_file_exception : public odrc_exception {
+class invalid_file_exception : public exception {
  public:
-  invaild_file_exception(const char* message = 0) throw()
-      : odrc_exception(ERROR_INVALID_FILE) {
+  invalid_file_exception(const char* message = nullptr) throw()
+      : exception(error::invalid_file_error) {
     _message = message;
   }
 
   const char* what() const throw() {
-    return (_message == 0 ? "ERROR_INVALID_FILE" : _message);
+    return (_message == nullptr ? "INVALID_FILE_ERROR" : _message);
   }
 
  private:
   const char* _message;
 };
-}  // namespace odrc::utility
+
+}  // namespace odrc
