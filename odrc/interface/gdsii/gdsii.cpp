@@ -5,7 +5,6 @@
 #include <cstddef>
 #include <cstring>
 #include <fstream>
-#include <iostream>
 #include <stdexcept>
 #include <vector>
 namespace odrc::gdsii {
@@ -16,9 +15,10 @@ int16_t parse_int16(const std::byte* bytes) {
          std::to_integer<int16_t>(bytes[1]);
 }
 
-int16_t parse_bitarray(const std::byte* bytes) {
-  return (std::to_integer<int16_t>(bytes[0]) << 8) |
-         std::to_integer<int16_t>(bytes[1]);
+std::bitset<16> parse_bitarray(const std::byte* bytes) {
+  std::bitset<16> temp_bitarray(std::to_integer<uint16_t>(bytes[0]) << 8|
+         std::to_integer<uint16_t>(bytes[1]));
+  return (temp_bitarray);
 }
 
 int32_t parse_int32(const std::byte* bytes) {
@@ -182,7 +182,7 @@ void library::read(const std::filesystem::path& file_path) {
           structs.back().elements.back().mag = parse_real64(&buffer[4]);
         } else if (current_stream == record_type::SREF) {
           (*instances.back().first).elements.back().mag =
-              parse_bitarray(&buffer[4]);
+              parse_real64(&buffer[4]);
         }
         break;
       case record_type::ANGLE:
@@ -191,7 +191,7 @@ void library::read(const std::filesystem::path& file_path) {
           structs.back().elements.back().angle = parse_real64(&buffer[4]);
         } else if (current_stream == record_type::SREF) {
           (*instances.back().first).elements.back().angle =
-              parse_bitarray(&buffer[4]);
+              parse_real64(&buffer[4]);
         }
         break;
       default:

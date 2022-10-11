@@ -1,5 +1,6 @@
 #pragma once
 
+#include <bitset>
 #include <cstddef>
 #include <filesystem>
 #include <string>
@@ -42,11 +43,11 @@ enum class data_type : std::underlying_type_t<std::byte> {
 };
 
 // Data parsers
-int16_t     parse_int16(const std::byte* bytes);
-int16_t     parse_bitarray(const std::byte* bytes);
-int32_t     parse_int32(const std::byte* bytes);
-double      parse_real64(const std::byte* bytes);
-std::string parse_string(const std::byte* begin, const std::byte* end);
+int16_t         parse_int16(const std::byte* bytes);
+std::bitset<16> parse_bitarray(const std::byte* bytes);
+int32_t         parse_int32(const std::byte* bytes);
+double          parse_real64(const std::byte* bytes);
+std::string     parse_string(const std::byte* begin, const std::byte* end);
 
 class library {
  public:
@@ -70,9 +71,9 @@ class library {
     record_type         rtype;
     int                 layer;
     int                 datatype;
-    int                 strans = -1;
-    double              mag    = -1;
-    double              angle  = -1;
+    double              mag;
+    double              angle;
+    std::bitset<16>     strans;
     std::vector<xy>     points;
     std::vector<colrow> colrows;
   };
