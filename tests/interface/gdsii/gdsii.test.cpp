@@ -27,6 +27,18 @@ TEST_SUITE("[OpenDRC] odrc::gdsii data parser tests") {
     B bytes[2]{B{0xff}, B{0x77}};
     CHECK_EQ(odrc::gdsii::parse_int16(bytes), int16_t{-137});
   }
+  TEST_CASE("parse_bitarray of 0x0001") {
+    B bytes[2]{B{0x00}, B{0x01}};
+    CHECK_EQ(odrc::gdsii::parse_bitarray(bytes), int16_t{1});
+  }
+  TEST_CASE("parse_bitarray of 0x0005") {
+    B bytes[2]{B{0x00}, B{0x05}};
+    CHECK_EQ(odrc::gdsii::parse_bitarray(bytes), int16_t{5});
+  }
+  TEST_CASE("parse_bitarray of 0x8000") {
+    B bytes[2]{B{0x80}, B{0x00}};
+    CHECK_EQ(odrc::gdsii::parse_bitarray(bytes), uint16_t{32768});
+  }
   TEST_CASE("parse_int32 of 0x00000001") {
     B bytes[4]{B{0x00}, B{0x00}, B{0x00}, B{0x01}};
     CHECK_EQ(odrc::gdsii::parse_int32(bytes), int32_t{1});
