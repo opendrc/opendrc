@@ -5,13 +5,18 @@
 #include <cstddef>
 #include <cstring>
 #include <fstream>
+#include <iostream>
 #include <stdexcept>
 #include <vector>
-
 namespace odrc::gdsii {
 
 // Data parsers
 int16_t parse_int16(const std::byte* bytes) {
+  return (std::to_integer<int16_t>(bytes[0]) << 8) |
+         std::to_integer<int16_t>(bytes[1]);
+}
+
+int16_t parse_bitarray(const std::byte* bytes) {
   return (std::to_integer<int16_t>(bytes[0]) << 8) |
          std::to_integer<int16_t>(bytes[1]);
 }
@@ -113,6 +118,10 @@ void library::read(const std::filesystem::path& file_path) {
         assert(dtype == data_type::no_data);
         current_stream = rtype;
         break;
+      case record_type::AREF:
+        assert(dtype == data_type::no_data);
+        current_stream = rtype;
+        break;
       case record_type::LAYER:
         assert(dtype == data_type::int16);
         structs.back().elements.back().layer = parse_int16(&buffer[4]);
@@ -149,7 +158,42 @@ void library::read(const std::filesystem::path& file_path) {
           }
         }
       } break;
-
+      case record_type::COLROW:
+        assert(dtype == data_type::int16);
+        {
+          int columns = parse_int16(&buffer[4]);
+          int rows    = parse_int16(&buffer[8]);
+          structs.back().elements.back().colrows.emplace_back(
+              colrow{columns, rows});
+        }
+        break;
+      case record_type::STRANS:
+        assert(dtype == data_type::bit_array);
+        if (current_stream == record_type::AREF) {
+          structs.back().elements.back().strans = parse_bitarray(&buffer[4]);
+        } else if (current_stream == record_type::SREF) {
+          (*instances.back().first).elements.back().strans =
+              parse_bitarray(&buffer[4]);
+        }
+        break;
+      case record_type::MAG:
+        assert(dtype == data_type::real64);
+        if (current_stream == record_type::AREF) {
+          structs.back().elements.back().mag = parse_real64(&buffer[4]);
+        } else if (current_stream == record_type::SREF) {
+          (*instances.back().first).elements.back().mag =
+              parse_bitarray(&buffer[4]);
+        }
+        break;
+      case record_type::ANGLE:
+        assert(dtype == data_type::real64);
+        if (current_stream == record_type::AREF) {
+          structs.back().elements.back().angle = parse_real64(&buffer[4]);
+        } else if (current_stream == record_type::SREF) {
+          (*instances.back().first).elements.back().angle =
+              parse_bitarray(&buffer[4]);
+        }
+        break;
       default:
         break;
     }
