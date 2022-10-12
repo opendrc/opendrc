@@ -71,17 +71,20 @@ class library {
     record_type         rtype;
     int                 layer;
     int                 datatype;
-    double              mag;
-    double              angle;
-    std::bitset<16>     strans;
     std::vector<xy>     points;
-    std::vector<colrow> colrows;
   };
   struct structure {
     datetime             mtime;
     datetime             atime;
     std::string          name;
     std::vector<element> elements;
+  };
+  struct xy_instance{
+    double              mag;
+    double              angle;
+    std::bitset<16>     strans;
+    std::vector<colrow> colrows;
+    std::vector<xy>     position;
   };
   void read(const std::filesystem::path& file_path);
   // meta info
@@ -96,7 +99,7 @@ class library {
   std::vector<structure> structs;
 
   // structure instantiation
-  std::vector<std::pair<structure*, xy>> instances;
+  std::vector<std::pair<structure*, xy_instance>> instances;
 
  private:
   datetime _read_time(const std::byte* bytes);

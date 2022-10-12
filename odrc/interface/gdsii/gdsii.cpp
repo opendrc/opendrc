@@ -16,8 +16,8 @@ int16_t parse_int16(const std::byte* bytes) {
 }
 
 std::bitset<16> parse_bitarray(const std::byte* bytes) {
-  std::bitset<16> temp_bitarray(std::to_integer<uint16_t>(bytes[0]) << 8|
-         std::to_integer<uint16_t>(bytes[1]));
+  std::bitset<16> temp_bitarray(std::to_integer<uint16_t>(bytes[0]) << 8 |
+                                std::to_integer<uint16_t>(bytes[1]));
   return (temp_bitarray);
 }
 
@@ -133,9 +133,15 @@ void library::read(const std::filesystem::path& file_path) {
       case record_type::XY:
         assert(dtype == data_type::int32);
         if (current_stream == record_type::SREF) {
-          int x                   = parse_int32(&buffer[4]);
-          int y                   = parse_int32(&buffer[8]);
-          instances.back().second = xy{x, y};
+          int x = parse_int32(&buffer[4]);
+          int y = parse_int32(&buffer[8]);
+          instances.back().second.position.emplace_back(xy{x, y});
+        } else if (current_stream == record_type::AREF) {
+          for (int i = 0; i < 3; ++i) {
+            int x = parse_int32(&buffer[4 + i * 8]);
+            int y = parse_int32(&buffer[8 + i * 8]);
+            instances.back().second.position.emplace_back(xy{x, y});
+          }
         } else {
           int num_coors = (record_length - 4) / 8;
           for (int i = 0; i < num_coors; ++i) {
@@ -151,10 +157,13 @@ void library::read(const std::filesystem::path& file_path) {
       case record_type::SNAME: {
         assert(dtype == data_type::ascii_string);
         std::string sname = parse_string(&buffer[4], &buffer[record_length]);
-        for (auto&& s : structs) {
-          if (s.name == sname) {
-            instances.emplace_back(std::make_pair(&s, xy{}));
-            break;
+        if (current_stream == record_type::SREF or
+            current_stream == record_type::AREF) {
+          for (auto&& s : structs) {
+            if (s.name == sname) {
+              instances.emplace_back(std::make_pair(&s, xy_instance{}));
+              break;
+            }
           }
         }
       } break;
@@ -163,35 +172,28 @@ void library::read(const std::filesystem::path& file_path) {
         {
           int columns = parse_int16(&buffer[4]);
           int rows    = parse_int16(&buffer[8]);
-          structs.back().elements.back().colrows.emplace_back(
-              colrow{columns, rows});
+          instances.back().second.colrows.emplace_back(colrow{columns, rows});
         }
         break;
       case record_type::STRANS:
         assert(dtype == data_type::bit_array);
-        if (current_stream == record_type::AREF) {
-          structs.back().elements.back().strans = parse_bitarray(&buffer[4]);
-        } else if (current_stream == record_type::SREF) {
-          (*instances.back().first).elements.back().strans =
-              parse_bitarray(&buffer[4]);
+        if (current_stream == record_type::AREF or
+            current_stream == record_type::SREF) {
+          instances.back().second.strans = parse_bitarray(&buffer[4]);
         }
         break;
       case record_type::MAG:
         assert(dtype == data_type::real64);
-        if (current_stream == record_type::AREF) {
-          structs.back().elements.back().mag = parse_real64(&buffer[4]);
-        } else if (current_stream == record_type::SREF) {
-          (*instances.back().first).elements.back().mag =
-              parse_real64(&buffer[4]);
+        if (current_stream == record_type::AREF or
+            current_stream == record_type::SREF) {
+          instances.back().second.mag = parse_real64(&buffer[4]);
         }
         break;
       case record_type::ANGLE:
         assert(dtype == data_type::real64);
-        if (current_stream == record_type::AREF) {
-          structs.back().elements.back().angle = parse_real64(&buffer[4]);
-        } else if (current_stream == record_type::SREF) {
-          (*instances.back().first).elements.back().angle =
-              parse_real64(&buffer[4]);
+        if (current_stream == record_type::AREF or
+            current_stream == record_type::SREF) {
+          instances.back().second.angle = parse_real64(&buffer[4]);
         }
         break;
       default:
