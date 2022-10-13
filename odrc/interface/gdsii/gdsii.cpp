@@ -16,9 +16,7 @@ int16_t parse_int16(const std::byte* bytes) {
 }
 
 std::bitset<16> parse_bitarray(const std::byte* bytes) {
-  std::bitset<16> temp_bitarray(std::to_integer<uint16_t>(bytes[0]) << 8 |
-                                std::to_integer<uint16_t>(bytes[1]));
-  return (temp_bitarray);
+  return (std::bitset<16>(parse_int16(bytes)));
 }
 
 int32_t parse_int32(const std::byte* bytes) {
@@ -116,10 +114,12 @@ void library::read(const std::filesystem::path& file_path) {
         break;
       case record_type::SREF:
         assert(dtype == data_type::no_data);
+        structs.back().elements.emplace_back();
         current_stream = rtype;
         break;
       case record_type::AREF:
         assert(dtype == data_type::no_data);
+        structs.back().elements.emplace_back();
         current_stream = rtype;
         break;
       case record_type::LAYER:
@@ -135,12 +135,12 @@ void library::read(const std::filesystem::path& file_path) {
         if (current_stream == record_type::SREF) {
           int x = parse_int32(&buffer[4]);
           int y = parse_int32(&buffer[8]);
-          instances.back().second.position.emplace_back(xy{x, y});
+          structs.back().elements.back().points.emplace_back(xy{x, y});
         } else if (current_stream == record_type::AREF) {
           for (int i = 0; i < 3; ++i) {
             int x = parse_int32(&buffer[4 + i * 8]);
             int y = parse_int32(&buffer[8 + i * 8]);
-            instances.back().second.position.emplace_back(xy{x, y});
+            structs.back().elements.back().points.emplace_back(xy{x, y});
           }
         } else {
           int num_coors = (record_length - 4) / 8;
@@ -161,7 +161,8 @@ void library::read(const std::filesystem::path& file_path) {
             current_stream == record_type::AREF) {
           for (auto&& s : structs) {
             if (s.name == sname) {
-              instances.emplace_back(std::make_pair(&s, xy_instance{}));
+              instances.emplace_back(
+                  std::make_pair(&s, &(structs.back().elements.back())));
               break;
             }
           }
@@ -170,30 +171,29 @@ void library::read(const std::filesystem::path& file_path) {
       case record_type::COLROW:
         assert(dtype == data_type::int16);
         {
-          int columns = parse_int16(&buffer[4]);
-          int rows    = parse_int16(&buffer[8]);
-          instances.back().second.colrows.emplace_back(colrow{columns, rows});
+          structs.back().elements.back().columns = parse_int16(&buffer[4]);
+          structs.back().elements.back().rows    = parse_int16(&buffer[6]);
         }
         break;
       case record_type::STRANS:
         assert(dtype == data_type::bit_array);
         if (current_stream == record_type::AREF or
             current_stream == record_type::SREF) {
-          instances.back().second.strans = parse_bitarray(&buffer[4]);
+          structs.back().elements.back().strans = parse_bitarray(&buffer[4]);
         }
         break;
       case record_type::MAG:
         assert(dtype == data_type::real64);
         if (current_stream == record_type::AREF or
             current_stream == record_type::SREF) {
-          instances.back().second.mag = parse_real64(&buffer[4]);
+          structs.back().elements.back().mag = parse_real64(&buffer[4]);
         }
         break;
       case record_type::ANGLE:
         assert(dtype == data_type::real64);
         if (current_stream == record_type::AREF or
             current_stream == record_type::SREF) {
-          instances.back().second.angle = parse_real64(&buffer[4]);
+          structs.back().elements.back().angle = parse_real64(&buffer[4]);
         }
         break;
       default:
