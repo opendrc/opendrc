@@ -7,13 +7,16 @@
 #include <fstream>
 #include <stdexcept>
 #include <vector>
-
 namespace odrc::gdsii {
 
 // Data parsers
 int16_t parse_int16(const std::byte* bytes) {
   return (std::to_integer<int16_t>(bytes[0]) << 8) |
          std::to_integer<int16_t>(bytes[1]);
+}
+
+std::bitset<16> parse_bitarray(const std::byte* bytes) {
+  return (std::bitset<16>(parse_int16(bytes)));
 }
 
 int32_t parse_int32(const std::byte* bytes) {
@@ -60,7 +63,6 @@ void library::read(const std::filesystem::path& file_path) {
     record_type rtype         = static_cast<record_type>(buffer[2]);
     data_type   dtype         = static_cast<data_type>(buffer[3]);
     ifs.read(reinterpret_cast<char*>(buffer.data() + 4), record_length - 4);
-
     switch (rtype) {
       case record_type::HEADER:
         assert(dtype == data_type::int16);
@@ -91,7 +93,7 @@ void library::read(const std::filesystem::path& file_path) {
         break;
       case record_type::STRNAME:
         assert(dtype == data_type::ascii_string);
-        structs.back().name.assign(
+        structs.back().strname.assign(
             parse_string(&buffer[4], &buffer[record_length]));
         break;
       case record_type::ENDSTR:
@@ -100,56 +102,232 @@ void library::read(const std::filesystem::path& file_path) {
       case record_type::BOUNDARY:
         assert(dtype == data_type::no_data);
         current_stream = rtype;
-        structs.back().elements.emplace_back();
-        structs.back().elements.back().rtype = rtype;
+        {
+          boundary* boundary_ptr = new boundary;
+          element*  element_ptr  = static_cast<element*>(boundary_ptr);
+          structs.back().elements.emplace_back(element_ptr);
+        }
         break;
       case record_type::PATH:
         assert(dtype == data_type::no_data);
         current_stream = rtype;
-        structs.back().elements.emplace_back();
-        structs.back().elements.back().rtype = rtype;
+        {
+          path*    path_ptr    = new path;
+          element* element_ptr = static_cast<element*>(path_ptr);
+          structs.back().elements.emplace_back(element_ptr);
+        }
         break;
       case record_type::SREF:
         assert(dtype == data_type::no_data);
         current_stream = rtype;
+        {
+          sref*    sref_ptr    = new sref;
+          element* element_ptr = static_cast<element*>(sref_ptr);
+          structs.back().elements.emplace_back(element_ptr);
+        }
+        break;
+      case record_type::AREF:
+        assert(dtype == data_type::no_data);
+        current_stream = rtype;
+        {
+          aref*    aref_ptr    = new aref;
+          element* element_ptr = static_cast<element*>(aref_ptr);
+          structs.back().elements.emplace_back(element_ptr);
+        }
         break;
       case record_type::LAYER:
         assert(dtype == data_type::int16);
-        structs.back().elements.back().layer = parse_int16(&buffer[4]);
+        if (current_stream == record_type::BOUNDARY) {
+          boundary* ptr =
+              static_cast<boundary*>(structs.back().elements.back());
+          ptr->layer = parse_int16(&buffer[4]);
+        } else if (current_stream == record_type::PATH) {
+          path* ptr  = static_cast<path*>(structs.back().elements.back());
+          ptr->layer = parse_int16(&buffer[4]);
+        } else if (current_stream == record_type::NODE) {
+          node* ptr  = static_cast<node*>(structs.back().elements.back());
+          ptr->layer = parse_int16(&buffer[4]);
+        } else if (current_stream == record_type::BOX) {
+          box* ptr   = static_cast<box*>(structs.back().elements.back());
+          ptr->layer = parse_int16(&buffer[4]);
+        }
         break;
       case record_type::DATATYPE:
         assert(dtype == data_type::int16);
-        structs.back().elements.back().datatype = parse_int16(&buffer[4]);
+        if (current_stream == record_type::BOUNDARY) {
+          boundary* ptr =
+              static_cast<boundary*>(structs.back().elements.back());
+          ptr->datatype = parse_int16(&buffer[4]);
+        } else if (current_stream == record_type::PATH) {
+          path* ptr     = static_cast<path*>(structs.back().elements.back());
+          ptr->datatype = parse_int16(&buffer[4]);
+        }
         break;
+      case record_type::WIDTH: {
+        assert(dtype == data_type::int32);
+        path* ptr  = static_cast<path*>(structs.back().elements.back());
+        ptr->width = parse_int32(&buffer[4]);
+      } break;
       case record_type::XY:
         assert(dtype == data_type::int32);
-        if (current_stream == record_type::SREF) {
-          int x                   = parse_int32(&buffer[4]);
-          int y                   = parse_int32(&buffer[8]);
-          instances.back().second = xy{x, y};
-        } else {
+        if (current_stream == record_type::BOUNDARY) {
+          boundary* ptr =
+              static_cast<boundary*>(structs.back().elements.back());
           int num_coors = (record_length - 4) / 8;
           for (int i = 0; i < num_coors; ++i) {
             int x = parse_int32(&buffer[4 + i * 8]);
             int y = parse_int32(&buffer[8 + i * 8]);
-            structs.back().elements.back().points.emplace_back(xy{x, y});
+            ptr->coordinates.emplace_back(xy{x, y});
+          }
+        } else if (current_stream == record_type::PATH) {
+          path* ptr       = static_cast<path*>(structs.back().elements.back());
+          int   num_coors = (record_length - 4) / 8;
+          for (int i = 0; i < num_coors; ++i) {
+            int x = parse_int32(&buffer[4 + i * 8]);
+            int y = parse_int32(&buffer[8 + i * 8]);
+            ptr->coordinates.emplace_back(xy{x, y});
+          }
+        } else if (current_stream == record_type::SREF and
+                   record_length == 12) {
+          sref* ptr = static_cast<sref*>(structs.back().elements.back());
+          int   x   = parse_int32(&buffer[4]);
+          int   y   = parse_int32(&buffer[8]);
+          ptr->coordinates.emplace_back(xy{x, y});
+        } else if (current_stream == record_type::AREF and
+                   record_length == 28) {
+          aref* ptr = static_cast<aref*>(structs.back().elements.back());
+          for (int i = 0; i < 3; ++i) {
+            int x = parse_int32(&buffer[4 + i * 8]);
+            int y = parse_int32(&buffer[8 + i * 8]);
+            ptr->coordinates.emplace_back(xy{x, y});
+          }
+        } else if (current_stream == record_type::NODE) {
+          aref* ptr       = static_cast<aref*>(structs.back().elements.back());
+          int   num_coors = (record_length - 4) / 8;
+          for (int i = 0; i < num_coors; ++i) {
+            int x = parse_int32(&buffer[4 + i * 8]);
+            int y = parse_int32(&buffer[8 + i * 8]);
+            ptr->coordinates.emplace_back(xy{x, y});
+          }
+        } else if (current_stream == record_type::BOX and record_length == 44) {
+          aref* ptr = static_cast<aref*>(structs.back().elements.back());
+          for (int i = 0; i < 5; ++i) {
+            int x = parse_int32(&buffer[4 + i * 8]);
+            int y = parse_int32(&buffer[8 + i * 8]);
+            ptr->coordinates.emplace_back(xy{x, y});
           }
         }
         break;
       case record_type::ENDEL:
         assert(dtype == data_type::no_data);
         break;
-      case record_type::SNAME: {
+      case record_type::SNAME:
         assert(dtype == data_type::ascii_string);
-        std::string sname = parse_string(&buffer[4], &buffer[record_length]);
-        for (auto&& s : structs) {
-          if (s.name == sname) {
-            instances.emplace_back(std::make_pair(&s, xy{}));
-            break;
-          }
+        if (current_stream == record_type::SREF) {
+          sref* ptr  = static_cast<sref*>(structs.back().elements.back());
+          ptr->sname = parse_string(&buffer[4], &buffer[record_length]);
+        } else if (current_stream == record_type::AREF) {
+          aref* ptr  = static_cast<aref*>(structs.back().elements.back());
+          ptr->sname = parse_string(&buffer[4], &buffer[record_length]);
         }
-      } break;
-
+        break;
+      case record_type::COLROW:
+        assert(dtype == data_type::int16);
+        {
+          aref* ptr    = static_cast<aref*>(structs.back().elements.back());
+          ptr->columns = parse_int16(&buffer[4]);
+          ptr->rows    = parse_int16(&buffer[6]);
+        }
+        break;
+      case record_type::NODE:
+        assert(dtype == data_type::no_data);
+        current_stream = rtype;
+        {
+          node*    node_ptr    = new node;
+          element* element_ptr = static_cast<element*>(node_ptr);
+          structs.back().elements.emplace_back(element_ptr);
+        }
+        break;
+      case record_type::STRANS:
+        assert(dtype == data_type::bit_array);
+        if (current_stream == record_type::SREF) {
+          sref* ptr = static_cast<sref*>(structs.back().elements.back());
+          std::bitset<16> sref_strans = parse_bitarray(&buffer[4]);
+          ptr->reflection_flag        = sref_strans[0];
+          ptr->mag_flag               = sref_strans[13];
+          ptr->angle_flag             = sref_strans[14];
+        } else if (current_stream == record_type::AREF) {
+          aref* ptr = static_cast<aref*>(structs.back().elements.back());
+          std::bitset<16> sref_strans = parse_bitarray(&buffer[4]);
+          ptr->reflection_flag        = sref_strans[0];
+          ptr->mag_flag               = sref_strans[13];
+          ptr->angle_flag             = sref_strans[14];
+        }
+        break;
+      case record_type::MAG:
+        assert(dtype == data_type::real64);
+        if (current_stream == record_type::SREF) {
+          sref* ptr = static_cast<sref*>(structs.back().elements.back());
+          ptr->mag  = parse_real64(&buffer[4]);
+        } else if (current_stream == record_type::AREF) {
+          aref* ptr = static_cast<aref*>(structs.back().elements.back());
+          ptr->mag  = parse_real64(&buffer[4]);
+        }
+        break;
+      case record_type::ANGLE:
+        assert(dtype == data_type::real64);
+        if (current_stream == record_type::SREF) {
+          sref* ptr  = static_cast<sref*>(structs.back().elements.back());
+          ptr->angle = parse_real64(&buffer[4]);
+        } else if (current_stream == record_type::AREF) {
+          aref* ptr  = static_cast<aref*>(structs.back().elements.back());
+          ptr->angle = parse_real64(&buffer[4]);
+        }
+        break;
+      case record_type::PATHTYPE:
+        assert(dtype == data_type::int16);
+        {
+          path* ptr     = static_cast<path*>(structs.back().elements.back());
+          ptr->pathtype = parse_int16(&buffer[4]);
+        }
+        break;
+      case record_type::NODETYPE:
+        assert(dtype == data_type::int16);
+        {
+          node* ptr     = static_cast<node*>(structs.back().elements.back());
+          ptr->nodetype = parse_int16(&buffer[4]);
+        }
+        break;
+      case record_type::BOX:
+        assert(dtype == data_type::int16);
+        current_stream = rtype;
+        {
+          box*     box_ptr     = new box[1];
+          element* element_ptr = static_cast<element*>(box_ptr);
+          structs.back().elements.emplace_back(element_ptr);
+        }
+        break;
+      case record_type::BOXTYPE:
+        assert(dtype == data_type::int16);
+        {
+          box* ptr     = static_cast<box*>(structs.back().elements.back());
+          ptr->boxtype = parse_int16(&buffer[4]);
+        }
+        break;
+      case record_type::BGNEXTN:
+        assert(dtype == data_type::int16);
+        {
+          path* ptr    = static_cast<path*>(structs.back().elements.back());
+          ptr->bgnextn = parse_int32(&buffer[4]);
+        }
+        break;
+      case record_type::ENDEXTN:
+        assert(dtype == data_type::int16);
+        {
+          path* ptr    = static_cast<path*>(structs.back().elements.back());
+          ptr->endextn = parse_int32(&buffer[4]);
+        }
+        break;
       default:
         break;
     }

@@ -12,6 +12,8 @@
 #include <odrc/infrastructure/execution.hpp>
 #include <odrc/infrastructure/sweepline/sweepline.hpp>
 
+#include <odrc/interface/gdsii/gdsii.hpp>
+
 namespace odrc {
 using horizontal_edge = thrust::pair<thrust::pair<int, int>, int>;
 using vertical_edge   = thrust::pair<int, thrust::pair<int, int>>;
@@ -69,17 +71,19 @@ __global__ void _vertical_width_check_kernel(vertical_edge* edges,
 void width_check(const odrc::gdsii::library& lib, int layer, int threshold) {
   for (auto&& s : lib.structs) {
     for (auto&& e : s.elements) {
-      if (e.rtype == odrc::gdsii::record_type::BOUNDARY and e.layer == layer) {
+      if (e->rtype == odrc::gdsii::record_type::BOUNDARY){
+        gdsii::library::boundary* boundary_ptr = static_cast<gdsii::library::boundary*>(e);
+        if(boundary_ptr->layer == layer) {
         std::vector<horizontal_edge> horizontal_edges;
         std::vector<vertical_edge>   vertical_edges;
-        int                          num_points = e.points.size() - 1;
-        for (int i = 0; i < num_points - 1; ++i) {
-          if (e.points[i].x == e.points[i + 1].x) {  // vertical
+        int                          num_coordinates = boundary_ptr->coordinates.size() - 1;
+        for (int i = 0; i < num_coordinates - 1; ++i) {
+          if (boundary_ptr->coordinates[i].x == boundary_ptr->coordinates[i + 1].x) {  // vertical
             vertical_edges.emplace_back(std::pair{
-                e.points[i].x, std::pair{e.points[i].y, e.points[i + 1].y}});
+                boundary_ptr->coordinates[i].x, std::pair{boundary_ptr->coordinates[i].y, boundary_ptr->coordinates[i + 1].y}});
           } else {
             horizontal_edges.emplace_back(std::pair{
-                std::pair{e.points[i].x, e.points[i + 1].x}, e.points[i].y});
+                std::pair{boundary_ptr->coordinates[i].x, boundary_ptr->coordinates[i + 1].x}, boundary_ptr->coordinates[i].y});
           }
         }
         std::sort(
@@ -144,6 +148,7 @@ void width_check(const odrc::gdsii::library& lib, int layer, int threshold) {
             thrust::raw_pointer_cast(vertical_edges_dev.data()),
             vertical_prefix_dev, result_buffer, vertical_edges.size());
       }
+    }
     }
   }
 }
