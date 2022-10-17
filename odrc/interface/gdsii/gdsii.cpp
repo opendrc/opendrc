@@ -178,7 +178,7 @@ void library::read(const std::filesystem::path& file_path) {
           for (int i = 0; i < num_coors; ++i) {
             int x = parse_int32(&buffer[4 + i * 8]);
             int y = parse_int32(&buffer[8 + i * 8]);
-            (*ptr_tmp).points.emplace_back(xy{x, y});
+            ptr_tmp->points.emplace_back(xy{x, y});
           }
         } else if (current_stream == record_type::PATH) {
           path* ptr_tmp   = static_cast<path*>(structs.back().elements.back());
@@ -186,21 +186,21 @@ void library::read(const std::filesystem::path& file_path) {
           for (int i = 0; i < num_coors; ++i) {
             int x = parse_int32(&buffer[4 + i * 8]);
             int y = parse_int32(&buffer[8 + i * 8]);
-            (*ptr_tmp).points.emplace_back(xy{x, y});
+            ptr_tmp->points.emplace_back(xy{x, y});
           }
         } else if (current_stream == record_type::SREF and
                    record_length == 12) {
           sref* ptr_tmp = static_cast<sref*>(structs.back().elements.back());
           int   x       = parse_int32(&buffer[4]);
           int   y       = parse_int32(&buffer[8]);
-          (*ptr_tmp).points.emplace_back(xy{x, y});
+          ptr_tmp->points.emplace_back(xy{x, y});
         } else if (current_stream == record_type::AREF and
                    record_length == 28) {
           aref* ptr_tmp = static_cast<aref*>(structs.back().elements.back());
           for (int i = 0; i < 3; ++i) {
             int x = parse_int32(&buffer[4 + i * 8]);
             int y = parse_int32(&buffer[8 + i * 8]);
-            (*ptr_tmp).points.emplace_back(xy{x, y});
+            ptr_tmp->points.emplace_back(xy{x, y});
           }
         } else if (current_stream == record_type::NODE) {
           aref* ptr_tmp   = static_cast<aref*>(structs.back().elements.back());
@@ -208,14 +208,14 @@ void library::read(const std::filesystem::path& file_path) {
           for (int i = 0; i < num_coors; ++i) {
             int x = parse_int32(&buffer[4 + i * 8]);
             int y = parse_int32(&buffer[8 + i * 8]);
-            (*ptr_tmp).points.emplace_back(xy{x, y});
+            ptr_tmp->points.emplace_back(xy{x, y});
           }
         } else if (current_stream == record_type::BOX and record_length == 44) {
           aref* ptr_tmp = static_cast<aref*>(structs.back().elements.back());
           for (int i = 0; i < 5; ++i) {
             int x = parse_int32(&buffer[4 + i * 8]);
             int y = parse_int32(&buffer[8 + i * 8]);
-            (*ptr_tmp).points.emplace_back(xy{x, y});
+            ptr_tmp->points.emplace_back(xy{x, y});
           }
         }
         break;

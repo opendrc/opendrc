@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <bitset>
 #include <cstddef>
 #include <filesystem>
@@ -54,7 +55,7 @@ enum class data_type : std::underlying_type_t<std::byte> {
 int16_t     parse_int16(const std::byte* bytes);
 int32_t     parse_int32(const std::byte* bytes);
 double      parse_real64(const std::byte* bytes);
-bool        parse_bitarray(const std::byte* bytes);
+bool        parse_bitarray(const std::byte* bytes, int bit_num);
 std::string parse_string(const std::byte* begin, const std::byte* end);
 
 class library {
@@ -73,6 +74,7 @@ class library {
   };
   struct element {
     record_type rtype;
+    virtual ~element(){};
   };
   struct path : public element {
     int             layer;
@@ -111,22 +113,18 @@ class library {
   struct node : public element {
     int nodetype;
     int layer;
+    std::vector<xy> points;
   };
   struct box : public element {
     int boxtype;
     int layer;
+    std::vector<xy> points;
   };
   struct structure {
     datetime              mtime;
     datetime              atime;
     std::string           strname;
     std::vector<element*> elements;
-    /*   ~structure() {
-      for (auto&& n : elements) {
-        delete n;
-      };
-    }
-    */
   };
 
   void read(const std::filesystem::path& file_path);
@@ -140,6 +138,13 @@ class library {
 
   // structure definition
   std::vector<structure> structs;
+  // destructor function
+  ~library() {
+    for (auto&& n : structs)
+      for (auto&& p : n.elements) {
+        delete p;
+      };
+  }
 
  private:
   datetime _read_time(const std::byte* bytes);
