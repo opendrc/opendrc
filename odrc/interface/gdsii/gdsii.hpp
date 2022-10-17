@@ -52,11 +52,11 @@ enum class data_type : std::underlying_type_t<std::byte> {
 };
 
 // Data parsers
-int16_t     parse_int16(const std::byte* bytes);
-int32_t     parse_int32(const std::byte* bytes);
-double      parse_real64(const std::byte* bytes);
-bool        parse_bitarray(const std::byte* bytes, int bit_num);
-std::string parse_string(const std::byte* begin, const std::byte* end);
+int16_t         parse_int16(const std::byte* bytes);
+int32_t         parse_int32(const std::byte* bytes);
+double          parse_real64(const std::byte* bytes);
+std::bitset<16> parse_bitarray(const std::byte* bytes);
+std::string     parse_string(const std::byte* begin, const std::byte* end);
 
 class library {
  public:
@@ -83,42 +83,42 @@ class library {
     int             width;
     int             bgnextn;
     int             endextn;
-    std::vector<xy> points;
+    std::vector<xy> coordinates;
   };
   struct boundary : public element {
     int             layer;
     int             datatype;
-    std::vector<xy> points;
+    std::vector<xy> coordinates;
   };
   struct sref : public element {
+    bool            angle_flag;
+    bool            mag_flag;
+    bool            reflection_flag;
     double          mag;
     double          angle;
-    bool            strans_flag1;
-    bool            strans_flag2;
-    bool            strans_flag3;
     std::string     sname;
-    std::vector<xy> points;
+    std::vector<xy> coordinates;
   };
   struct aref : public element {
     int             columns;
     int             rows;
-    bool            strans_flag1;
-    bool            strans_flag2;
-    bool            strans_flag3;
+    bool            angle_flag;
+    bool            mag_flag;
+    bool            reflection_flag;
     double          mag;
     double          angle;
     std::string     sname;
-    std::vector<xy> points;
+    std::vector<xy> coordinates;
   };
   struct node : public element {
-    int nodetype;
-    int layer;
-    std::vector<xy> points;
+    int             nodetype;
+    int             layer;
+    std::vector<xy> coordinates;
   };
   struct box : public element {
-    int boxtype;
-    int layer;
-    std::vector<xy> points;
+    int             boxtype;
+    int             layer;
+    std::vector<xy> coordinates;
   };
   struct structure {
     datetime              mtime;

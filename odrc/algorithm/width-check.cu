@@ -72,18 +72,18 @@ void width_check(const odrc::gdsii::library& lib, int layer, int threshold) {
   for (auto&& s : lib.structs) {
     for (auto&& e : s.elements) {
       if (e->rtype == odrc::gdsii::record_type::BOUNDARY){
-        gdsii::library::boundary* ptrtmp = static_cast<gdsii::library::boundary*>(e);
-        if(ptrtmp->layer == layer) {
+        gdsii::library::boundary* boundary_ptr = static_cast<gdsii::library::boundary*>(e);
+        if(boundary_ptr->layer == layer) {
         std::vector<horizontal_edge> horizontal_edges;
         std::vector<vertical_edge>   vertical_edges;
-        int                          num_points = ptrtmp->points.size() - 1;
-        for (int i = 0; i < num_points - 1; ++i) {
-          if (ptrtmp->points[i].x == ptrtmp->points[i + 1].x) {  // vertical
+        int                          num_coordinates = boundary_ptr->coordinates.size() - 1;
+        for (int i = 0; i < num_coordinates - 1; ++i) {
+          if (boundary_ptr->coordinates[i].x == boundary_ptr->coordinates[i + 1].x) {  // vertical
             vertical_edges.emplace_back(std::pair{
-                ptrtmp->points[i].x, std::pair{ptrtmp->points[i].y, ptrtmp->points[i + 1].y}});
+                boundary_ptr->coordinates[i].x, std::pair{boundary_ptr->coordinates[i].y, boundary_ptr->coordinates[i + 1].y}});
           } else {
             horizontal_edges.emplace_back(std::pair{
-                std::pair{ptrtmp->points[i].x, ptrtmp->points[i + 1].x}, ptrtmp->points[i].y});
+                std::pair{boundary_ptr->coordinates[i].x, boundary_ptr->coordinates[i + 1].x}, boundary_ptr->coordinates[i].y});
           }
         }
         std::sort(
