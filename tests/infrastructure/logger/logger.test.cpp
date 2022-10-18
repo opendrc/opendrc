@@ -2,8 +2,8 @@
 
 #include <doctest/doctest.h>
 
+#include <cstdio>
 #include <fstream>
-#include <vector>
 
 std::size_t count_lines(const std::string& filename) {
   std::ifstream ifs(filename);
@@ -18,8 +18,8 @@ std::size_t count_lines(const std::string& filename) {
   return counter;
 }
 
-void require_message_count(const std::string& filename,
-                           const std::size_t  messages) {
+void check_message_count(const std::string& filename,
+                         const std::size_t  messages) {
   if (strlen(spdlog::details::os::default_eol) == 0) {
     CHECK(count_lines(filename) == 1);
   } else {
@@ -30,7 +30,6 @@ void require_message_count(const std::string& filename,
 TEST_SUITE("[OpenDRC] odrc::logger tests") {
   const std::string     log_filename = "log_test.txt";
   odrc::utility::logger logger(log_filename, odrc::utility::log_level::trace);
-  size_t                line_count = count_lines(log_filename);
   TEST_CASE("test info level") {
     logger.trace("doctest", "Test message level {}", "TRACE");
     logger.debug("doctest", "Test message level {}", "DEBUG");
@@ -39,6 +38,7 @@ TEST_SUITE("[OpenDRC] odrc::logger tests") {
     logger.error("doctest", "Test message level {}", "ERROR");
     logger.critical("doctest", "Test message level {}", "CRITICAL");
     logger.flush();
-    require_message_count(log_filename, line_count + 6);
+    check_message_count(log_filename, 6);
+    std::remove(log_filename.c_str());
   }
 }
