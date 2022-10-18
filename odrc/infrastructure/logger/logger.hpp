@@ -14,12 +14,10 @@ enum class log_level { trace, debug, info, warn, error, critical, off };
 class logger {
  public:
   logger(const std::string& log_filename, const log_level& log_level) {
-    _sinks.push_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
-    _sinks.push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>(
-        log_filename.c_str()));
+    _sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(
+        log_filename.c_str());
 
-    _logger = std::make_shared<spdlog::logger>("OpenDRC", _sinks.begin(),
-                                               _sinks.end());
+    _logger = std::make_shared<spdlog::logger>("OpenDRC", _sink);
 
     _logger->set_pattern("[%D %H:%M:%S] [%n] [%L] [thread %t] %v");
     _logger->set_level(_log_level_map.at(log_level));
@@ -77,7 +75,7 @@ class logger {
 
  private:
   std::shared_ptr<spdlog::logger> _logger;
-  std::vector<spdlog::sink_ptr>   _sinks;
+  spdlog::sink_ptr                _sink;
 
   const std::map<log_level, spdlog::level::level_enum> _log_level_map{
       {log_level::trace, spdlog::level::level_enum::trace},
