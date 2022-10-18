@@ -30,6 +30,7 @@ void require_message_count(const std::string& filename,
 TEST_SUITE("[OpenDRC] odrc::logger tests") {
   const std::string     log_filename = "log_test.txt";
   odrc::utility::logger logger(log_filename, odrc::utility::log_level::trace);
+  size_t                line_count = count_lines(log_filename);
   TEST_CASE("test info level") {
     logger.trace("doctest", "Test message level {}", "TRACE");
     logger.debug("doctest", "Test message level {}", "DEBUG");
@@ -38,6 +39,6 @@ TEST_SUITE("[OpenDRC] odrc::logger tests") {
     logger.error("doctest", "Test message level {}", "ERROR");
     logger.critical("doctest", "Test message level {}", "CRITICAL");
     logger.flush();
-    require_message_count(log_filename, 6);
+    require_message_count(log_filename, line_count + 6);
   }
 }
