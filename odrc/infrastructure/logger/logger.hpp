@@ -13,10 +13,13 @@ enum class log_level { trace, debug, info, warn, error, critical, off };
 
 class logger {
  public:
-  logger(const std::string& log_filename, const log_level& log_level) {
-    _sinks.push_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
+  logger(const std::string& log_filename,
+         const log_level&   log_level,
+         bool               output_to_console = true) {
     _sinks.push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>(
         log_filename.c_str()));
+    if (output_to_console)
+      _sinks.push_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
 
     _logger = std::make_shared<spdlog::logger>("OpenDRC", _sinks.begin(),
                                                _sinks.end());
