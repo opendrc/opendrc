@@ -95,7 +95,7 @@ void library::read(const std::filesystem::path& file_path) {
 
       case record_type::BGNSTR: {
         assert(dtype == data_type::int16);
-        auto struc  = structs.emplace_back();
+        auto& struc  = structs.emplace_back();
         struc.mtime = _read_time(&buffer[4]);
         struc.atime = _read_time(&buffer[16]);
       } break;
