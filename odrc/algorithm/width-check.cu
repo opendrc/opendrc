@@ -69,6 +69,7 @@ __global__ void _vertical_width_check_kernel(vertical_edge* edges,
 }
 
 void width_check(const odrc::gdsii::library& lib, int layer, int threshold) {
+#if false
   for (auto&& s : lib.structs) {
     for (auto&& e : s.elements) {
       if (e->rtype == odrc::gdsii::record_type::BOUNDARY){
@@ -151,5 +152,6 @@ void width_check(const odrc::gdsii::library& lib, int layer, int threshold) {
     }
     }
   }
+#endif
 }
 }  // namespace odrc
