@@ -271,6 +271,7 @@ void library::read(const std::filesystem::path& file_path) {
         break;
       case record_type::BOXTYPE:
         assert(dtype == data_type::int16);
+        assert(current_stream == record_type::BOX);
         _boxes.back().boxtype = parse_int16(&buffer[4]);
         break;
       case record_type::BGNEXTN:
