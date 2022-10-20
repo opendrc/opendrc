@@ -1,6 +1,7 @@
 #include <odrc/interface/gdsii/gdsii.hpp>
 
 #include <doctest/doctest.h>
+#include <math.h>
 #include <bitset>
 #include <cstddef>
 #include <exception>
@@ -186,6 +187,30 @@ TEST_SUITE("[OpenDRC] odrc::gdsii library tests") {
     CHECK_EQ(lib.dbu_in_meter / lib.dbu_in_user_unit, doctest::Approx(1e-6));
     CHECK_EQ(lib.structs.size(), 53);
     // CHECK_EQ(lib.instances.size(), 4182);
+  }
+  TEST_CASE("TEST 00") {
+    odrc::gdsii::library lib;
+    lib.read("./test.gds");
+    CHECK_EQ(fabs(lib.dbu_in_user_unit / 0.001 - 1.0) < 1e-6, true);
+    CHECK_EQ(lib.dbu_in_meter / lib.dbu_in_user_unit, doctest::Approx(1e-6));
+    CHECK_EQ(lib.name, "LIB.DB");
+    CHECK_EQ(lib.version, 600);
+    CHECK_EQ(lib.mtime.year, 2);  // 02-02-08 18:18:28
+    CHECK_EQ(lib.mtime.month, 2);
+    CHECK_EQ(lib.mtime.day, 8);
+    CHECK_EQ(lib.mtime.hour, 18);
+    CHECK_EQ(lib.mtime.minute, 18);
+    CHECK_EQ(lib.mtime.second, 28);
+    CHECK_EQ(lib.atime.year, 2);  // 02-02-08 18:18:28
+    CHECK_EQ(lib.atime.month, 2);
+    CHECK_EQ(lib.atime.day, 8);
+    CHECK_EQ(lib.atime.hour, 18);
+    CHECK_EQ(lib.atime.minute, 18);
+    CHECK_EQ(lib.atime.second, 28);
+    CHECK_EQ(std::string(lib.structs.begin()->strname), "TRANS");
+    CHECK_EQ(std::string((lib.structs.data() + 1)->strname), "INV2");
+    CHECK_EQ(std::string((lib.structs.data() + 2)->strname), "RINGO");
+
   }
   TEST_CASE("open gdsii file error") {
     odrc::gdsii::library lib;
