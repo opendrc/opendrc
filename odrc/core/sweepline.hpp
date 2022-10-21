@@ -8,7 +8,7 @@
 #include <stdexcept>
 #include <type_traits>
 
-#include <odrc/infrastructure/execution.hpp>
+#include <odrc/core/execution.hpp>
 
 namespace odrc::core {
 

@@ -1,4 +1,4 @@
-#include <odrc/infrastructure/logger/logger.hpp>
+#include <odrc/utility/logger.hpp>
 
 #include <doctest/doctest.h>
 
