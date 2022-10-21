@@ -8,6 +8,7 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
+#include <map>
 
 namespace odrc::gdsii {
 enum class record_type : std::underlying_type_t<std::byte> {
@@ -145,7 +146,7 @@ class library {
   // public API functions
 
   void read(const std::filesystem::path& file_path);
-
+  void layer_sort(const std::vector<structure>& structs);
   // meta info
   int         version = -1;
   datetime    mtime;
@@ -166,4 +167,10 @@ class library {
   std::vector<sref>     _srefs;
   std::vector<aref>     _arefs;
 };
+/*
+class lib_bylayer{
+  public:
+  multimap<int,void*> _map;
+  map _search(const odrc::gdsii::library );
+}*/
 }  // namespace odrc::gdsii

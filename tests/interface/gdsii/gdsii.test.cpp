@@ -208,8 +208,8 @@ TEST_SUITE("[OpenDRC] odrc::gdsii library tests") {
     CHECK_EQ(lib.atime.minute, 18);
     CHECK_EQ(lib.atime.second, 28);
     CHECK_EQ(std::string(lib.structs.begin()->strname), "TRANS");
-    CHECK_EQ(std::string((lib.structs.data() + 1)->strname), "INV2");
-    CHECK_EQ(std::string((lib.structs.data() + 2)->strname), "RINGO");
+    CHECK_EQ(std::string(lib.structs.at(1).strname), "INV2");
+    CHECK_EQ(std::string(lib.structs.at(2).strname), "RINGO");
 
   }
   TEST_CASE("open gdsii file error") {

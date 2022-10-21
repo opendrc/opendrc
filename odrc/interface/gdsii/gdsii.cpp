@@ -5,9 +5,9 @@
 #include <cstddef>
 #include <cstring>
 #include <fstream>
+#include <map>
 #include <stdexcept>
 #include <vector>
-
 namespace odrc::gdsii {
 
 // Data parsers
@@ -95,7 +95,7 @@ void library::read(const std::filesystem::path& file_path) {
 
       case record_type::BGNSTR: {
         assert(dtype == data_type::int16);
-        auto& struc  = structs.emplace_back();
+        auto& struc = structs.emplace_back();
         struc.mtime = _read_time(&buffer[4]);
         struc.atime = _read_time(&buffer[16]);
       } break;
@@ -306,5 +306,27 @@ library::datetime library::_read_time(const std::byte* bytes) {
 
 library::xy library::_read_xy(const std::byte* bytes) {
   return xy{parse_int32(&bytes[0]), parse_int32(&bytes[4])};
+}
+
+void library::layer_sort(const std::vector<structure>& structs) {
+  std::map<std::string, int64_t> _map;
+  for (const auto & str : structs) {
+    _map.insert(std::pair(str.strname,0));
+    for (const auto & ele : str.elements) {
+      if (ele.first == record_type::PATH) {
+        _map[str.strname]+=1<<_paths.at(ele.second).layer;
+      } else if (ele.first == record_type::BOUNDARY) {
+        _map[str.strname]+=1<<_boundaries.at(ele.second).layer;
+      } else if (ele.first == record_type::BOX) {
+        _map[str.strname]+=1<<_boxes.at(ele.second).layer;
+      } else if (ele.first == record_type::NODE) {
+        _map[str.strname]+=1<<_nodes.at(ele.second).layer;
+      } else if (ele.first == record_type::AREF) {
+        _map[str.strname]+=_map[_arefs.at(ele.second).sname];
+      } else if (ele.first == record_type::SREF) {
+        _map[str.strname]+=_map[_srefs.at(ele.second).sname];
+      }
+    }
+  }
 }
 }  // namespace odrc::gdsii
