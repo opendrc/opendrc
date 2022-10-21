@@ -182,7 +182,7 @@ TEST_SUITE("[OpenDRC] odrc::gdsii data parser tests") {
 TEST_SUITE("[OpenDRC] odrc::gdsii library tests") {
   TEST_CASE("read normal gdsii file") {  // results are from gdstk or klayout
     odrc::gdsii::library lib;
-    lib.read("./gcd.gds");
+    lib.read("../../data/gcd/gcd.gds");
     CHECK_EQ(lib.version, 600);
     CHECK_EQ(lib.dbu_in_meter / lib.dbu_in_user_unit, doctest::Approx(1e-6));
     CHECK_EQ(lib.structs.size(), 53);
@@ -190,7 +190,7 @@ TEST_SUITE("[OpenDRC] odrc::gdsii library tests") {
   }
   TEST_CASE("TEST 00") {
     odrc::gdsii::library lib;
-    lib.read("./test.gds");
+    lib.read("../../data/gcd/test.gds");
     CHECK_EQ(fabs(lib.dbu_in_user_unit / 0.001 - 1.0) < 1e-6, true);
     CHECK_EQ(lib.dbu_in_meter / lib.dbu_in_user_unit, doctest::Approx(1e-6));
     CHECK_EQ(lib.name, "LIB.DB");
