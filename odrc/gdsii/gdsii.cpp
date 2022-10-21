@@ -1,4 +1,4 @@
-#include <odrc/interface/gdsii/gdsii.hpp>
+#include <odrc/gdsii/gdsii.hpp>
 
 #include <cassert>
 #include <cmath>

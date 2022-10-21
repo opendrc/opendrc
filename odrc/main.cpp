@@ -1,7 +1,7 @@
 #include <iostream>
 
 #include <odrc/algorithm/width-check.hpp>
-#include <odrc/interface/gdsii/gdsii.hpp>
+#include <odrc/gdsii/gdsii.hpp>
 
 void help() {
   std::cerr << "Usage: ./odrc <gds_in>" << std::endl;

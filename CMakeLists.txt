@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 3.18)
 
 project(
   OpenDRC 
-  VERSION 0.1.0
-  DESCRIPTION "A Design Rule Checker with GPU Acceleration"
+  VERSION 0.2.0
+  DESCRIPTION "A Design Rule Checker with Hierarchical GPU Acceleration"
   LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)

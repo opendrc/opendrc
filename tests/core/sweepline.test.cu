@@ -1,11 +1,11 @@
-#include <odrc/infrastructure/sweepline/sweepline.hpp>
+#include <odrc/core/sweepline.hpp>
 
 #include <vector>
 
 #include <cuda_runtime.h>
 #include <doctest/doctest.h>
 
-#include <odrc/infrastructure/execution.hpp>
+#include <odrc/core/execution.hpp>
 
 TEST_SUITE("[OpenDRC] odrc::core parallel sweepline tests") {
   TEST_CASE("test naive parallel prefix sum") {

@@ -9,10 +9,10 @@
 #include <thrust/execution_policy.h>
 #include <thrust/pair.h>
 
-#include <odrc/infrastructure/execution.hpp>
-#include <odrc/infrastructure/sweepline/sweepline.hpp>
+#include <odrc/core/execution.hpp>
+#include <odrc/core/sweepline.hpp>
 
-#include <odrc/interface/gdsii/gdsii.hpp>
+#include <odrc/gdsii/gdsii.hpp>
 
 namespace odrc {
 using horizontal_edge = thrust::pair<thrust::pair<int, int>, int>;
