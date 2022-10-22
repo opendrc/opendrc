@@ -3,7 +3,8 @@
 #include <doctest/doctest.h>
 #include <bitset>
 #include <cstddef>
-#include <exception>
+
+#include <odrc/utility/exception.hpp>
 
 TEST_SUITE("[OpenDRC] odrc::gdsii data parser tests") {
   using B = std::byte;
@@ -180,15 +181,12 @@ TEST_SUITE("[OpenDRC] odrc::gdsii data parser tests") {
 
 TEST_SUITE("[OpenDRC] odrc::gdsii library tests") {
   TEST_CASE("read normal gdsii file") {  // results are from gdstk or klayout
-    odrc::gdsii::library lib;
-    lib.read("./gcd.gds");
-    CHECK_EQ(lib.version, 600);
-    CHECK_EQ(lib.dbu_in_meter / lib.dbu_in_user_unit, doctest::Approx(1e-6));
-    CHECK_EQ(lib.structs.size(), 53);
-    // CHECK_EQ(lib.instances.size(), 4182);
+    auto db = odrc::gdsii::read("./gcd.gds");
+    CHECK_EQ(db.version, 600);
+    CHECK_EQ(db.dbu_in_meter / db.dbu_in_user_unit, doctest::Approx(1e-6));
+    CHECK_EQ(db.cells.size(), 53);
   }
   TEST_CASE("open gdsii file error") {
-    odrc::gdsii::library lib;
-    CHECK_THROWS_AS(lib.read("./not_exist.gds"), std::runtime_error);
+    CHECK_THROWS_AS(odrc::gdsii::read("./not_exist.gds"), odrc::open_file_error);
   }
 }
