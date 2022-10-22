@@ -8,7 +8,7 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 
-namespace odrc::utility {
+namespace odrc::util {
 enum class log_level { trace, debug, info, warn, error, critical, off };
 
 class logger {
