@@ -9,6 +9,8 @@
 #include <utility>
 #include <vector>
 
+#include <odrc/core/database.hpp>
+
 namespace odrc::gdsii {
 enum class record_type : std::underlying_type_t<std::byte> {
   HEADER   = 0x00,
@@ -53,117 +55,14 @@ enum class data_type : std::underlying_type_t<std::byte> {
 };
 
 // Data parsers
-std::bitset<16> parse_bitarray(const std::byte* bytes);
-int16_t         parse_int16(const std::byte* bytes);
-int32_t         parse_int32(const std::byte* bytes);
-double          parse_real64(const std::byte* bytes);
-std::string     parse_string(const std::byte* begin, const std::byte* end);
+std::bitset<16>      parse_bitarray(const std::byte* bytes);
+int16_t              parse_int16(const std::byte* bytes);
+int32_t              parse_int32(const std::byte* bytes);
+double               parse_real64(const std::byte* bytes);
+std::string          parse_string(const std::byte* begin, const std::byte* end);
+odrc::util::datetime parse_datetime(const std::byte* bytes);
+odrc::core::coord    parse_coord(const std::byte* bytes);
 
-class library {
- public:
-  struct datetime {
-    int year   = -1;
-    int month  = -1;
-    int day    = -1;
-    int hour   = -1;
-    int minute = -1;
-    int second = -1;
-  };
-  struct xy {
-    int x = -1;
-    int y = -1;
-  };
+odrc::core::database read(const std::filesystem::path& file_path);
 
-  // basic elements
-
-  struct element {
-    record_type rtype;
-  };
-
-  struct path : public element {
-    int             layer;
-    int             datatype;
-    int             pathtype;
-    int             width;
-    int             bgnextn;
-    int             endextn;
-    std::vector<xy> points;  // size in [2, 200]
-  };
-  struct boundary : public element {
-    int             layer;
-    int             datatype;
-    std::vector<xy> points;  // size in [4, 200]
-  };
-  struct node : public element {
-    int             nodetype;  // 0-63
-    int             layer;
-    std::vector<xy> points;
-  };
-  struct box : public element {
-    int             boxtype;  // 0-63
-    int             layer;
-    std::vector<xy> points;
-  };
-
-  // structure reference
-
-  struct strans {
-    bool   is_reflected;
-    bool   is_magnified;
-    bool   is_rotated;
-    double mag;
-    double angle;
-  };
-
-  struct sref : public element {
-    std::string sname;
-    xy          ref_point;
-    strans      trans;
-  };
-  struct aref : public element {
-    std::string sname;
-    int         num_columns;
-    int         num_rows;
-    xy          bottomleft;
-    xy          bottomright;
-    xy          topleft;
-    strans      trans;
-  };
-
-  // structure definition
-
-  struct structure {
-    datetime    mtime;
-    datetime    atime;
-    std::string strname;
-    // a list of <record_type, offset-in-internal-storage> pairs
-    std::vector<std::pair<record_type, int>> elements;
-  };
-
-  std::vector<structure> structs;
-
-  // public API functions
-
-  void read(const std::filesystem::path& file_path);
-
-  // meta info
-  int         version = -1;
-  datetime    mtime;
-  datetime    atime;
-  std::string name;
-  double      dbu_in_user_unit;
-  double      dbu_in_meter;
-
- private:
-  datetime _read_time(const std::byte* bytes);
-  xy       _read_xy(const std::byte* bytes);
-
-  // internal storage for elements
-  std::vector<path>     _paths;
-  std::vector<boundary> _boundaries;
-  std::vector<node>     _nodes;
-  std::vector<box>      _boxes;
-  std::vector<sref>     _srefs;
-  std::vector<aref>     _arefs;
-};
 }  // namespace odrc::gdsii

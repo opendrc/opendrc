@@ -1,7 +1,7 @@
 #pragma once
 
-#include <odrc/gdsii/gdsii.hpp>
+#include <odrc/core/database.hpp>
 
 namespace odrc {
-    void width_check(const odrc::gdsii::library &lib, int layer, int threshold);
+    void width_check(const odrc::core::database &db, int layer, int threshold);
 }

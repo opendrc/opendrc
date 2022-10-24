@@ -12,7 +12,7 @@
 #include <odrc/core/execution.hpp>
 #include <odrc/core/sweepline.hpp>
 
-#include <odrc/gdsii/gdsii.hpp>
+#include <odrc/core/database.hpp>
 
 namespace odrc {
 using horizontal_edge = thrust::pair<thrust::pair<int, int>, int>;
@@ -68,7 +68,7 @@ __global__ void _vertical_width_check_kernel(vertical_edge* edges,
   }
 }
 
-void width_check(const odrc::gdsii::library& lib, int layer, int threshold) {
+void width_check(const odrc::core::database& db, int layer, int threshold) {
 #if false
   for (auto&& s : lib.structs) {
     for (auto&& e : s.elements) {
