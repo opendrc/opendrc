@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -40,6 +41,18 @@ class cell {
   polygon&  create_polygon() { return polygons.emplace_back(); }
   cell_ref& create_cell_ref() { return cell_refs.emplace_back(); }
 
+  void add_layer(int layer) {  // might need a better name
+    uint64_t mask = 1 << layer;
+    layers |= mask;
+  }
+
+  bool is_touching(int layer) const {  // might need a better name
+    uint64_t mask = 1 << layer;
+    return (layers & mask) != 0;
+  }
+
+  // a bit-wise representation of layers it spans across
+  uint64_t              layers = 0;
   std::string           name;
   odrc::util::datetime  mtime;
   odrc::util::datetime  atime;
