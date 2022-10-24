@@ -98,7 +98,7 @@ odrc::core::database read(const std::filesystem::path& file_path) {
     data_type   dtype         = static_cast<data_type>(buffer[3]);
 
     auto begin = &buffer[bytes_per_record_head];
-    auto end   = begin + record_length;
+    auto end   = &buffer[record_length];
 
     ifs.read(reinterpret_cast<char*>(begin),
              record_length - bytes_per_record_head);
@@ -166,7 +166,9 @@ odrc::core::database read(const std::filesystem::path& file_path) {
       case record_type::LAYER:
         assert(dtype == data_type::int16);
         if (current_element == record_type::BOUNDARY) {
-          polygon->layer = parse_int16(begin);
+          int layer      = parse_int16(begin);
+          polygon->layer = layer;
+          cell->add_layer(layer);
         }
         break;
       case record_type::DATATYPE:

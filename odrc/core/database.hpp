@@ -4,6 +4,7 @@
 #include <vector>
 
 #include <odrc/core/cell.hpp>
+#include <odrc/utility/datetime.hpp>
 
 namespace odrc::core {
 

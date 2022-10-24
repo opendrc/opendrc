@@ -10,4 +10,4 @@ struct datetime {
   int minute = -1;
   int second = -1;
 };
-}  // namespace odrc::utility
+}  // namespace odrc::util
