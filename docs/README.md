@@ -2,11 +2,13 @@
 
 ## Design Philosophy
 
-OpenDRC is an opensource design rule checker that supports GPU acceleration.
+OpenDRC is an open-source design rule checker that supports GPU acceleration.
 Initial project targets include 
 - Support of GDSII
-- Support of ASAP7 PDK
+- Support of advanced rule decks (e.g., ASAP7, FreePDK45)
+- Support of hierarchical layout designs
 - Support of GPU acceleration
+- Extreme usability and extensibility
 
 ## Code Organization
 
@@ -15,10 +17,9 @@ From top to bottom, OpenDRC consists of the following layers:
 - Interface: IO, DB adaptor, function APIs
 - Application: algorithm scheduling
 - Algorithm: core algorithms, where GPU kernels are launched
-- Infrastructure: core data structures, utilities, GPU libraries
+- Infrastructure: abstract data structures and algorithms, utilities, GPU libraries
 
-In general, higher layers depend on the abstraction of lower layers, but are implementation-neutral.
-Lower layers should not depend on higher layers.
+In general, higher layers depend on the abstraction of lower layers, but not the other way round.
 
 ### Physical (file) organization
 OpenDRC basically follows the [canonical project structure](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/p1204r0.html#tests-unit) proposal, except that unittests are also placed in the `/test` folder.
@@ -29,15 +30,13 @@ OpenDRC
 +-- docs
 +-- examples
 +-- odrc
-    +-- interface
-        +-- gdsii
-            +-- gdsii.cpp
-            +-- gdsii.hpp
+    +-- gdsii
+        +-- gdsii.cpp
+        +-- gdsii.hpp
     +-- main.cpp
 +-- tests
-    +-- interface
-        +-- gdsii
-            +-- gdsii.test.cpp
+    +-- gdsii
+        +-- gdsii.test.cpp
     +-- main.cpp
 +-- thirdparty
     +-- doctest
@@ -47,12 +46,10 @@ OpenDRC
 In CMake, `target_include_directories` have been configured to include the project root folder (`OpenDRC/`) and the third-party folder (`OpenDRC/thirdparty`).
 Therefore, to include a header file, use
 ```c++
-#include <odrc/interface/gdsii/gdsii.hpp>
+#include <odrc/gdsii/gdsii.hpp>
 
 #include <doctest/doctest.h>
 ```
-
-## Test
 
 ## Building
 OpenDRC uses CMake to automatically generate build system.
@@ -61,6 +58,13 @@ The standard way to build the project is as following:
 mkdir build && cd build
 cmake ..
 make
+```
+
+## Test
+OpenDRC organizes unit-tests with *doctest*.
+To execute tests after successfully building, run
+```bash
+./tests/tests
 ```
 
 ## Development Workflow
