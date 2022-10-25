@@ -1,6 +1,5 @@
 #pragma once
 
-#include <algorithm>
 #include <iostream>
 #include <map>
 #include <odrc/core/cell.hpp>

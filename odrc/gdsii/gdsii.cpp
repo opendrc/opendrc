@@ -169,11 +169,10 @@ odrc::core::database read(const std::filesystem::path& file_path) {
         current_element = rtype;
         polygon         = &cell->create_polygon();
         break;
-      /* unused
       case record_type::PATH:
-        if (dtype == data_type::no_data);
+        //assert(dtype == data_type::no_data);
         current_element = rtype;
-        break;                */
+        break;                
       case record_type::SREF:
         if (dtype != data_type::no_data) {
           throw std::runtime_error("ERROR:Data type of SREF is not no_data");
@@ -181,12 +180,10 @@ odrc::core::database read(const std::filesystem::path& file_path) {
         current_element = rtype;
         cell_ref        = &cell->create_cell_ref();
         break;
-      /* unused
       case record_type::AREF:
         if (dtype == data_type::no_data)
         current_element = rtype;
         break;
-      */
       case record_type::LAYER:
         if (dtype != data_type::int16) {
           throw std::runtime_error("ERROR:Data type of LAYER is not int16");
@@ -205,11 +202,10 @@ odrc::core::database read(const std::filesystem::path& file_path) {
           polygon->datatype = parse_int16(begin);
         }
         break;
-      /* unused
       case record_type::WIDTH:
         assert(dtype == data_type::int32);
         assert(current_element == record_type::PATH);
-        break;      */
+        break;      
       case record_type::XY:
         if (dtype != data_type::int32) {
           throw std::runtime_error("ERROR:Data type of XY is not int32");
@@ -246,8 +242,6 @@ odrc::core::database read(const std::filesystem::path& file_path) {
           cell_ref->cell_name = parse_string(begin, end);
         }
         break;
-
-        /*  unused
       case record_type::COLROW:
         assert(dtype == data_type::int16);
         assert(current_element == record_type::AREF);
@@ -255,8 +249,7 @@ odrc::core::database read(const std::filesystem::path& file_path) {
       case record_type::NODE:
         assert(dtype == data_type::no_data);
         current_element = rtype;
-        break;   */
-
+        break;   
       case record_type::STRANS:
         if (dtype != data_type::bit_array) {
           throw std::runtime_error(
@@ -285,32 +278,31 @@ odrc::core::database read(const std::filesystem::path& file_path) {
           cell_ref->trans.angle = parse_real64(begin);
         }
         break;
-      /* now this is unused.
       case record_type::PATHTYPE:
-        if(dtype == data_type::int16);
-        if(current_element == record_type::PATH);
+        //assert(dtype == data_type::int16);
+        //assert(current_element == record_type::PATH);
         break;
       case record_type::NODETYPE:
-        if(dtype == data_type::int16);
-        if(current_element == record_type::NODE);
+        //assert(dtype == data_type::int16);
+        //assert(current_element == record_type::NODE);
         break;
       case record_type::BOX:
-        if(dtype == data_type::no_data);
+        //assert(dtype == data_type::no_data);
         current_element = rtype;
         break;
       case record_type::BOXTYPE:
-        if(dtype == data_type::int16);
-        if(current_element == record_type::BOX);
+        //assert(dtype == data_type::int16);
+        //assert(current_element == record_type::BOX);
         break;
       case record_type::BGNEXTN:
-        if(dtype == data_type::int32);
-        if(current_element == record_type::PATH);
+        //assert(dtype == data_type::int32);
+        //assert(current_element == record_type::PATH);
         break;
       case record_type::ENDEXTN:
-        if(dtype == data_type::int32);
-        if(current_element == record_type::PATH);
+        //assert(dtype == data_type::int32);
+        //assert(current_element == record_type::PATH);
         break;
-      */
+      
       default:
         break;
     }
@@ -345,19 +337,19 @@ void database::min_bound() {
     for (const auto& pol : cel.polygons) {
       x_min = std::min(
           x_min, std::min_element(pol.points.begin(), pol.points.end(),
-                                  [](auto a, auto b) { return a.x > b.x; })
+                                  [](auto a, auto b) { return a.x < b.x; })
                      ->x);
       x_max = std::max(
           x_max, std::max_element(pol.points.begin(), pol.points.end(),
-                                  [](auto& a, auto& b) { return a.x < b.x; })
+                                  [](auto& a, auto& b) { return a.x > b.x; })
                      ->x);
       y_min = std::min(
           y_min, std::min_element(pol.points.begin(), pol.points.end(),
-                                  [](auto a, auto b) { return a.y > b.y; })
+                                  [](auto a, auto b) { return a.y < b.y; })
                      ->y);
       y_max = std::max(
           y_max, std::max_element(pol.points.begin(), pol.points.end(),
-                                  [](auto a, auto b) { return a.y < b.y; })
+                                  [](auto a, auto b) { return a.y > b.y; })
                      ->y);
     }
     for (const auto& ref : cel.cell_refs) {
