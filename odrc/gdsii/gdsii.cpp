@@ -105,6 +105,7 @@ odrc::core::database read(const std::filesystem::path& file_path) {
 
     switch (rtype) {
       case record_type::HEADER:
+<<<<<<< HEAD
         if (dtype != data_type::int16) {
           throw std::runtime_error("ERROR:Data type of HEADER is not int16");
         }
@@ -114,10 +115,18 @@ odrc::core::database read(const std::filesystem::path& file_path) {
         if (dtype != data_type::int16) {
           throw std::runtime_error("ERROR:Data type of BGNLIB is not int16");
         }
+=======
+        assert(dtype == data_type::int16);
+        db.version = parse_int16(begin);
+        break;
+      case record_type::BGNLIB:
+        assert(dtype == data_type::int16);
+>>>>>>> 39871cac67c41f4a4d8467f7735ff4cdefdb6cc0
         db.mtime = parse_datetime(begin);
         db.atime = parse_datetime(begin + bytes_per_datetime);
         break;
       case record_type::LIBNAME:
+<<<<<<< HEAD
         if (dtype != data_type::ascii_string) {
           throw std::runtime_error("ERROR:Data type of LIBNAME is not string");
         }
@@ -127,26 +136,42 @@ odrc::core::database read(const std::filesystem::path& file_path) {
         if (dtype != data_type::real64) {
           throw std::runtime_error("ERROR:Data type of UNITS is not real64");
         }
+=======
+        assert(dtype == data_type::ascii_string);
+        db.name.assign(parse_string(begin, end));
+        break;
+      case record_type::UNITS:
+        assert(dtype == data_type::real64);
+>>>>>>> 39871cac67c41f4a4d8467f7735ff4cdefdb6cc0
         db.dbu_in_user_unit = parse_real64(begin);
         db.dbu_in_meter     = parse_real64(begin + bytes_per_real64);
         break;
       case record_type::ENDLIB:
+<<<<<<< HEAD
         if (dtype != data_type::no_data) {
           throw std::runtime_error("ERROR:Data type of ENDLIB is not no_data");
         }
+=======
+        assert(dtype == data_type::no_data);
+>>>>>>> 39871cac67c41f4a4d8467f7735ff4cdefdb6cc0
         break;
 
         // structure-level records
 
       case record_type::BGNSTR:
+<<<<<<< HEAD
         if (dtype != data_type::int16) {
           throw std::runtime_error("ERROR:Data type of BGNSTR is not int16");
         }
+=======
+        assert(dtype == data_type::int16);
+>>>>>>> 39871cac67c41f4a4d8467f7735ff4cdefdb6cc0
         cell        = &db.create_cell();
         cell->mtime = parse_datetime(begin);
         cell->atime = parse_datetime(begin + bytes_per_datetime);
         break;
       case record_type::STRNAME:
+<<<<<<< HEAD
         if (dtype != data_type::ascii_string) {
           throw std::runtime_error("ERROR:Data type of STRNAME is not string");
         }
@@ -156,12 +181,20 @@ odrc::core::database read(const std::filesystem::path& file_path) {
         if (dtype != data_type::no_data) {
           throw std::runtime_error("ERROR:Data type of ENDSTR is not no_data");
         }
+=======
+        assert(dtype == data_type::ascii_string);
+        cell->name.assign(parse_string(begin, end));
+        break;
+      case record_type::ENDSTR:
+        assert(dtype == data_type::no_data);
+>>>>>>> 39871cac67c41f4a4d8467f7735ff4cdefdb6cc0
         cell = nullptr;  // invalidate pointer for safety
         break;
 
         // elements
 
       case record_type::BOUNDARY:
+<<<<<<< HEAD
         if (dtype != data_type::no_data) {
           throw std::runtime_error(
               "ERROR:Data type of BOUNDARY is not no_data");
@@ -191,6 +224,27 @@ odrc::core::database read(const std::filesystem::path& file_path) {
         if (dtype != data_type::int16) {
           throw std::runtime_error("ERROR:Data type of LAYER is not int16");
         }
+=======
+        assert(dtype == data_type::no_data);
+        current_element = rtype;
+        polygon         = &cell->create_polygon();
+        break;
+      case record_type::PATH:
+        assert(dtype == data_type::no_data);
+        current_element = rtype;
+        break;
+      case record_type::SREF:
+        assert(dtype == data_type::no_data);
+        current_element = rtype;
+        cell_ref        = &cell->create_cell_ref();
+        break;
+      case record_type::AREF:
+        assert(dtype == data_type::no_data);
+        current_element = rtype;
+        break;
+      case record_type::LAYER:
+        assert(dtype == data_type::int16);
+>>>>>>> 39871cac67c41f4a4d8467f7735ff4cdefdb6cc0
         if (current_element == record_type::BOUNDARY) {
           int layer      = parse_int16(begin);
           polygon->layer = layer;
@@ -198,13 +252,18 @@ odrc::core::database read(const std::filesystem::path& file_path) {
         }
         break;
       case record_type::DATATYPE:
+<<<<<<< HEAD
         if (dtype != data_type::int16) {
           throw std::runtime_error("ERROR:Data type of DATATYPE is not int16");
         }
+=======
+        assert(dtype == data_type::int16);
+>>>>>>> 39871cac67c41f4a4d8467f7735ff4cdefdb6cc0
         if (current_element == record_type::BOUNDARY) {
           polygon->datatype = parse_int16(begin);
         }
         break;
+<<<<<<< HEAD
       /* unused
       case record_type::WIDTH:
         assert(dtype == data_type::int32);
@@ -214,6 +273,14 @@ odrc::core::database read(const std::filesystem::path& file_path) {
         if (dtype != data_type::int32) {
           throw std::runtime_error("ERROR:Data type of XY is not int32");
         }
+=======
+      case record_type::WIDTH:
+        assert(dtype == data_type::int32);
+        assert(current_element == record_type::PATH);
+        break;
+      case record_type::XY:
+        assert(dtype == data_type::int32);
+>>>>>>> 39871cac67c41f4a4d8467f7735ff4cdefdb6cc0
         if (current_element == record_type::BOUNDARY) {
           int num_coords =
               (record_length - bytes_per_record_head) / bytes_per_coord;
@@ -223,31 +290,46 @@ odrc::core::database read(const std::filesystem::path& file_path) {
           }
         } else if (current_element == record_type::SREF) {
           // sref contains exactly 1 coordinate
+<<<<<<< HEAD
           if (record_length != bytes_per_coord + bytes_per_record_head) {
             throw std::runtime_error("ERROR:Record length is no true");
           }
+=======
+          assert(record_length == bytes_per_coord + bytes_per_record_head);
+>>>>>>> 39871cac67c41f4a4d8467f7735ff4cdefdb6cc0
           cell_ref->ref_point = parse_coord(begin);
         }
         break;
       case record_type::ENDEL:
+<<<<<<< HEAD
         if (dtype != data_type::no_data) {
           throw std::runtime_error("ERROR:Data type of ENDEL is not ENDEL");
         }
+=======
+        assert(dtype == data_type::no_data);
+>>>>>>> 39871cac67c41f4a4d8467f7735ff4cdefdb6cc0
         // invalidate pointers for safety
         current_element = rtype;
         polygon         = nullptr;
         cell_ref        = nullptr;
         break;
       case record_type::SNAME:
+<<<<<<< HEAD
         if (dtype != data_type::ascii_string) {
           throw std::runtime_error("ERROR:Data type of SNAME is not string");
         }
+=======
+        assert(dtype == data_type::ascii_string);
+>>>>>>> 39871cac67c41f4a4d8467f7735ff4cdefdb6cc0
         if (current_element == record_type::SREF) {
           cell_ref->cell_name = parse_string(begin, end);
         }
         break;
+<<<<<<< HEAD
 
         /*  unused
+=======
+>>>>>>> 39871cac67c41f4a4d8467f7735ff4cdefdb6cc0
       case record_type::COLROW:
         assert(dtype == data_type::int16);
         assert(current_element == record_type::AREF);
@@ -255,6 +337,7 @@ odrc::core::database read(const std::filesystem::path& file_path) {
       case record_type::NODE:
         assert(dtype == data_type::no_data);
         current_element = rtype;
+<<<<<<< HEAD
         break;   */
 
       case record_type::STRANS:
@@ -262,6 +345,11 @@ odrc::core::database read(const std::filesystem::path& file_path) {
           throw std::runtime_error(
               "ERROR:Data type of STRANS is not bit_array");
         }
+=======
+        break;
+      case record_type::STRANS:
+        assert(dtype == data_type::bit_array);
+>>>>>>> 39871cac67c41f4a4d8467f7735ff4cdefdb6cc0
         if (current_element == record_type::SREF) {
           auto strans                  = parse_bitarray(begin);
           cell_ref->trans.is_reflected = strans.test(15);  // 0-th bit from left
@@ -270,21 +358,30 @@ odrc::core::database read(const std::filesystem::path& file_path) {
         }
         break;
       case record_type::MAG:
+<<<<<<< HEAD
         if (dtype != data_type::real64) {
           throw std::runtime_error("ERROR:Data type of MAG is not real64");
         }
+=======
+        assert(dtype == data_type::real64);
+>>>>>>> 39871cac67c41f4a4d8467f7735ff4cdefdb6cc0
         if (current_element == record_type::SREF) {
           cell_ref->trans.mag = parse_real64(begin);
         }
         break;
       case record_type::ANGLE:
+<<<<<<< HEAD
         if (dtype != data_type::real64) {
           throw std::runtime_error("ERROR:Data type of ANGLE is not real64");
         }
+=======
+        assert(dtype == data_type::real64);
+>>>>>>> 39871cac67c41f4a4d8467f7735ff4cdefdb6cc0
         if (current_element == record_type::SREF) {
           cell_ref->trans.angle = parse_real64(begin);
         }
         break;
+<<<<<<< HEAD
       /* now this is unused.
       case record_type::PATHTYPE:
         if(dtype == data_type::int16);
@@ -311,6 +408,32 @@ odrc::core::database read(const std::filesystem::path& file_path) {
         if(current_element == record_type::PATH);
         break;
       */
+=======
+      case record_type::PATHTYPE:
+        assert(dtype == data_type::int16);
+        assert(current_element == record_type::PATH);
+        break;
+      case record_type::NODETYPE:
+        assert(dtype == data_type::int16);
+        assert(current_element == record_type::NODE);
+        break;
+      case record_type::BOX:
+        assert(dtype == data_type::no_data);
+        current_element = rtype;
+        break;
+      case record_type::BOXTYPE:
+        assert(dtype == data_type::int16);
+        assert(current_element == record_type::BOX);
+        break;
+      case record_type::BGNEXTN:
+        assert(dtype == data_type::int32);
+        assert(current_element == record_type::PATH);
+        break;
+      case record_type::ENDEXTN:
+        assert(dtype == data_type::int32);
+        assert(current_element == record_type::PATH);
+        break;
+>>>>>>> 39871cac67c41f4a4d8467f7735ff4cdefdb6cc0
       default:
         break;
     }
@@ -321,6 +444,7 @@ odrc::core::database read(const std::filesystem::path& file_path) {
   return db;
 }
 
+<<<<<<< HEAD
 }  // namespace odrc::gdsii
 
 namespace odrc::core {
@@ -371,3 +495,6 @@ void database::min_bound() {
   }
 }
 }  // namespace odrc::core
+=======
+}  // namespace odrc::gdsii
+>>>>>>> 39871cac67c41f4a4d8467f7735ff4cdefdb6cc0
