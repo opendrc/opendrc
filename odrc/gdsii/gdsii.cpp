@@ -62,10 +62,6 @@ odrc::util::datetime parse_datetime(const std::byte* bytes) {
   return dt;
 }
 
-odrc::core::coord parse_coord(const std::byte* bytes) {
-  return odrc::core::coord{parse_int32(&bytes[0]), parse_int32(&bytes[4])};
-}
-
 odrc::core::database read(const std::filesystem::path& file_path) {
   odrc::core::database db;
   std::byte            buffer[65536];
@@ -78,6 +74,7 @@ odrc::core::database read(const std::filesystem::path& file_path) {
   // structure size in bytes for indexing
 
   constexpr int bytes_per_record_head = 4;
+  constexpr int bytes_per_int32       = 4;
   constexpr int bytes_per_real64      = 8;
   constexpr int bytes_per_coord       = 8;
   constexpr int bytes_per_datetime    = 12;
@@ -170,9 +167,9 @@ odrc::core::database read(const std::filesystem::path& file_path) {
         polygon         = &cell->create_polygon();
         break;
       case record_type::PATH:
-        //assert(dtype == data_type::no_data);
+        assert(dtype == data_type::no_data);
         current_element = rtype;
-        break;                
+        break;
       case record_type::SREF:
         if (dtype != data_type::no_data) {
           throw std::runtime_error("ERROR:Data type of SREF is not no_data");
@@ -182,7 +179,7 @@ odrc::core::database read(const std::filesystem::path& file_path) {
         break;
       case record_type::AREF:
         if (dtype == data_type::no_data)
-        current_element = rtype;
+          current_element = rtype;
         break;
       case record_type::LAYER:
         if (dtype != data_type::int16) {
@@ -205,7 +202,7 @@ odrc::core::database read(const std::filesystem::path& file_path) {
       case record_type::WIDTH:
         assert(dtype == data_type::int32);
         assert(current_element == record_type::PATH);
-        break;      
+        break;
       case record_type::XY:
         if (dtype != data_type::int32) {
           throw std::runtime_error("ERROR:Data type of XY is not int32");
@@ -214,15 +211,35 @@ odrc::core::database read(const std::filesystem::path& file_path) {
           int num_coords =
               (record_length - bytes_per_record_head) / bytes_per_coord;
           for (int i = 0; i < num_coords; ++i) {
-            polygon->points.emplace_back(
-                parse_coord(begin + bytes_per_coord * i));
+            int coord_x = parse_int32(begin + bytes_per_coord * i);
+            int coord_y = parse_int32(begin + bytes_per_int32 + bytes_per_coord * i);
+            polygon->points.emplace_back(odrc::core::coord{coord_x, coord_y});
+            cell->mbr[0] =
+                std::min(cell->mbr[0], coord_x);
+            cell->mbr[1] =
+                std::max(cell->mbr[1], coord_x);
+            cell->mbr[2] =
+                std::min(cell->mbr[2], coord_y);
+            cell->mbr[3] =
+                std::max(cell->mbr[3], coord_y);
           }
         } else if (current_element == record_type::SREF) {
           // sref contains exactly 1 coordinate
           if (record_length != bytes_per_coord + bytes_per_record_head) {
             throw std::runtime_error("ERROR:Record length is no true");
           }
-          cell_ref->ref_point = parse_coord(begin);
+          int coord_x         = parse_int32(begin);
+          int coord_y         = parse_int32(begin + bytes_per_int32);
+          cell_ref->ref_point = odrc::core::coord{coord_x, coord_y};
+          //odrc::core::cell*     cell            = &db.cells;
+          for (const auto& cel : db.cells) {
+            if (cel.name == cell_ref->cell_name) {
+              cell->mbr[0] = cel.mbr[0] + coord_x;
+              cell->mbr[1] = cel.mbr[1] + coord_x;
+              cell->mbr[2] = cel.mbr[2] + coord_y;
+              cell->mbr[3] = cel.mbr[3] + coord_y;
+            }
+          }
         }
         break;
       case record_type::ENDEL:
@@ -240,6 +257,11 @@ odrc::core::database read(const std::filesystem::path& file_path) {
         }
         if (current_element == record_type::SREF) {
           cell_ref->cell_name = parse_string(begin, end);
+          for (const auto& cel : db.cells) {
+            if (cel.name == cell_ref->cell_name) {
+              cell->add_layer(cel.layers);
+            }
+          }
         }
         break;
       case record_type::COLROW:
@@ -249,7 +271,7 @@ odrc::core::database read(const std::filesystem::path& file_path) {
       case record_type::NODE:
         assert(dtype == data_type::no_data);
         current_element = rtype;
-        break;   
+        break;
       case record_type::STRANS:
         if (dtype != data_type::bit_array) {
           throw std::runtime_error(
@@ -279,30 +301,29 @@ odrc::core::database read(const std::filesystem::path& file_path) {
         }
         break;
       case record_type::PATHTYPE:
-        //assert(dtype == data_type::int16);
-        //assert(current_element == record_type::PATH);
+        assert(dtype == data_type::int16);
+        assert(current_element == record_type::PATH);
         break;
       case record_type::NODETYPE:
-        //assert(dtype == data_type::int16);
-        //assert(current_element == record_type::NODE);
+        assert(dtype == data_type::int16);
+        assert(current_element == record_type::NODE);
         break;
       case record_type::BOX:
-        //assert(dtype == data_type::no_data);
+        assert(dtype == data_type::no_data);
         current_element = rtype;
         break;
       case record_type::BOXTYPE:
-        //assert(dtype == data_type::int16);
-        //assert(current_element == record_type::BOX);
+        assert(dtype == data_type::int16);
+        assert(current_element == record_type::BOX);
         break;
       case record_type::BGNEXTN:
-        //assert(dtype == data_type::int32);
-        //assert(current_element == record_type::PATH);
+        assert(dtype == data_type::int32);
+        assert(current_element == record_type::PATH);
         break;
       case record_type::ENDEXTN:
-        //assert(dtype == data_type::int32);
-        //assert(current_element == record_type::PATH);
+        assert(dtype == data_type::int32);
+        assert(current_element == record_type::PATH);
         break;
-      
       default:
         break;
     }
@@ -314,52 +335,3 @@ odrc::core::database read(const std::filesystem::path& file_path) {
 }
 
 }  // namespace odrc::gdsii
-
-namespace odrc::core {
-void database::layer_sort() {
-  for (const auto& cel : cells) {
-    cell_layer.insert(std::pair(cel.name, 0));
-    for (const auto& pol : cel.polygons) {
-      cell_layer[cel.name] = cell_layer[cel.name] | 1 << pol.layer;
-    }
-    for (const auto& ref : cel.cell_refs) {
-      cell_layer[cel.name] = cell_layer[cel.name] | cell_layer[ref.cell_name];
-    }
-  }
-}
-
-void database::min_bound() {
-  for (const auto& cel : cells) {
-    int x_max = 0;
-    int x_min = 0;
-    int y_max = 0;
-    int y_min = 0;
-    for (const auto& pol : cel.polygons) {
-      x_min = std::min(
-          x_min, std::min_element(pol.points.begin(), pol.points.end(),
-                                  [](auto a, auto b) { return a.x < b.x; })
-                     ->x);
-      x_max = std::max(
-          x_max, std::max_element(pol.points.begin(), pol.points.end(),
-                                  [](auto& a, auto& b) { return a.x > b.x; })
-                     ->x);
-      y_min = std::min(
-          y_min, std::min_element(pol.points.begin(), pol.points.end(),
-                                  [](auto a, auto b) { return a.y < b.y; })
-                     ->y);
-      y_max = std::max(
-          y_max, std::max_element(pol.points.begin(), pol.points.end(),
-                                  [](auto a, auto b) { return a.y > b.y; })
-                     ->y);
-    }
-    for (const auto& ref : cel.cell_refs) {
-      x_min = std::min(x_min, min_bound_rect[ref.cell_name].at(0));
-      x_max = std::max(x_max, min_bound_rect[ref.cell_name].at(1));
-      y_min = std::min(y_min, min_bound_rect[ref.cell_name].at(2));
-      y_max = std::max(y_max, min_bound_rect[ref.cell_name].at(3));
-    }
-    min_bound_rect.insert(
-        std::pair(cel.name, std::vector<int>{x_min, x_max, y_min, y_max}));
-  }
-}
-}  // namespace odrc::core
