@@ -54,6 +54,11 @@ enum class data_type : std::underlying_type_t<std::byte> {
   ascii_string = 0x06,
 };
 
+// enum to string conversion
+
+const char* record_type_to_string(record_type rtype);
+const char* data_type_to_string(data_type dtype);
+
 // Data parsers
 std::bitset<16>      parse_bitarray(const std::byte* bytes);
 int16_t              parse_int16(const std::byte* bytes);
