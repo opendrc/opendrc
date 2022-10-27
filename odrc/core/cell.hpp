@@ -43,8 +43,10 @@ class cell {
 
   void add_layer(int layer) {  // might need a better name
     uint64_t mask = 1 << layer;
-    layers |= mask;
+    add_layer_with_mask(mask);
   }
+
+  void add_layer_with_mask(uint64_t mask) { layers |= mask; }
 
   bool is_touching(int layer) const {  // might need a better name
     uint64_t mask = 1 << layer;
@@ -52,14 +54,13 @@ class cell {
   }
 
   // a bit-wise representation of layers it spans across
-  int                   mbr[4]={0,0,0,0};    
   uint64_t              layers = 0;
   std::string           name;
   odrc::util::datetime  mtime;
   odrc::util::datetime  atime;
   std::vector<polygon>  polygons;
   std::vector<cell_ref> cell_refs;
-                   
+  int                   mbr[4] = {0, 0, 0, 0};
 };
 
 }  // namespace odrc::core
