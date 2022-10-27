@@ -52,11 +52,14 @@ class cell {
   }
 
   // a bit-wise representation of layers it spans across
+  int                   mbr[4]={0,0,0,0};    
   uint64_t              layers = 0;
   std::string           name;
   odrc::util::datetime  mtime;
   odrc::util::datetime  atime;
   std::vector<polygon>  polygons;
   std::vector<cell_ref> cell_refs;
+                   
 };
+
 }  // namespace odrc::core

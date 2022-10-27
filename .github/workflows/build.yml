@@ -30,7 +30,7 @@ jobs:
       - name: Copy test data
         run: |
           cp ${{ github.workspace }}/data/gcd/gcd.gds ${{ github.workspace }}/build/tests/
-
+          cp ${{ github.workspace }}/data/test/test.gds ${{ github.workspace }}/build/tests/
       - name: Test
         run: |
           cd ${{ github.workspace }}/build/tests && srun -p AIEDA --gres=gpu:1 ./tests
