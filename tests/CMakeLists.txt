@@ -5,6 +5,7 @@ add_executable(tests
   gdsii/gdsii.test.cpp
   utility/exception.test.cpp
   utility/logger.test.cpp
+  utility/timer.test.cpp
 )
 target_include_directories(tests PRIVATE ${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/thirdparty)
 target_link_libraries(tests PRIVATE libcore libgdsii libutil)
