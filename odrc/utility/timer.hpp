@@ -33,6 +33,8 @@ class timer {
     elapsed_ms = 0;
   }
 
+  int64_t get_elapsed() { return elapsed_ms; }
+
  private:
   std::string                                                 _tag;
   logger*                                                     _logger;
