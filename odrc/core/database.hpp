@@ -22,12 +22,18 @@ class database {
   // layout
   cell& create_cell() { return cells.emplace_back(); }
   cell& get_cell(const std::string& name) {
+    return cells.at(_name_to_idx.at(name));
+  }
+  const cell& get_cell(const std::string& name) const {
+    return cells.at(_name_to_idx.at(name));
+  }
+
+  void update_map() {
     // update map if it's not up-to-date
     // do nothing if both containers have equal sizes
     for (auto i = _name_to_idx.size(); i < cells.size(); ++i) {
       _name_to_idx.emplace(cells.at(i).name, i);
     }
-    return cells.at(_name_to_idx.at(name));
   }
 
   std::vector<cell> cells;

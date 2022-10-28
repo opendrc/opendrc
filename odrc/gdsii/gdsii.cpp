@@ -201,11 +201,11 @@ odrc::core::database read(const std::filesystem::path& file_path) {
 
   // structure size in bytes for indexing
 
-  constexpr int bytes_per_record_head = 4;
-  constexpr int bytes_per_int32       = 4;
-  constexpr int bytes_per_real64      = 8;
-  constexpr int bytes_per_coord       = 8;
-  constexpr int bytes_per_datetime    = 12;
+  [[maybe_unused]] constexpr int bytes_per_record_head = 4;
+  [[maybe_unused]] constexpr int bytes_per_int32       = 4;
+  [[maybe_unused]] constexpr int bytes_per_real64      = 8;
+  [[maybe_unused]] constexpr int bytes_per_coord       = 8;
+  [[maybe_unused]] constexpr int bytes_per_datetime    = 12;
 
   // variables to help track current element
 
@@ -214,14 +214,15 @@ odrc::core::database read(const std::filesystem::path& file_path) {
   odrc::core::polygon*  polygon         = nullptr;
   odrc::core::cell_ref* cell_ref        = nullptr;
 
-  // aliaes for datatype
-  constexpr data_type dt_none   = data_type::no_data;
-  constexpr data_type dt_bits   = data_type::bit_array;
-  constexpr data_type dt_int16  = data_type::int16;
-  constexpr data_type dt_int32  = data_type::int32;
-  constexpr data_type dt_real32 = data_type::real32;
-  constexpr data_type dt_real64 = data_type::real64;
-  constexpr data_type dt_string = data_type::ascii_string;
+  // aliases for datatype
+
+  [[maybe_unused]] constexpr data_type dt_none   = data_type::no_data;
+  [[maybe_unused]] constexpr data_type dt_bits   = data_type::bit_array;
+  [[maybe_unused]] constexpr data_type dt_int16  = data_type::int16;
+  [[maybe_unused]] constexpr data_type dt_int32  = data_type::int32;
+  [[maybe_unused]] constexpr data_type dt_real32 = data_type::real32;
+  [[maybe_unused]] constexpr data_type dt_real64 = data_type::real64;
+  [[maybe_unused]] constexpr data_type dt_string = data_type::ascii_string;
 
   while (true) {
     // read record header
@@ -293,6 +294,7 @@ odrc::core::database read(const std::filesystem::path& file_path) {
       case record_type::STRNAME:
         check_dtype(dt_string);
         cell->name.assign(parse_string(begin, end));
+        db.update_map();  // update map when the name is assigned
         break;
       case record_type::ENDSTR:
         check_dtype(dt_none);
