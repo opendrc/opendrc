@@ -1,11 +1,11 @@
 #pragma once
-#include <list>
-#include <iostream>
-#include <map>
+
+#include <string>
+#include <unordered_map>
+#include <vector>
+
 #include <odrc/core/cell.hpp>
 #include <odrc/utility/datetime.hpp>
-#include <string>
-#include <vector>
 
 namespace odrc::core {
 
@@ -21,44 +21,25 @@ class database {
 
   // layout
   cell& create_cell() { return cells.emplace_back(); }
+  cell& get_cell(const std::string& name) {
+    return cells.at(_name_to_idx.at(name));
+  }
+  const cell& get_cell(const std::string& name) const {
+    return cells.at(_name_to_idx.at(name));
+  }
 
-  std::vector<cell> cells;
-};
-/*
-struct horizontal_line {
-  int         x_min;
-  int         x_max;
-  int         y;
-  std::string name;
-};
-std::vector<std::string> inter_check( database *db) {
-  std::list<horizontal_line> sorted;
-  std::vector<std::string>   inter_cell;
-  for (const auto& cel : db->cells) {
-    auto i     = sorted.begin();
-    bool y_min = true;
-    bool y_max = true;
-    while (y_max) {
-      if (cel.mbr[2] >= i->y) {
-        if (y_min) {
-          sorted.insert(i,
-              horizontal_line{cel.mbr[0], cel.mbr[1], cel.mbr[2], cel.name});
-          y_min = false;
-        }
-        bool is_inter = !(cel.mbr[0] >= i->x_max || cel.mbr[1] <= i->x_min);
-        if (is_inter) {
-          inter_cell.emplace_back(std::string(cel.name) + "and" +
-                             std::string(i->name) + "are overlapped.");
-        }
-      }
-      if (cel.mbr[3] >= i->y) {
-        sorted.insert(i,
-            horizontal_line{cel.mbr[0], cel.mbr[1], cel.mbr[3], cel.name});
-        y_max = false;
-      }
-      i++;
+  void update_map() {
+    // update map if it's not up-to-date
+    // do nothing if both containers have equal sizes
+    for (auto i = _name_to_idx.size(); i < cells.size(); ++i) {
+      _name_to_idx.emplace(cells.at(i).name, i);
     }
   }
-  return inter;
-}*/
+
+  std::vector<cell> cells;
+
+ private:
+  std::unordered_map<std::string, int> _name_to_idx;
+};
+
 }  // namespace odrc::core
