@@ -13,12 +13,20 @@ struct coord {
   int y;
 };
 
+class cell;
 class polygon {
  public:
   int layer;
   int datatype;
 
   std::vector<coord> points;
+  int                mbr[4] = {};
+
+  bool is_touching(const polygon& other) const {
+    return mbr[0] < other.mbr[1] and mbr[1] > other.mbr[0] and
+           mbr[2] < other.mbr[3] and mbr[3] > other.mbr[2];
+  }
+  bool is_touching(const cell& other) const;
 };
 
 struct transform {
@@ -34,6 +42,17 @@ class cell_ref {
   std::string cell_name;
   coord       ref_point;
   transform   trans;
+  int         mbr[4] = {};
+
+
+  bool is_touching(const polygon& other) const {
+    return mbr[0] < other.mbr[1] and mbr[1] > other.mbr[0] and
+           mbr[2] < other.mbr[3] and mbr[3] > other.mbr[2];
+  }
+  bool is_touching(const cell_ref& other) const {
+    return mbr[0] < other.mbr[1] and mbr[1] > other.mbr[0] and
+           mbr[2] < other.mbr[3] and mbr[3] > other.mbr[2];
+  }
 };
 
 class cell {
@@ -53,6 +72,16 @@ class cell {
     return (layers & mask) != 0;
   }
 
+  bool is_touching(const cell& other) const {
+    return mbr[0] < other.mbr[1] and mbr[1] > other.mbr[0] and
+           mbr[2] < other.mbr[3] and mbr[3] > other.mbr[2];
+  }
+
+  bool is_touching(const polygon& other) const {
+    return mbr[0] < other.mbr[1] and mbr[1] > other.mbr[0] and
+           mbr[2] < other.mbr[3] and mbr[3] > other.mbr[2];
+  }
+
   // a bit-wise representation of layers it spans across
   uint64_t              layers = 0;
   std::string           name;
@@ -60,7 +89,12 @@ class cell {
   odrc::util::datetime  atime;
   std::vector<polygon>  polygons;
   std::vector<cell_ref> cell_refs;
-  int                   mbr[4] = {0, 0, 0, 0};
+  int                   mbr[4] = {};
+  int                   depth  = -1;
 };
 
+inline bool polygon::is_touching(const cell& other) const {
+  return mbr[0] < other.mbr[1] and mbr[1] > other.mbr[0] and
+         mbr[2] < other.mbr[3] and mbr[3] > other.mbr[2];
+}
 }  // namespace odrc::core
