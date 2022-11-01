@@ -35,6 +35,24 @@ class database {
       _name_to_idx.emplace(cells.at(i).name, i);
     }
   }
+  void update_depth_and_mbr() {
+    for (auto& cell : cells) {
+      if (cell.cell_refs.size() == 0) {
+        cell.depth = 1;
+      } else {
+        int depth = 1;
+        for (auto& cell_ref : cell.cell_refs) {
+          auto& the_cell = get_cell(cell_ref.cell_name);
+          depth = depth < the_cell.depth + 1 ? the_cell.depth + 1 : depth;
+          cell_ref.mbr[0] = the_cell.mbr[0] + cell_ref.ref_point.x;
+          cell_ref.mbr[1] = the_cell.mbr[1] + cell_ref.ref_point.x;
+          cell_ref.mbr[2] = the_cell.mbr[2] + cell_ref.ref_point.y;
+          cell_ref.mbr[3] = the_cell.mbr[3] + cell_ref.ref_point.y;
+        }
+        cell.depth = depth;
+      }
+    }
+  }
 
   std::vector<cell> cells;
 

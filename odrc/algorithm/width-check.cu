@@ -1,6 +1,7 @@
 #include <odrc/algorithm/width-check.hpp>
 
 #include <cassert>
+#include <stdexcept>
 #include <string>
 #include <unordered_map>
 

@@ -347,10 +347,14 @@ odrc::core::database read(const std::filesystem::path& file_path) {
           for (int i = 0; i < num_coords; ++i) {
             auto coord = parse_coord(begin + bytes_per_coord * i);
             polygon->points.emplace_back(coord);
-            cell->mbr[0] = std::min(cell->mbr[0], coord.x);
-            cell->mbr[1] = std::max(cell->mbr[1], coord.x);
-            cell->mbr[2] = std::min(cell->mbr[2], coord.y);
-            cell->mbr[3] = std::max(cell->mbr[3], coord.y);
+            polygon->mbr[0] = std::min(polygon->mbr[0], coord.x);
+            polygon->mbr[1] = std::max(polygon->mbr[1], coord.x);
+            polygon->mbr[2] = std::min(polygon->mbr[2], coord.y);
+            polygon->mbr[3] = std::max(polygon->mbr[3], coord.y);
+            cell->mbr[0]    = std::min(cell->mbr[0], coord.x);
+            cell->mbr[1]    = std::max(cell->mbr[1], coord.x);
+            cell->mbr[2]    = std::min(cell->mbr[2], coord.y);
+            cell->mbr[3]    = std::max(cell->mbr[3], coord.y);
           }
         } else if (current_element == record_type::SREF) {
           // sref contains exactly 1 coordinate

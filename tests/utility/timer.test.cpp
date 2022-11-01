@@ -46,9 +46,9 @@ void check_log_file(const std::string&          filename,
 
 TEST_SUITE("[OpenDRC] odrc::timer tests") {
   TEST_CASE("test timer") {
-    int64_t              sleep_time  = 2000;
-    int                  sleep_count = 10;
-    int                  reset_count = 5;
+    int64_t              sleep_time  = 100;
+    int                  sleep_count = 5;
+    int                  reset_count = 2;
     std::vector<int64_t> elapsed_times;
     const std::string    log_filename = "log_timer_test.txt";
     odrc::util::logger   logger(log_filename, odrc::util::log_level::trace,

@@ -1,5 +1,6 @@
 #include <iostream>
 
+#include <odrc/algorithm/space-check.hpp>
 #include <odrc/algorithm/width-check.hpp>
 #include <odrc/gdsii/gdsii.hpp>
 
@@ -14,7 +15,9 @@ int main(int argc, char* argv[]) {
   }
   try {
     auto db = odrc::gdsii::read(argv[1]);
+    db.update_depth_and_mbr();
     odrc::width_check(db, 11, 650);
+    odrc::space_check(db, 11, 11, 650);
   } catch (std::exception& e) {
     std::cerr << e.what() << std::endl;
     return 1;
