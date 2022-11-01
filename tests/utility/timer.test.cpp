@@ -54,7 +54,7 @@ TEST_SUITE("[OpenDRC] odrc::timer tests") {
     odrc::util::logger   logger(log_filename, odrc::util::log_level::trace,
                                 false);
     {
-      odrc::util::timer test_timer("test", &logger);
+      odrc::util::timer test_timer("test", logger);
       for (int i = 0; i < sleep_count; ++i) {
         test_timer.start();
         std::this_thread::sleep_for(std::chrono::milliseconds(sleep_time));
