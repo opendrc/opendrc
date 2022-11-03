@@ -10,9 +10,9 @@ namespace odrc::util {
 
 class timer {
  public:
-  timer(std::string tag, logger* time_logger) {
+  timer(std::string tag, logger& time_logger) {
     _tag    = tag;
-    _logger = time_logger;
+    _logger = &time_logger;
   }
 
   ~timer() { _logger->info("Timer", "[{}] {} ms", _tag, elapsed_ms); }
