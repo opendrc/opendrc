@@ -24,14 +24,14 @@ int main(int argc, char* argv[]) {
     // return 0;
     {
       odrc::util::logger logger("/dev/null", odrc::util::log_level::info, true);
-      odrc::util::timer  t("t", &logger);
+      odrc::util::timer  t("t", logger);
       t.start();
       odrc::width_check_cpu(db, 20, 18);
       t.pause();
     }
     {
       odrc::util::logger logger("/dev/null", odrc::util::log_level::info, true);
-      odrc::util::timer  t("t", &logger);
+      odrc::util::timer  t("t", logger);
       t.start();
       odrc::width_check_cpu(db, 30, 18);
       t.pause();

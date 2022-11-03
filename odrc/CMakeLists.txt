@@ -3,7 +3,7 @@ add_subdirectory(core)
 add_subdirectory(gdsii)
 add_subdirectory(utility)
 add_executable(odrc main.cpp)
-target_include_directories(odrc PRIVATE ${CMAKE_SOURCE_DIR})
+target_include_directories(odrc PRIVATE ${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/thirdparty)
 target_link_libraries(odrc PRIVATE libchecks libcore libgdsii libutil)
 target_compile_options(odrc PRIVATE
   $<$<CXX_COMPILER_ID:MSVC>:/W4>
