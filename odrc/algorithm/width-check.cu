@@ -3,6 +3,7 @@
 #include <cassert>
 #include <stdexcept>
 #include <string>
+#include <stdexcept>
 #include <unordered_map>
 
 #include <cuda_runtime.h>
