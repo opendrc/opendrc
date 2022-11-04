@@ -5,10 +5,6 @@
 
 namespace odrc::core {
 
-bool is_exist(int child_ptr) {  // judge whether the child node is existing
-  return child_ptr + 1;
-}
-
 struct interval {
   int x_left;
   int x_right;
@@ -22,12 +18,11 @@ struct node {
   int                   right_child = -1;
   std::vector<interval> lines_start;
   std::vector<interval> lines_end;
+  bool   has_left_child(){return ;}//
 };
 
 class interval_tree {
  public:
-  std::vector<node> nodes;
-
   int  add_node(interval* edge);  // add a node into the tree
   void add_interval(interval* edge,
                     const int node);  // add an interval into the interval tree
@@ -41,9 +36,10 @@ class interval_tree {
           overlap_interval);  // get the overlapping intervals
 
  private:
-  void add_segment(interval* edge,
+  std::vector<node> nodes;
+  void _add_interval_to_node(interval* edge,
                    const int node);  // add a segment into an existing node
-  void get_intervals_containing_point(
+  void _get_intervals_containing_point(
       const int point,
       const int edge_id,
       const int node,
@@ -63,7 +59,7 @@ inline void interval_tree::get_intervals_containing_point(
     const int                         point,
     const int                         edge_id,
     const int                         node,
-    std::vector<std::pair<int, int>>* overlap_intervals) {
+    std::vector<std::pair<int, int>>* overlap_intervals) {// name of function
   if (point == nodes.at(node).x_mid) {
     for (const auto& edge : nodes.at(node).lines_start) {
       overlap_intervals->emplace_back(std::make_pair(edge_id, edge.id));
@@ -92,7 +88,7 @@ inline void interval_tree::get_intervals_containing_point(
 inline void interval_tree::get_overlapping_intervals(
     interval*                         edge,
     int                               node,
-    std::vector<std::pair<int, int>>* overlap_interval) {
+    std::vector<std::pair<int, int>>* overlap_interval) {//
   int left_child_offset  = nodes.at(node).left_child;
   int right_child_offset = nodes.at(node).right_child;
   if (edge->x_right <= nodes.at(node).x_mid) {
