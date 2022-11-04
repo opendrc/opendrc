@@ -3,6 +3,7 @@
 #include <cassert>
 #include <stack>
 #include <string>
+#include <stdexcept>
 #include <type_traits>
 #include <unordered_map>
 #include <variant>
