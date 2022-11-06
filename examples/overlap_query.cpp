@@ -41,7 +41,7 @@ std::vector<std::pair<int, int>> overlap_query(odrc::core::database& db,
   }
   std::sort(sorted_edge.begin(), sorted_edge.end(),
             [](const odrc::core::interval& a, const odrc::core::interval& b) {
-              return a.y < b.y;
+              return a.y < b.y || (a.y == b.y && a.id > b.id);
             });
   odrc::core::interval_tree tree;
   for (int edge = 0; edge != sorted_edge.size(); edge++) {
