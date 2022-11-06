@@ -1,6 +1,5 @@
 #include <vector>
 
-#include <iostream>
 #include <odrc/core/interval_tree.hpp>
 #include <odrc/gdsii/gdsii.hpp>
 std::vector<std::pair<int, int>> overlap_query(odrc::core::database& db,
@@ -21,8 +20,7 @@ std::vector<std::pair<int, int>> overlap_query(odrc::core::database& db,
                                    -sorted_edge.size() / 2 - 1});
         }
       }
-      for (const auto& cell_ref :
-           cell.cell_refs) {  // only support for the max depth of cells is 2
+      for (const auto& cell_ref : cell.cell_refs) {
         auto the_cell = db.get_cell(cell_ref.cell_name);
         if (the_cell.is_touching(layer)) {
           int ref_x = cell_ref.ref_point.x;
