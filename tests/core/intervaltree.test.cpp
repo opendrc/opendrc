@@ -48,15 +48,17 @@ TEST_SUITE("[OpenDRC] odrc::core interval tree tests") {
     CHECK_EQ(overlap_cells.at(4).second,3);
     CHECK_EQ(overlap_cells.at(5).first,6);
     CHECK_EQ(overlap_cells.at(5).second,1);
-    CHECK_EQ(overlap_cells.at(6).first,7);
-    CHECK_EQ(overlap_cells.at(6).second,1);
+    CHECK_EQ(overlap_cells.at(6).first,6);
+    CHECK_EQ(overlap_cells.at(6).second,3);
     CHECK_EQ(overlap_cells.at(7).first,7);
-    CHECK_EQ(overlap_cells.at(7).second,4);
-    CHECK_EQ(overlap_cells.at(8).first,8);
+    CHECK_EQ(overlap_cells.at(7).second,1);
+    CHECK_EQ(overlap_cells.at(8).first,7);
     CHECK_EQ(overlap_cells.at(8).second,4);
-    CHECK_EQ(overlap_cells.at(9).first,9);
-    CHECK_EQ(overlap_cells.at(9).second,3);
+    CHECK_EQ(overlap_cells.at(9).first,8);
+    CHECK_EQ(overlap_cells.at(9).second,4);
     CHECK_EQ(overlap_cells.at(10).first,9);
-    CHECK_EQ(overlap_cells.at(10).second,5);
+    CHECK_EQ(overlap_cells.at(10).second,3);
+    CHECK_EQ(overlap_cells.at(11).first,9);
+    CHECK_EQ(overlap_cells.at(11).second,5);
   }
 }

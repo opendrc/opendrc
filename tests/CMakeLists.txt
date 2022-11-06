@@ -1,6 +1,7 @@
 add_executable(tests
   main.cpp
   core/sweepline.test.cpp
+  core/intervaltree.test.cpp
   core/sweepline.test.cu
   gdsii/gdsii.test.cpp
   utility/exception.test.cpp
