@@ -21,7 +21,7 @@ std::vector<std::pair<int, int>> overlap_query(odrc::core::database& db,
         }
       }
       for (const auto& cell_ref : cell.cell_refs) {
-        auto the_cell = db.get_cell(cell_ref.cell_name);
+        auto& the_cell = db.get_cell(cell_ref.cell_name);
         if (the_cell.is_touching(layer)) {
           int ref_x = cell_ref.ref_point.x;
           int ref_y = cell_ref.ref_point.y;
