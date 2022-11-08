@@ -33,16 +33,17 @@ TEST_SUITE("[OpenDRC] odrc::core interval tree tests") {
     interval_pairs                    overlap_cells;
     // test data
     std::vector<std::vector<int>> mbr{
-        {6, 12, 1, 4}, {3, 7, 2, 13},   {11, 15, 4, 14}, {2, 4, 5, 15},
-        {6, 8, 6, 16}, {10, 12, 7, 17}, {14, 16, 8, 18}, {1, 3, 9, 19},
-        {5, 13, 0, 12}};  // the data represents {x_min,x_max,y_min,y_max}
-    for (int i = 0; i < 9; i++) {
+        {6, 12, 1, 4},  {3, 7, 2, 13},   {11, 15, 4, 14}, {2, 4, 5, 15},
+        {6, 8, 6, 16},  {10, 12, 7, 17}, {14, 16, 8, 18}, {1, 3, 9, 19},
+        {5, 13, 0, 12}, {3, 7, 3, 12}};  // the data represents
+                                         // {x_min,x_max,y_min,y_max}
+    for (int i = 0; i < mbr.size(); i++) {
       sorted_edge.emplace_back(odrc::core::interval{
           mbr[i][0], mbr[i][1], mbr[i][2],
           sorted_edge.size() / 2 + 1});  // input {x_min, x_max, y_min,id}
       sorted_edge.emplace_back(odrc::core::interval{
           mbr[i][0], mbr[i][1], mbr[i][3],
-          -sorted_edge.size() / 2 - 1});  // input {x_min, x_max, y_max,-id}
+          -(sorted_edge.size() / 2 + 1)});  // input {x_min, x_max, y_max,-id}
     }
 
     std::sort(sorted_edge.begin(), sorted_edge.end(),
@@ -61,6 +62,7 @@ TEST_SUITE("[OpenDRC] odrc::core interval tree tests") {
         tree.add_interval(sorted_edge[edge]);
       } else {
         // if y is less than 0, delete this edge
+        sorted_edge[edge].id = std::abs(sorted_edge[edge].id);
         tree.delete_interval(sorted_edge[edge]);
       }
     }

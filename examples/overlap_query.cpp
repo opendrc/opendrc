@@ -17,7 +17,7 @@ std::vector<std::pair<int, int>> overlap_query(odrc::core::database& db,
                                    sorted_edge.size() / 2 + 1});
           sorted_edge.emplace_back(
               odrc::core::interval{poly.mbr[0], poly.mbr[1], poly.mbr[3],
-                                   -sorted_edge.size() / 2 - 1});
+                                   -(sorted_edge.size() / 2 + 1)});
         }
       }
       for (const auto& cell_ref : cell.cell_refs) {
@@ -32,7 +32,7 @@ std::vector<std::pair<int, int>> overlap_query(odrc::core::database& db,
                   sorted_edge.size() / 2 + 1});
               sorted_edge.emplace_back(odrc::core::interval{
                   poly.mbr[0] + ref_x, poly.mbr[1] + ref_x, poly.mbr[3] + ref_y,
-                  -sorted_edge.size() / 2 - 1});
+                  -(sorted_edge.size() / 2 + 1)});
             }
           }
         }
@@ -52,6 +52,7 @@ std::vector<std::pair<int, int>> overlap_query(odrc::core::database& db,
                            overlap_intervals.end());
       tree.add_interval(sorted_edge[edge]);
     } else {
+      sorted_edge[edge].id = std::abs(sorted_edge[edge].id);
       tree.delete_interval(sorted_edge[edge]);
     }
   }
