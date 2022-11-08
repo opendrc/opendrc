@@ -13,28 +13,12 @@ struct interval {
   int id;
 };
 
-bool comp_left(const interval& a, const interval& b) {
- if (a.x_left == b.x_left) {
-    return a.id < b.id;
-  } else {
-    return a.x_left < b.x_left;
-  }
-}
-
-bool comp_right(const interval& a, const interval& b) {
-  if (a.x_right == b.x_right) {
-    return a.id < b.id;
-  } else {
-    return a.x_right < b.x_right;
-  }
-}
-
 struct node {
   int                   x_mid;
-  int                   left_child  = -1;
-  int                   right_child = -1;
-  std::vector<interval> lines_start;
-  std::vector<interval> lines_end;
+  int                   left_child  = -1;  // the left child node offset
+  int                   right_child = -1;  // the right child node offset
+  std::vector<interval> lines_start;       // lines sorted by start point
+  std::vector<interval> lines_end;         // lines sorted by end point
 
   bool has_left_child() { return left_child != -1; }
   bool has_right_child() { return right_child != -1; }
@@ -50,7 +34,7 @@ class interval_tree {
  private:
   std::vector<node> nodes;
 
-  int  _add_node(const interval& edge);
+  int  _add_node(const interval& edge);  // create a new node
   void _add_interval_to_node(
       const interval& edge,
       const int       node);  // add a segment into an existing node
@@ -74,6 +58,8 @@ inline interval_pairs interval_tree::_get_intervals_containing_point(
     const int node) {
   interval_pairs overlap_intervals;
   if (point <= nodes.at(node).x_mid) {
+    // point is not greater than mid point,judge
+    // from the start point of lines
     for (auto edge = nodes.at(node).lines_start.begin();
          edge != nodes.at(node).lines_start.end(); edge++) {
       if (edge->x_left <= point) {
@@ -83,6 +69,8 @@ inline interval_pairs interval_tree::_get_intervals_containing_point(
       }
     }
   } else if (point > nodes.at(node).x_mid) {
+    // point is greater than mid point,judge
+    // from the end point of lines
     for (auto edge = nodes.at(node).lines_end.rbegin();
          edge != nodes.at(node).lines_end.rend(); edge++) {
       if (edge->x_right >= point) {
@@ -105,10 +93,11 @@ inline interval_pairs interval_tree::get_intervals_overlapping_with(
   int left_child_offset  = nodes.at(node).left_child;
   int right_child_offset = nodes.at(node).right_child;
   if (edge.x_right <= nodes.at(node).x_mid) {
+    // query intervals in this node
     overlap_intervals =
         _get_intervals_containing_point(edge.x_right, edge.id, node);
-    if (nodes.at(node).has_left_child()) {  // if node has a left child, jump
-                                            // to left child node
+    if (nodes.at(node).has_left_child()) {
+      // if node has a left child, jump to left child node
       auto intervals = get_intervals_overlapping_with(edge, left_child_offset);
       overlap_intervals.insert(overlap_intervals.end(), intervals.begin(),
                                intervals.end());
@@ -140,22 +129,37 @@ inline interval_pairs interval_tree::get_intervals_overlapping_with(
 
 inline void interval_tree::_add_interval_to_node(const interval& edge,
                                                  const int       node) {
-  auto start_insert =
-      std::lower_bound(nodes.at(node).lines_start.begin(),
-                       nodes.at(node).lines_start.end(), edge, comp_left);
+  // insert the given edge in the correct position
+  auto start_insert = std::lower_bound(
+      nodes.at(node).lines_start.begin(), nodes.at(node).lines_start.end(),
+      edge, [](const interval& a, const interval& b) {
+        if (a.x_left == b.x_left) {
+          return a.id < b.id;
+        } else {
+          return a.x_left < b.x_left;
+        }
+      });
   nodes.at(node).lines_start.insert(start_insert, edge);
-  auto end_insert =
-      std::lower_bound(nodes.at(node).lines_end.begin(),
-                       nodes.at(node).lines_end.end(), edge, comp_right);
+  auto end_insert = std::lower_bound(nodes.at(node).lines_end.begin(),
+                                     nodes.at(node).lines_end.end(), edge,
+                                     [](const interval& a, const interval& b) {
+                                       if (a.x_right == b.x_right) {
+                                         return a.id < b.id;
+                                       } else {
+                                         return a.x_right < b.x_right;
+                                       }
+                                     });
   nodes.at(node).lines_end.insert(end_insert, edge);
 }
 
 inline void interval_tree::add_interval(const interval& edge, const int node) {
   if (nodes.empty()) {
-    _add_node(edge);
+    _add_node(edge);  // if there is no node, creat the root node
     return;
   }
   if (edge.x_left > nodes.at(node).x_mid) {
+    // if there is a left child node, jump to child node
+    // else creat a left child node
     if (nodes.at(node).has_right_child()) {
       add_interval(edge, nodes.at(node).right_child);
     } else {
@@ -179,13 +183,25 @@ inline void interval_tree::delete_interval(const interval& edge,
   } else if (edge.x_right < nodes.at(node).x_mid) {
     delete_interval(edge, nodes.at(node).left_child);
   } else {
-    auto start_erase =
-        std::lower_bound(nodes.at(node).lines_start.begin(),
-                         nodes.at(node).lines_start.end(), edge, comp_left);
+    auto start_erase = std::lower_bound(
+        nodes.at(node).lines_start.begin(), nodes.at(node).lines_start.end(),
+        edge, [](const interval& a, const interval& b) {
+          if (a.x_left == b.x_left) {
+            return a.id < b.id;
+          } else {
+            return a.x_left < b.x_left;
+          }
+        });
     nodes.at(node).lines_start.erase(start_erase);
-    auto end_erase =
-        std::lower_bound(nodes.at(node).lines_end.begin(),
-                         nodes.at(node).lines_end.end(), edge, comp_right);
+    auto end_erase = std::lower_bound(nodes.at(node).lines_end.begin(),
+                                      nodes.at(node).lines_end.end(), edge,
+                                      [](const interval& a, const interval& b) {
+                                        if (a.x_right == b.x_right) {
+                                          return a.id < b.id;
+                                        } else {
+                                          return a.x_right < b.x_right;
+                                        }
+                                      });
     nodes.at(node).lines_end.erase(end_erase);
   }
 }
