@@ -1,6 +1,6 @@
 add_executable(tests
   main.cpp
-  core/intervaltree.test.cpp
+  core/interval_tree.test.cpp
   core/sweepline.test.cpp
   core/sweepline.test.cu
   gdsii/gdsii.test.cpp
