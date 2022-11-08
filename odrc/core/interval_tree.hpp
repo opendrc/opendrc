@@ -1,208 +1,174 @@
 #pragma once
 #include <algorithm>
+#include <cassert>
+#include <cstddef>
+#include <functional>
+#include <set>
 #include <vector>
 
 namespace odrc::core {
 
-using interval_pairs = std::vector<std::pair<int, int>>;
-
+template <typename T, typename V>
 struct interval {
-  int x_left;
-  int x_right;
-  int y;
-  int id;
+  T l;
+  T r;
+  V v;
+
+  T    mid() const { return (l + r) / 2; }
+  bool contains(const T& p) const { return l <= p and p <= r; }
 };
 
+template <typename T, typename V>
 struct node {
-  int                   x_mid;
-  int                   left_child  = -1;  // the left child node offset
-  int                   right_child = -1;  // the right child node offset
-  std::vector<interval> lines_start;       // lines sorted by start point
-  std::vector<interval> lines_end;         // lines sorted by end point
+  using Intvl = interval<T, V>;
+  T mid;  // value of the tree node
 
-  bool has_left_child() { return left_child != -1; }
-  bool has_right_child() { return right_child != -1; }
+  node() = default;
+  node(const Intvl& intvl) {
+    mid = intvl.mid();
+    insert(intvl);
+  }
+  node(Intvl&& intvl) {
+    mid = intvl.mid();
+    insert(std::move(intvl));
+  }
+
+  int lc = -1;  // left child offset;
+  int rc = -1;  // right child offset
+
+  using l_comp = struct {
+    bool operator()(const Intvl& lhs, const Intvl& rhs) const {
+      return lhs.l == rhs.l ? lhs.v < rhs.v : lhs.l < rhs.l;
+    }
+  };
+  using r_comp = struct {
+    bool operator()(const Intvl& lhs, const Intvl& rhs) const {
+      return lhs.r == rhs.r ? lhs.v < rhs.v : lhs.r > rhs.r;
+    }
+  };
+
+  std::set<Intvl, l_comp> intvl_l;  // intervals in ascending left endpoint
+  std::set<Intvl, r_comp> intvl_r;  // intervals in descending right endpoint
+
+  [[nodiscard]] bool has_left_child() const { return lc != -1; }
+  [[nodiscard]] bool has_right_child() const { return rc != -1; }
+
+  void insert(const Intvl& intvl) {
+    intvl_l.emplace(intvl);
+    intvl_r.emplace(intvl);
+  }
+  void insert(Intvl&& intvl) {
+    intvl_l.emplace(std::move(intvl));
+    intvl_r.emplace(std::move(intvl));
+  }
+  void remove(const Intvl& intvl) {
+    intvl_l.erase(intvl);
+    intvl_r.erase(intvl);
+  }
+  std::vector<V> get_intervals_containing(const T& p) const {
+    std::vector<V> v;
+    if (p <= mid) {  // iff intvl.l <= p
+      for (auto it = intvl_l.begin(); it != intvl_l.end(); ++it) {
+        if (it->l > p) {
+          break;
+        }
+        v.emplace_back(it->v);
+      }
+    } else {
+      for (auto it = intvl_r.begin(); it != intvl_r.end(); ++it) {
+        if (it->r < p) {
+          break;
+        }
+        v.emplace_back(it->v);
+      }
+    }
+    return v;
+  }
 };
 
+template <typename T, typename V>
 class interval_tree {
  public:
-  void           add_interval(const interval& edge, const int node = 0);
-  void           delete_interval(const interval& edge, const int node = 0);
-  interval_pairs get_intervals_overlapping_with(const interval& edge,
-                                                const int       node = 0);
+  using Intvl = interval<T, V>;
+  using Node  = node<T, V>;
+
+  void insert(const Intvl& intvl, const std::size_t n = 0) {
+    if (nodes.empty()) {
+      nodes.emplace_back(intvl);
+      return;
+    }
+    assert(n >= 0 and n < nodes.size());
+    Node& node = nodes.at(n);
+    if (intvl.contains(node.mid)) {
+      node.insert(intvl);
+    } else if (intvl.r < node.mid) {  // insert to left subtree
+      if (node.has_left_child()) {
+        insert(intvl, node.lc);
+      } else {
+        nodes.emplace_back(intvl);  // deactiavtes reference of node!
+        nodes.at(n).lc = nodes.size() - 1;
+      }
+    } else {  // insert to right subtree
+      if (node.has_right_child()) {
+        insert(intvl, node.rc);
+      } else {
+        nodes.emplace_back(intvl);  // deactiavtes reference of node!
+        nodes.at(n).rc = nodes.size() - 1;
+      }
+    }
+  };
+
+  void remove(const Intvl& intvl, const std::size_t n = 0) {
+    assert(n >= 0 and n < nodes.size());
+    Node& node = nodes.at(n);
+    if (intvl.contains(node.mid)) {
+      node.remove(intvl);
+    } else if (intvl.r < node.mid) {
+      remove(intvl, node.lc);
+    } else {
+      remove(intvl, node.rc);
+    }
+  }
+
+  // returns a vector of Intvl::v
+  std::vector<V> get_intervals_overlapping_with(const Intvl&      intvl,
+                                                const std::size_t n = 0) {
+    std::vector<V> intvls;
+    if (nodes.empty()) {
+      return intvls;
+    }
+    assert(n >= 0 and n < nodes.size());
+    const Node& node = nodes.at(n);
+    if (intvl.r <= node.mid) {
+      auto v = node.get_intervals_containing(intvl.r);
+      intvls.insert(intvls.end(), v.begin(), v.end());
+      if (node.has_left_child()) {
+        auto v_l = get_intervals_overlapping_with(intvl, node.lc);
+        intvls.insert(intvls.end(), v_l.begin(), v_l.end());
+      }
+    } else if (intvl.l >= node.mid) {
+      auto v = node.get_intervals_containing(intvl.l);
+      intvls.insert(intvls.end(), v.begin(), v.end());
+      if (node.has_right_child()) {
+        auto v_r = get_intervals_overlapping_with(intvl, node.rc);
+        intvls.insert(intvls.end(), v_r.begin(), v_r.end());
+      }
+    } else {
+      auto v = node.get_intervals_containing(node.mid);
+      intvls.insert(intvls.end(), v.begin(), v.end());
+      if (node.has_left_child()) {
+        auto v_l = get_intervals_overlapping_with(intvl, node.lc);
+        intvls.insert(intvls.end(), v_l.begin(), v_l.end());
+      }
+      if (node.has_right_child()) {
+        auto v_r = get_intervals_overlapping_with(intvl, node.rc);
+        intvls.insert(intvls.end(), v_r.begin(), v_r.end());
+      }
+    }
+  }
 
  private:
-  std::vector<node> nodes;
-
-  int  _add_node(const interval& edge);  // create a new node
-  void _add_interval_to_node(
-      const interval& edge,
-      const int       node);  // add a segment into an existing node
-  interval_pairs _get_intervals_containing_point(
-      const int point,
-      const int edge_id,
-      const int node);  // get intervals containing the point
+  std::vector<Node> nodes;
 };
 
-inline int interval_tree::_add_node(const interval& edge) {
-  nodes.emplace_back();
-  nodes.back().x_mid = (edge.x_left + edge.x_right) / 2;
-  nodes.back().lines_start.emplace_back(edge);
-  nodes.back().lines_end.emplace_back(edge);
-  return nodes.size() - 1;
-}
-
-inline interval_pairs interval_tree::_get_intervals_containing_point(
-    const int point,
-    const int id,
-    const int node) {
-  interval_pairs overlap_intervals;
-  if (point <= nodes.at(node).x_mid) {
-    // point is not greater than mid point,judge
-    // from the start point of lines
-    for (auto edge = nodes.at(node).lines_start.begin();
-         edge != nodes.at(node).lines_start.end(); edge++) {
-      if (edge->x_left <= point) {
-        overlap_intervals.emplace_back(std::make_pair(id, edge->id));
-      } else {
-        break;
-      }
-    }
-  } else if (point > nodes.at(node).x_mid) {
-    // point is greater than mid point,judge
-    // from the end point of lines
-    for (auto edge = nodes.at(node).lines_end.rbegin();
-         edge != nodes.at(node).lines_end.rend(); edge++) {
-      if (edge->x_right >= point) {
-        overlap_intervals.emplace_back(std::make_pair(id, edge->id));
-      } else {
-        break;
-      }
-    }
-  }
-  return overlap_intervals;
-}
-
-inline interval_pairs interval_tree::get_intervals_overlapping_with(
-    const interval& edge,
-    const int       node) {
-  interval_pairs overlap_intervals;
-  if (nodes.empty()) {  // if node is empty, return null
-    return overlap_intervals;
-  }
-  int left_child_offset  = nodes.at(node).left_child;
-  int right_child_offset = nodes.at(node).right_child;
-  if (edge.x_right <= nodes.at(node).x_mid) {
-    // query intervals in this node
-    overlap_intervals =
-        _get_intervals_containing_point(edge.x_right, edge.id, node);
-    if (nodes.at(node).has_left_child()) {
-      // if node has a left child, jump to left child node
-      auto intervals = get_intervals_overlapping_with(edge, left_child_offset);
-      overlap_intervals.insert(overlap_intervals.end(), intervals.begin(),
-                               intervals.end());
-    }
-  } else if (edge.x_left >= nodes.at(node).x_mid) {
-    overlap_intervals =
-        _get_intervals_containing_point(edge.x_left, edge.id, node);
-    if (nodes.at(node).has_right_child()) {
-      auto intervals = get_intervals_overlapping_with(edge, right_child_offset);
-      overlap_intervals.insert(overlap_intervals.end(), intervals.begin(),
-                               intervals.end());
-    }
-  } else {
-    overlap_intervals =
-        _get_intervals_containing_point(nodes.at(node).x_mid, edge.id, node);
-    if (nodes.at(node).has_left_child()) {
-      auto intervals = get_intervals_overlapping_with(edge, left_child_offset);
-      overlap_intervals.insert(overlap_intervals.end(), intervals.begin(),
-                               intervals.end());
-    }
-    if (nodes.at(node).has_right_child()) {
-      auto intervals = get_intervals_overlapping_with(edge, right_child_offset);
-      overlap_intervals.insert(overlap_intervals.end(), intervals.begin(),
-                               intervals.end());
-    }
-  }
-  return overlap_intervals;
-}
-
-inline void interval_tree::_add_interval_to_node(const interval& edge,
-                                                 const int       node) {
-  // insert the given edge in the correct position
-  auto start_insert = std::lower_bound(
-      nodes.at(node).lines_start.begin(), nodes.at(node).lines_start.end(),
-      edge, [](const interval& a, const interval& b) {
-        if (a.x_left == b.x_left) {
-          return a.id < b.id;
-        } else {
-          return a.x_left < b.x_left;
-        }
-      });
-  nodes.at(node).lines_start.insert(start_insert, edge);
-  auto end_insert = std::lower_bound(nodes.at(node).lines_end.begin(),
-                                     nodes.at(node).lines_end.end(), edge,
-                                     [](const interval& a, const interval& b) {
-                                       if (a.x_right == b.x_right) {
-                                         return a.id < b.id;
-                                       } else {
-                                         return a.x_right < b.x_right;
-                                       }
-                                     });
-  nodes.at(node).lines_end.insert(end_insert, edge);
-}
-
-inline void interval_tree::add_interval(const interval& edge, const int node) {
-  if (nodes.empty()) {
-    _add_node(edge);  // if there is no node, creat the root node
-    return;
-  }
-  if (edge.x_left > nodes.at(node).x_mid) {
-    // if there is a left child node, jump to child node
-    // else creat a left child node
-    if (nodes.at(node).has_right_child()) {
-      add_interval(edge, nodes.at(node).right_child);
-    } else {
-      nodes.at(node).right_child = _add_node(edge);
-    }
-  } else if (edge.x_right < nodes.at(node).x_mid) {
-    if (nodes.at(node).has_left_child()) {
-      add_interval(edge, nodes.at(node).left_child);
-    } else {
-      nodes.at(node).left_child = _add_node(edge);
-    }
-  } else {
-    _add_interval_to_node(edge, node);
-  }
-}
-
-inline void interval_tree::delete_interval(const interval& edge,
-                                           const int       node) {
-  if (edge.x_left > nodes.at(node).x_mid) {
-    delete_interval(edge, nodes.at(node).right_child);
-  } else if (edge.x_right < nodes.at(node).x_mid) {
-    delete_interval(edge, nodes.at(node).left_child);
-  } else {
-    auto start_erase = std::lower_bound(
-        nodes.at(node).lines_start.begin(), nodes.at(node).lines_start.end(),
-        edge, [](const interval& a, const interval& b) {
-          if (a.x_left == b.x_left) {
-            return a.id < b.id;
-          } else {
-            return a.x_left < b.x_left;
-          }
-        });
-    nodes.at(node).lines_start.erase(start_erase);
-    auto end_erase = std::lower_bound(nodes.at(node).lines_end.begin(),
-                                      nodes.at(node).lines_end.end(), edge,
-                                      [](const interval& a, const interval& b) {
-                                        if (a.x_right == b.x_right) {
-                                          return a.id < b.id;
-                                        } else {
-                                          return a.x_right < b.x_right;
-                                        }
-                                      });
-    nodes.at(node).lines_end.erase(end_erase);
-  }
-}
 }  // namespace odrc::core
