@@ -1,9 +1,11 @@
 #include <doctest/doctest.h>
+
 #include <algorithm>
 #include <cmath>
+#include <vector>
+
 #include <odrc/core/interval_tree.hpp>
 #include <odrc/gdsii/gdsii.hpp>
-#include <vector>
 
 using interval_pairs = std::vector<std::pair<int, int>>;
 

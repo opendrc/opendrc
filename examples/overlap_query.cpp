@@ -1,3 +1,4 @@
+#include <cmath>
 #include <vector>
 
 #include <odrc/core/interval_tree.hpp>
