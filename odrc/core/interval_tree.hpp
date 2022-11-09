@@ -3,6 +3,7 @@
 #include <cassert>
 #include <cstddef>
 #include <functional>
+#include <iostream>
 #include <set>
 #include <vector>
 
@@ -21,7 +22,8 @@ struct interval {
 template <typename T, typename V>
 struct node {
   using Intvl = interval<T, V>;
-  T mid;  // value of the tree node
+  T    mid;  // value of the tree node
+  bool is_subtree_empty = false;
 
   node() = default;
   node(const Intvl& intvl) {
@@ -53,20 +55,23 @@ struct node {
   [[nodiscard]] bool has_left_child() const { return lc != -1; }
   [[nodiscard]] bool has_right_child() const { return rc != -1; }
 
+  bool empty() const { return intvl_l.empty(); }
+
   void insert(const Intvl& intvl) {
     intvl_l.emplace(intvl);
     intvl_r.emplace(intvl);
+    is_subtree_empty = false;
   }
   void insert(Intvl&& intvl) {
     intvl_l.emplace(std::move(intvl));
     intvl_r.emplace(std::move(intvl));
+    is_subtree_empty = false;
   }
   void remove(const Intvl& intvl) {
     intvl_l.erase(intvl);
     intvl_r.erase(intvl);
   }
-  std::vector<V> get_intervals_containing(const T& p) const {
-    std::vector<V> v;
+  void get_intervals_containing(const T& p, std::vector<V>& v) const {
     if (p <= mid) {  // iff intvl.l <= p
       for (auto it = intvl_l.begin(); it != intvl_l.end(); ++it) {
         if (it->l > p) {
@@ -82,7 +87,6 @@ struct node {
         v.emplace_back(it->v);
       }
     }
-    return v;
   }
 };
 
@@ -91,29 +95,39 @@ class interval_tree {
  public:
   using Intvl = interval<T, V>;
   using Node  = node<T, V>;
+  int deepest = 0;
 
-  void insert(const Intvl& intvl, const std::size_t n = 0) {
+  void insert(const Intvl& intvl, const std::size_t n = 0, int depth = 0) {
     if (nodes.empty()) {
       nodes.emplace_back(intvl);
       return;
     }
     assert(n >= 0 and n < nodes.size());
-    Node& node = nodes.at(n);
+    Node& node            = nodes.at(n);
+    node.is_subtree_empty = false;
     if (intvl.contains(node.mid)) {
       node.insert(intvl);
     } else if (intvl.r < node.mid) {  // insert to left subtree
       if (node.has_left_child()) {
-        insert(intvl, node.lc);
+        insert(intvl, node.lc, depth + 1);
       } else {
         nodes.emplace_back(intvl);  // deactiavtes reference of node!
         nodes.at(n).lc = nodes.size() - 1;
+        if (depth + 1 > deepest) {
+          deepest = depth + 1;
+          std::cout << "New depth: " << depth + 1 << std::endl;
+        }
       }
     } else {  // insert to right subtree
       if (node.has_right_child()) {
-        insert(intvl, node.rc);
+        insert(intvl, node.rc, depth + 1);
       } else {
         nodes.emplace_back(intvl);  // deactiavtes reference of node!
         nodes.at(n).rc = nodes.size() - 1;
+        if (depth + 1 > deepest) {
+          deepest = depth + 1;
+          std::cout << "New depth: " << depth + 1 << std::endl;
+        }
       }
     }
   };
@@ -128,41 +142,48 @@ class interval_tree {
     } else {
       remove(intvl, node.rc);
     }
+    bool is_left_empty =
+        !node.has_left_child() or nodes.at(node.lc).is_subtree_empty;
+    bool is_right_empty =
+        !node.has_right_child() or nodes.at(node.rc).is_subtree_empty;
+    node.is_subtree_empty = node.empty() and is_left_empty and is_right_empty;
   }
-
-  // returns a vector of Intvl::v
   std::vector<V> get_intervals_overlapping_with(const Intvl&      intvl,
                                                 const std::size_t n = 0) {
     std::vector<V> intvls;
+    _run_query(intvl, 0, intvls);
+    return intvls;
+  }
+
+  // returns a vector of Intvl::v
+  void _run_query(const Intvl&      intvl,
+                  const std::size_t n,
+                  std::vector<V>&   rtn) {
     if (nodes.empty()) {
-      return intvls;
+      return;
+    }
+    if (nodes.at(n).is_subtree_empty) {
+      return;
     }
     assert(n >= 0 and n < nodes.size());
     const Node& node = nodes.at(n);
     if (intvl.r <= node.mid) {
-      auto v = node.get_intervals_containing(intvl.r);
-      intvls.insert(intvls.end(), v.begin(), v.end());
+      node.get_intervals_containing(intvl.r, rtn);
       if (node.has_left_child()) {
-        auto v_l = get_intervals_overlapping_with(intvl, node.lc);
-        intvls.insert(intvls.end(), v_l.begin(), v_l.end());
+        _run_query(intvl, node.lc, rtn);
       }
     } else if (intvl.l >= node.mid) {
-      auto v = node.get_intervals_containing(intvl.l);
-      intvls.insert(intvls.end(), v.begin(), v.end());
+      node.get_intervals_containing(intvl.l, rtn);
       if (node.has_right_child()) {
-        auto v_r = get_intervals_overlapping_with(intvl, node.rc);
-        intvls.insert(intvls.end(), v_r.begin(), v_r.end());
+        _run_query(intvl, node.rc, rtn);
       }
     } else {
-      auto v = node.get_intervals_containing(node.mid);
-      intvls.insert(intvls.end(), v.begin(), v.end());
+      node.get_intervals_containing(node.mid, rtn);
       if (node.has_left_child()) {
-        auto v_l = get_intervals_overlapping_with(intvl, node.lc);
-        intvls.insert(intvls.end(), v_l.begin(), v_l.end());
+        _run_query(intvl, node.lc, rtn);
       }
       if (node.has_right_child()) {
-        auto v_r = get_intervals_overlapping_with(intvl, node.rc);
-        intvls.insert(intvls.end(), v_r.begin(), v_r.end());
+        _run_query(intvl, node.rc, rtn);
       }
     }
   }
