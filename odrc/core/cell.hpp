@@ -37,13 +37,33 @@ struct transform {
   double angle;
 };
 
+struct h_edge {
+  int x1;
+  int x2;
+  int y;
+};
+
+struct v_edge {
+  int x;
+  int y1;
+  int y2;
+};
+
 class cell_ref {
  public:
-  std::string cell_name;
-  coord       ref_point;
-  transform   trans;
-  int         mbr[4] = {};
+  std::string         cell_name;
+  coord               ref_point;
+  transform           trans;
+  int                 mbr[4] = {};
+  std::vector<h_edge> h_edges;
+  std::vector<v_edge> v_edges;
 
+  cell_ref() = default;
+  cell_ref(const std::string& name, const coord& p)
+      : cell_name(name), ref_point(p) {}
+
+  cell_ref(const std::string& name, const coord& p, const transform& t)
+      : cell_name(name), ref_point(p), trans(t) {}
 
   bool is_touching(const polygon& other) const {
     return mbr[0] < other.mbr[1] and mbr[1] > other.mbr[0] and
