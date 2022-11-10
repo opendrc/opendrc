@@ -1,7 +1,9 @@
+// #define AREA_TEST
 #include <iostream>
 
 #include <odrc/algorithm/space-check.hpp>
 #include <odrc/algorithm/width-check.hpp>
+#include <odrc/algorithm/area-check.hpp>
 #include <odrc/gdsii/gdsii.hpp>
 
 #include <odrc/utility/timer.hpp>
@@ -56,12 +58,21 @@ int main(int argc, char* argv[]) {
     // }
     // odrc::width_check(db, 11, 650);
     {
-      odrc::util::logger logger("/dev/null", odrc::util::log_level::info, true);
-      odrc::util::timer  t("t", logger);
-      t.start();
+      odrc::util::logger logger("/dev/null", odrc::util::log_level::info,
+      true); odrc::util::timer  t("t", logger); t.start();
       odrc::space_check_dac23(db, 19, 19, 18);
       t.pause();
     }
+#ifdef AREA_TEST
+    {
+      odrc::util::logger logger("/dev/null", odrc::util::log_level::info, true);
+      odrc::util::timer  t("t", logger);
+      t.start();
+      odrc::area_check_cpu(db, 19, 1000);
+      t.pause();
+    }
+#endif
+
   } catch (std::exception& e) {
     std::cerr << e.what() << std::endl;
     return 1;

@@ -7,15 +7,21 @@ namespace odrc {
 
 using odrc::core::polygon;
 
-bool _check_polygon_area(const polygon& poly, int threshold)  {
+void _check_polygon_area(const polygon& poly, int threshold) {
   int         area = 0;
   const auto& points =
       poly.points;  // TODO: I need to ensure the sequence of points is correct
-  for (auto i = 0; i < points.size(); ++i) {
+  for (auto i = 0UL; i < points.size(); ++i) {
     auto j = (i + 1) % points.size();
     area += points.at(i).x * points.at(j).y - points.at(j).x * points.at(i).y;
   }
-  return area<threshold;
+  area = abs(area / 2);
+  if (area > threshold) {
+    for (auto& p : points) {
+      printf("(%d,%d),", p.x, p.y);
+    }
+    printf("area: %d %d\n ", area, area < threshold);
+  }
 }
 
 void area_check_cpu(const odrc::core::database& db, int layer, int threshold) {
@@ -24,14 +30,11 @@ void area_check_cpu(const odrc::core::database& db, int layer, int threshold) {
 
   static int checked_poly = 0;
   static int saved_poly   = 0;
-  static int rotated      = 0;
-  static int magnified    = 0;
-  static int reflected    = 0;
 
   for (const auto& cell : db.cells) {
-    if (not cell.is_touching(layer)) {
+    if (not cell.is_touching(layer))
       continue;
-    }
+
     int local_poly = 0;
     for (const auto& polygon : cell.polygons) {
       if (polygon.layer != layer) {
