@@ -57,18 +57,18 @@ int main(int argc, char* argv[]) {
     //   t.pause();
     // }
     // odrc::width_check(db, 11, 650);
-    {
-      odrc::util::logger logger("/dev/null", odrc::util::log_level::info,
-      true); odrc::util::timer  t("t", logger); t.start();
-      odrc::space_check_dac23(db, 19, 19, 18);
-      t.pause();
-    }
+    // {
+    //   odrc::util::logger logger("/dev/null", odrc::util::log_level::info,
+    //   true); odrc::util::timer  t("t", logger); t.start();
+    //   odrc::space_check_dac23(db, 19, 19, 18);
+    //   t.pause();
+    // }
 #ifdef AREA_TEST
     {
       odrc::util::logger logger("/dev/null", odrc::util::log_level::info, true);
       odrc::util::timer  t("t", logger);
       t.start();
-      odrc::area_check_cpu(db, 19, 1000);
+      odrc::area_check_cpu(db, 19, 10000);
       t.pause();
     }
 #endif
