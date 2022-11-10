@@ -29,44 +29,46 @@ interval_pairs brute_force_query(std::vector<std::vector<int>>& mbr) {
 
 TEST_SUITE("[OpenDRC] odrc::core interval tree tests") {
   TEST_CASE("test overlapping cells") {
-    std::vector<odrc::core::interval> sorted_edge;
-    interval_pairs                    overlap_cells;
+    using Intvl = odrc::core::interval<int, int>;
+    struct edge {
+      Intvl intvl;
+      int   y;
+      bool  is_remove;
+      edge(int l, int r, int y, int id, bool is_remove = false)
+          : intvl(Intvl{l, r, id}), y(y), is_remove(is_remove) {}
+    };
+    std::vector<edge> edges;
+    interval_pairs    overlap_cells;
     // test data
     std::vector<std::vector<int>> mbr{
         {6, 12, 1, 4}, {3, 7, 2, 13},   {11, 15, 4, 14}, {2, 4, 5, 15},
         {6, 8, 6, 16}, {10, 12, 7, 17}, {14, 16, 8, 18}, {1, 3, 9, 19},
         {5, 13, 0, 12}};  // the data represents {x_min,x_max,y_min,y_max}
-    for (int i = 0; i < 9; i++) {
-      sorted_edge.emplace_back(odrc::core::interval{
-          mbr[i][0], mbr[i][1], mbr[i][2],
-          sorted_edge.size() / 2 + 1});  // input {x_min, x_max, y_min,id}
-      sorted_edge.emplace_back(odrc::core::interval{
-          mbr[i][0], mbr[i][1], mbr[i][3],
-          -sorted_edge.size() / 2 - 1});  // input {x_min, x_max, y_max,-id}
+    for (int i = 0; i < 9; ++i) {
+      edges.emplace_back(mbr[i][0], mbr[i][1], mbr[i][2], i);
+      edges.emplace_back(mbr[i][0], mbr[i][1], mbr[i][3], i, true);
     }
 
-    std::sort(sorted_edge.begin(), sorted_edge.end(),
-              [](const odrc::core::interval& a, const odrc::core::interval& b) {
-                return a.y < b.y || (a.y == b.y && a.id > b.id);
-              });  // sort edges by y (or id if y is equal)
+    std::sort(edges.begin(), edges.end(), [](const auto& a, const auto& b) {
+      return a.y == b.y ? b.is_remove  : a.y < b.y;
+    });  // sort edges by y (or id if y is equal)
 
-    odrc::core::interval_tree tree;
-    for (int edge = 0; edge != sorted_edge.size(); edge++) {
-      if (sorted_edge[edge].id > 0) {
-        // if y is greater than 0, query and add this edge
+    odrc::core::interval_tree<int, int> tree;
+    for (const auto& edge : edges) {
+      if (!edge.is_remove) {
         auto overlap_intervals =
-            tree.get_intervals_overlapping_with(sorted_edge[edge]);
-        overlap_cells.insert(overlap_cells.end(), overlap_intervals.begin(),
-                             overlap_intervals.end());
-        tree.add_interval(sorted_edge[edge]);
+            tree.get_intervals_overlapping_with(edge.intvl);
+        for (int e : overlap_intervals) {
+          overlap_cells.emplace_back(edge.intvl.v+1, e+1);
+        }
+        tree.insert(edge.intvl);
       } else {
-        // if y is less than 0, delete this edge
-        tree.delete_interval(sorted_edge[edge]);
+        tree.remove(edge.intvl);
       }
     }
-    for (int i = 0; i != overlap_cells.size(); i++) {
-      if (overlap_cells.at(i).first > overlap_cells.at(i).second) {
-        std::swap(overlap_cells.at(i).first, overlap_cells.at(i).second);
+    for (auto& cells : overlap_cells) {
+      if (cells.first > cells.second) {
+        std::swap(cells.first, cells.second);
       }
     }  // make sure the smaller id is the first element in pair
     std::sort(overlap_cells.begin(), overlap_cells.end());
