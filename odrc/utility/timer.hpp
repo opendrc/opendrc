@@ -15,7 +15,9 @@ class timer {
     _logger = &time_logger;
   }
 
-  ~timer() { _logger->info("Timer", "[{}] {} ms", _tag, elapsed_ms); }
+  ~timer() {
+    _logger->info("Timer", "[{}] {} ms", _tag, int64_t(elapsed_ms / 1000.0));
+  }
 
   void start() {
     _begin_time_point = std::chrono::high_resolution_clock::now();
@@ -23,17 +25,18 @@ class timer {
 
   void pause() {
     const auto _end_time_point = std::chrono::high_resolution_clock::now();
-    elapsed_ms += std::chrono::duration_cast<std::chrono::milliseconds>(
+    elapsed_ms += std::chrono::duration_cast<std::chrono::microseconds>(
                       _end_time_point - _begin_time_point)
                       .count();
   }
 
   void reset(std::string message = "") {
-    _logger->info("Timer", "[{}] {} {} ms", _tag, message, elapsed_ms);
+    _logger->info("Timer", "[{}] {} {} ms", _tag, message,
+                  int64_t(elapsed_ms / 1000.0));
     elapsed_ms = 0;
   }
 
-  int64_t get_elapsed() { return elapsed_ms; }
+  int64_t get_elapsed() { return elapsed_ms / 1000; }
 
  private:
   std::string                                                 _tag;

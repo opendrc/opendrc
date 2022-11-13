@@ -1,0 +1,83 @@
+
+# avaiable ASAP7 designs
+designs = ["aes", "ethmac", "gcd", "ibex", "jpeg", "sha3", "uart"]
+modes = ["flat", "deep", "tile"]
+rules = ["e1", "e2", "e3"]
+
+for design in designs do
+	puts "########## " + design + " ##########"
+	source("./asap7/" + design + ".gds") #GDS input
+# target(design + "_ret.gds") # output database
+	report(design + "_ret.gds") # output database
+
+	metal1 = input(19, 0)
+	via1   = input(21, 0)
+	metal2 = input(20, 0)
+	via2   = input(25, 0)
+	metal3 = input(30, 0)
+	via3   = input(35, 0)
+
+	for r in rules do
+		if r == "e1"
+ 			flat()
+			ts1 = Time.new
+			metal1.enclosing(via1, 5).output("m1_space", "M1 space violations")
+			te1 = Time.new
+
+			deep()
+			ts2 = Time.new
+			metal1.enclosing(via1, 5).output("m1_space", "M1 space violations")
+			te2 = Time.new
+
+			tiles(20.um)
+			tile_borders(20.nm)
+			threads(8)
+			ts3 = Time.new
+			metal1.enclosing(via1, 5).output("m1_space", "M1 space violations")
+			te3 = Time.new
+
+			puts sprintf("V1.M1.EN.1 & %0.02f & %0.02f & %0.02f ", (te1-ts1).to_s, (te2-ts2).to_s, (te3-ts3).to_s)
+		elsif r == "e2"
+ 			flat()
+			ts1 = Time.new
+			metal2.enclosing(via2, 5).output("m1_space", "M1 space violations")
+			te1 = Time.new
+
+			deep()
+			ts2 = Time.new
+			metal2.enclosing(via2, 5).output("m1_space", "M1 space violations")
+			te2 = Time.new
+
+			tiles(20.um)
+			tile_borders(20.nm)
+			threads(8)
+			ts3 = Time.new
+			metal2.enclosing(via2, 5).output("m1_space", "M1 space violations")
+			te3 = Time.new
+
+			puts sprintf("V2.M2.EN.1 & %0.02f & %0.02f & %0.02f ", (te1-ts1).to_s, (te2-ts2).to_s, (te3-ts3).to_s)
+		else
+ 			flat()
+			ts1 = Time.new
+			metal2.enclosing(via1, 5).output("m1_space", "M1 space violations")
+			te1 = Time.new
+
+			deep()
+			ts2 = Time.new
+			metal2.enclosing(via1, 5).output("m1_space", "M1 space violations")
+			te2 = Time.new
+
+			tiles(20.um)
+			tile_borders(20.nm)
+			threads(8)
+			ts3 = Time.new
+			metal2.enclosing(via1, 5).output("m1_space", "M1 space violations")
+			te3 = Time.new
+
+			puts sprintf("V1.M2.EN.2 & %0.02f & %0.02f & %0.02f ", (te1-ts1).to_s, (te2-ts2).to_s, (te3-ts3).to_s)
+		end
+
+
+	end
+
+end
