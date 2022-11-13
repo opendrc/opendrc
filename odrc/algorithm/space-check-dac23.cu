@@ -2,6 +2,9 @@
 
 #include <algorithm>
 #include <iostream>
+#include <numeric>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include <odrc/core/interval_tree.hpp>
@@ -16,257 +19,205 @@ using cell_ref = odrc::core::cell_ref;
 using odrc::core::h_edge;
 using odrc::core::v_edge;
 
-struct check_result {
-  int  e11x;
-  int  e11y;
-  int  e12x;
-  int  e12y;
-  int  e21x;
-  int  e21y;
-  int  e22x;
-  int  e22y;
-  bool is_violation = false;
-};
+class DisjointSet {
+ public:
+  std::vector<int> parent;
+  std::vector<int> rank;
 
-struct cpair {
-  int c1;
-  int c2;
-};
-
-__global__ void check_kernel(cpair*        cpairs,
-                             int           size,
-                             h_edge*       hes,
-                             v_edge*       ves,
-                             int*          hidx,
-                             int*          vidx,
-                             int           threshold,
-                             check_result* result) {
-  int tid = threadIdx.x + blockDim.x * blockIdx.x;
-  if (tid >= size)
-    return;
-  int   c1         = cpairs[tid].c1;
-  int   c2         = cpairs[tid].c2;
-  int   h1s        = hidx[c1];
-  int   h1e        = hidx[c1 + 1];
-  int   h2s        = hidx[c2];
-  int   h2e        = hidx[c2 + 1];
-  int   res_offset = tid * 10;  // at most 10 violations per thread
-  auto& res        = result[res_offset];
-  for (int p1 = h1s; p1 < h1e; ++p1) {
-    for (int p2 = h2s; p2 < h2e; ++p2) {
-      // space
-      res.e11x = hes[p1].x1;
-      res.e11y = hes[p1].y;
-      res.e12x = hes[p1].x2;
-      res.e12y = hes[p1].y;
-      res.e21x = hes[p2].x1;
-      res.e21y = hes[p2].y;
-      res.e22x = hes[p2].x2;
-      res.e22y = hes[p2].y;
-
-      if (res.e11y < res.e22y) {
-        // e22 e21
-        // e11 e12
-        bool is_outside_to_outside =
-            res.e11x < res.e12x and res.e21x > res.e22x;
-        bool is_too_close = res.e21y - res.e11y < threshold;
-        bool is_projection_overlap =
-            res.e21x < res.e11x and res.e12x < res.e22x;
-        res.is_violation =
-            is_outside_to_outside and is_too_close and is_projection_overlap;
-      } else {
-        // e12 e11
-        // e21 e22
-        bool is_outside_to_outside =
-            res.e21x < res.e22x and res.e11x > res.e12x;
-        bool is_too_close = res.e11y - res.e21y < threshold;
-        bool is_projection_overlap =
-            res.e11x < res.e21x and res.e22x < res.e12x;
-        res.is_violation =
-            is_outside_to_outside and is_too_close and is_projection_overlap;
-      }
-      if (res.is_violation) {
-        ++res_offset;
-        if (res_offset >= (tid + 1) * 10)
-          return;
-        res = result[res_offset];
-      }
+  // perform MakeSet operation
+  void makeSet(int n) {
+    parent.resize(n, 0);
+    rank.resize(n, 0);
+    for (int i = 0; i < n; ++i) {
+      parent[i] = i;
     }
   }
-}
+  void makeSet(std::vector<int> const& universe) {
+    assert(false);
+    // create `n` disjoint sets (one for each item)
+    for (int i : universe) {
+      parent[i] = i;
+      rank[i]   = 0;
+    }
+  }
 
-void run_check(cpair*        cpairs,
-               int           size,
-               h_edge*       hes,
-               v_edge*       ves,
-               int*          hidx,
-               int*          vidx,
-               int           threshold,
-               check_result* result,
-               cudaStream_t  stream) {
-  int batch_size = 512;
-  check_kernel<<<(size + batch_size - 1) / batch_size, batch_size, 0, stream>>>(
-      cpairs, size, hes, ves, hidx, vidx, threshold, result);
-}
+  // Find the root of the set in which element `k` belongs
+  int Find(int k) {
+    return parent[k] == k ? k : parent[k] = Find(parent[k]);
+    // if (parent[k] == k)
+    //   return k;  // If i am my own parent/rep
+    // Find with Path compression, meaning we update the parent for this node
+    // once recursion returns
+    // parent[k] = Find(parent[k]);
+    // return parent[k];
+  }
+
+  // Perform Union of two subsets
+  void Union(int u, int v) {
+    // find the root of the sets in which elements `x` and `y` belongs
+    int ru = Find(u);
+    int rv = Find(v);
+    if (ru == rv)
+      return;
+    if (rank[ru] > rank[rv]) {
+      parent[rv] = parent[ru];
+    } else if (rank[rv] > rank[ru]) {
+      parent[ru] = parent[rv];
+    } else {
+      parent[rv] = parent[ru];
+      rank[ru]++;
+    }
+  }
+  void union_range(int start, int end) {
+    int p = Find(start);
+    for (int i = start; i <= end; ++i) {
+      parent[i] = p;
+    }
+  }
+};
 
 void space_check_dac23(const odrc::core::database& db,
                        int                         layer1,
                        int                         layer2,
                        int                         threshold) {
-  std::vector<h_edge> hes;
-  std::vector<v_edge> ves;
-  std::vector<int>    hidx;
-  std::vector<int>    vidx;
-  for (const auto& cr : db.cells.back().cell_refs) {
-    hidx.emplace_back(hes.size());
-    vidx.emplace_back(ves.size());
-    hes.insert(hes.end(), cr.h_edges.begin(), cr.h_edges.end());
-    ves.insert(ves.end(), cr.v_edges.begin(), cr.v_edges.end());
-  }
-  hidx.emplace_back(hes.size());
-  vidx.emplace_back(ves.size());
-  cudaStream_t stream1;
-  cudaStreamCreate(&stream1);
-
-  h_edge*       h_edges;
-  v_edge*       v_edges;
-  int*          h_idx;
-  int*          v_idx;
-  check_result* results;
-  cudaMallocAsync((void**)&h_edges, sizeof(h_edge) * hes.size(), stream1);
-  cudaMallocAsync((void**)&v_edges, sizeof(v_edge) * ves.size(), stream1);
-  cudaMemcpyAsync(h_edges, hes.data(), sizeof(h_edge) * hes.size(),
-                  cudaMemcpyHostToDevice, stream1);
-  cudaMemcpyAsync(v_edges, ves.data(), sizeof(v_edge) * ves.size(),
-                  cudaMemcpyHostToDevice, stream1);
-  cudaMallocAsync((void**)&h_idx, sizeof(int) * hidx.size(), stream1);
-  cudaMallocAsync((void**)&v_idx, sizeof(int) * vidx.size(), stream1);
-  cudaMemcpyAsync(h_idx, hidx.data(), sizeof(int) * hidx.size(),
-                  cudaMemcpyHostToDevice, stream1);
-  cudaMemcpyAsync(v_idx, vidx.data(), sizeof(int) * vidx.size(),
-                  cudaMemcpyHostToDevice, stream1);
-  cudaMallocAsync((void**)&results, sizeof(check_result) * 128000, stream1);
-
   odrc::util::logger logger("/dev/null", odrc::util::log_level::info, true);
-  using Intvl = core::interval<int, int>;
-  struct event {
-    Intvl intvl;
-    int   y;
-    int   offset;
-    bool  is_polygon;
-    bool  is_inevent;
-  };
-
-  std::vector<event> events;
-
-  const auto& top_cell = db.cells.back();
-
-  std::cout << "# cell_refs: " << top_cell.cell_refs.size() << std::endl;
-  for (int i = 0; i < top_cell.cell_refs.size(); ++i) {
-    const auto& cell_ref = top_cell.cell_refs.at(i);
-    const auto& the_cell = db.get_cell(cell_ref.cell_name);
-    if (!the_cell.is_touching(layer1) and !the_cell.is_touching(layer2)) {
+  odrc::util::timer  t("uf", logger);
+  odrc::util::timer  lu("lu", logger);
+  odrc::util::timer  is("is", logger);
+  odrc::util::timer  loop("loop", logger);
+  const auto&        cell_refs = db.cells.back().cell_refs;
+  t.start();
+  std::unordered_set<int> y;
+  y.reserve(cell_refs.size() * 2);
+  std::vector<int> cells;
+  //   std::unordered_map<int, int> y_comp;
+  std::vector<int> lrs;
+  cells.reserve(cell_refs.size());
+  lrs.reserve(cell_refs.size() * 2);
+  for (int i = 0; i < cell_refs.size(); ++i) {
+    const auto& cr       = cell_refs[i];
+    const auto& the_cell = db.get_cell(cr.cell_name);
+    if (!the_cell.is_touching(layer1)) {
       continue;
     }
-    events.emplace_back(
-        event{Intvl{cell_ref.mbr[2], cell_ref.mbr[3],
-                    i + int(db.cells.back().polygons.size()) * 0},
-              cell_ref.mbr[0], i, false, true});
-    events.emplace_back(
-        event{Intvl{cell_ref.mbr[2], cell_ref.mbr[3],
-                    (i + int(db.cells.back().polygons.size()) * 0)},
-              cell_ref.mbr[1], i, false, false});
+    cells.emplace_back(i);
+    y.insert(cr.mbr[2]);
+    y.insert(cr.mbr[3]);
+    lrs.emplace_back(cr.mbr[2]);
+    lrs.emplace_back(cr.mbr[3]);
   }
-  std::cout << "# events: " << events.size() << std::endl;
-
-  {
-    odrc::util::timer t("t", logger);
-    t.start();
-
-    std::sort(events.begin(), events.end(), [](const auto& e1, const auto& e2) {
-      if (e1.y == e2.y) {
-        return e1.is_inevent and !e2.is_inevent;
-      } else {
-        return e1.y < e2.y;
-      }
-    });
-    t.pause();
+  t.pause();
+  std::cout << "loop through: " << t.get_elapsed() << std::endl;
+  t.start();
+  std::vector<int> yv(y.begin(), y.end());
+  std::sort(yv.begin(), yv.end());
+  std::vector<int> y_comp(yv.back()+5);
+  std::cout << yv.back() << std::endl;
+  return;
+  for (int i = 0; i < yv.size(); ++i) {
+    // y_comp.emplace(yv[i], i);
+    y_comp[yv[i]] = i;
   }
+  for (int i = 0; i < lrs.size(); ++i) {
+    lrs[i] = y_comp[lrs[i]];
+  }
+  //   DisjointSet uf;
+  //   uf.makeSet(yv.size());
+  // hack
+  /*
 
-  core::interval_tree<int, int> tree;
-
-  std::cout << "scanning bottom up" << std::endl;
-  int                                   add = 0;
-  int                                   del = 0;
-  int                                   cnt = 0;
-  int                                   sum = 0;
-  std::unordered_map<int, const event*> map;
-  int                                   total_ovlp = 0;
-  {
-    odrc::util::timer t("t", logger);
-    t.start();
-    long long sum = 0;
-    for (auto& e : events) {
-      sum += e.intvl.mid();
+  std::vector<int> ufv(10, 0);
+  std::iota(ufv.begin(), ufv.end(), 0);
+  int a[3][2] = {{0, 4}, {5, 9}, {4, 4}};
+  for(int i = 0; i < 3; ++i) {
+    int l = a[i][0];
+    int r = a[i][1];
+    ufv[l] = std::max(ufv[l], r);
+  }
+  for(int i = 0; i < 10; ++i) {
+    std::cout << ufv[i] << " ";
+  }
+  std::cout << std::endl;
+  int my_idx  = -1;
+  int my_end   = -1;
+  for (int i = 0; i < ufv.size(); ++i) {
+    if (i > my_end) {
+      my_end   = ufv[i];
+      ++my_idx;
     }
-    int mid = sum / double(events.size());
-    std::cout << "MID: " << mid << std::endl;
-    // hack to balance tree
-    Intvl _i1{mid - 1, mid + 1, -1};
-    Intvl _i2{mid * 0.5 - 1, mid * 0.5 + 1, -1};
-    Intvl _i3{mid * 1.5 - 1, mid * 1.5 + 1, -1};
-    Intvl _i4{mid * 0.25 - 1, mid * 0.25 + 1, -1};
-    Intvl _i5{mid * 0.75 - 1, mid * 0.75 + 1, -1};
-    Intvl _i6{mid * 1.25 - 1, mid * 1.25 + 1, -1};
-    Intvl _i7{mid * 1.75 - 1, mid * 1.75 + 1, -1};
-    tree.insert(_i1);
-    tree.insert(_i2);
-    tree.insert(_i3);
-    tree.insert(_i4);
-    tree.insert(_i5);
-    tree.insert(_i6);
-    tree.insert(_i7);
-    tree.remove(_i1);
-    tree.remove(_i2);
-    tree.remove(_i3);
-    tree.remove(_i4);
-    tree.remove(_i5);
-    tree.remove(_i6);
-    tree.remove(_i7);
-    int                next_progress = 5;
-    std::vector<cpair> cpairs;
-    int                batch_size = 10240;
-    int                next_start = 0;
-    int                next_send  = batch_size;
-    for (int i = 0; i < events.size(); ++i) {
-      if (double(i) / events.size() >= next_progress / 100.0) {
-        std::cout << "Progress : " << next_progress << "%" << std::endl;
-        next_progress += 5;
-      }
-      //   for (const auto& e : events) {
-      const auto& e = events[i];
-      if (e.is_inevent) {
-        auto ovlp = tree.get_intervals_overlapping_with(e.intvl);
-        for (int c : ovlp) {
-          cpairs.emplace_back(cpair{c, e.intvl.v});
-          if (cpairs.size() >= next_send) {
-            cudaStreamSynchronize(stream1);
-            run_check(&cpairs[next_start], batch_size, h_edges, v_edges, h_idx,
-                      v_idx, threshold, results, stream1);
-            // std::cout << "  async processing batch "
-            //   << next_send / batch_size - 1 << std::endl;
-            next_start = next_send;
-            next_send += batch_size;
-          }
-        }
-        tree.insert(e.intvl);
-      } else {
-        tree.remove(e.intvl);
-      }
-    }
-    cudaStreamSynchronize(stream1);
-    run_check(&cpairs[next_start], cpairs.size() - next_start, h_edges, v_edges,
-              h_idx, v_idx, threshold, results, stream1);
+    my_end    = std::max(my_end, ufv[i]);
+    ufv[i] = my_idx;
   }
+  for(int i = 0; i < 10; ++i) {
+    std::cout << ufv[i] << " ";
+  }
+  std::cout << std::endl;
+  return;
+  */
+
+  const int        csize = cells.size();
+  std::vector<int> ufv(y_comp.size(), 0);
+  std::iota(ufv.begin(), ufv.end(), 0);
+
+  t.pause();
+  std::cout << "comp and sort: " << t.get_elapsed() << std::endl;
+  t.start();
+  int lrs_size = lrs.size();
+  for (int i = 0; i < lrs_size; i += 2) {
+    // int ufb  = y_comp[cell_refs[cells[i]].mbr[2]];
+    // int ufu  = y_comp[cell_refs[cells[i]].mbr[3]];
+    int ufb  = lrs[i];
+    int ufu  = lrs[i + 1];
+    ufv[ufb] = ufv[ufb] > ufu ? ufv[ufb] : ufu;
+    // for (int k = ufb + 1; k <= ufu; ++k) {
+    //   uf.Union(ufb, k);
+    // }
+    // uf.union_range(ufb, ufu);
+  }
+  t.pause();
+  std::cout << "uf: " << t.get_elapsed() << std::endl;
+  t.start();
+  int lidx  = -1;
+  int label = 0;
+  /*
+  for (int i = 0; i < uf.parent.size(); ++i) {
+    int p = uf.Find(i);
+    if (i == 0 or p != label) {
+      label = p;
+      ++lidx;
+    }
+    uf.parent[i] = lidx;
+  }
+  */
+  int start = 0;
+  int end   = -1;
+  for (int i = 0; i < ufv.size(); ++i) {
+    if (i > end) {
+      start = i;
+      end   = ufv[i];
+      ++lidx;
+    }
+    end    = std::max(end, ufv[i]);
+    ufv[i] = lidx;
+  }
+  t.pause();
+  std::cout << "update label: " << t.get_elapsed() << std::endl;
+  t.start();
+  // UF.find is invalid from this point
+  std::vector<std::vector<int>> rows(yv.size());
+  loop.start();
+  for (int i = 0; i < csize; ++i) {
+    // lu.start();
+    // int y_comped = y_comp.at(cell_refs.at(cells.at(i)).mbr[2]);
+    // is.start();
+    // rows.at(uf.parent.at(y_comped)).emplace_back(i);
+    rows[ufv[lrs[i * 2]]].emplace_back(cells[i]);
+    // is.pause();
+    // lu.pause();
+  }
+  loop.pause();
+  t.pause();
+  std::cout << "all: " << t.get_elapsed() << std::endl;
 }
+
 }  // namespace odrc

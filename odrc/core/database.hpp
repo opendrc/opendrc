@@ -54,7 +54,7 @@ class database {
       top_cell.cell_refs.emplace_back(pcells.back().name, coord{0, 0});
     }
     cells.insert(cells.end() - 1, pcells.begin(), pcells.end());
-    for(int i = _name_to_idx.size()-1; i < cells.size(); ++i) {
+    for (int i = _name_to_idx.size() - 1; i < cells.size(); ++i) {
       _name_to_idx[cells.at(i).name] = i;
     }
 
@@ -66,14 +66,18 @@ class database {
         for (auto& cell_ref : cell.cell_refs) {
           auto& the_cell = get_cell(cell_ref.cell_name);
           depth = depth < the_cell.depth + 1 ? the_cell.depth + 1 : depth;
-          cell_ref.mbr[0] = the_cell.mbr[0] + cell_ref.ref_point.x;
-          cell_ref.mbr[1] = the_cell.mbr[1] + cell_ref.ref_point.x;
-          cell_ref.mbr[2] = the_cell.mbr[2] + cell_ref.ref_point.y;
-          cell_ref.mbr[3] = the_cell.mbr[3] + cell_ref.ref_point.y;
+          cell_ref.mbr[0] = 99999999;
+          cell_ref.mbr[1] = -1;
+          cell_ref.mbr[2] = 99999999;
+          cell_ref.mbr[3] = -1;
           if (the_cell.depth == 1) {  // lowest cells that only contains polys
             for (const auto& polygon : the_cell.polygons) {
               if (polygon.layer != 19)
                 continue;
+              cell_ref.mbr[0]    = std::min(polygon.mbr[0], cell_ref.mbr[0]);
+              cell_ref.mbr[1]    = std::max(polygon.mbr[1], cell_ref.mbr[1]);
+              cell_ref.mbr[2]    = std::min(polygon.mbr[2], cell_ref.mbr[2]);
+              cell_ref.mbr[3]    = std::max(polygon.mbr[3], cell_ref.mbr[3]);
               const auto& points = polygon.points;
               for (auto i = 0; i < points.size() - 1; ++i) {
                 if (points.at(i).x == points.at(i + 1).x) {  // v_edge
@@ -96,6 +100,10 @@ class database {
                   [](const auto& e1, const auto& e2) { return e1.y < e2.y; });
             }
           }
+          cell_ref.mbr[0] += cell_ref.ref_point.x;
+          cell_ref.mbr[1] += cell_ref.ref_point.x + 17;
+          cell_ref.mbr[2] += cell_ref.ref_point.y;
+          cell_ref.mbr[3] += cell_ref.ref_point.y + 17;
         }
         cell.depth = depth;
       }
