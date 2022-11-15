@@ -20,7 +20,7 @@ interval_pairs brute_force_query(std::vector<std::vector<int>>& mbr) {
       // rectangles is greater than half of the sum of
       // side lengths
       if (is_overlapping) {
-        overlap_cells.emplace_back(std::make_pair(i + 1, j + 1));
+        overlap_cells.emplace_back(std::make_pair(i , j ));
       }
     }
   }
@@ -56,11 +56,7 @@ TEST_SUITE("[OpenDRC] odrc::core interval tree tests") {
     odrc::core::interval_tree<int, int> tree;
     for (const auto& edge : edges) {
       if (!edge.is_remove) {
-        auto overlap_intervals =
-            tree.get_intervals_overlapping_with(edge.intvl);
-        for (int e : overlap_intervals) {
-          overlap_cells.emplace_back(edge.intvl.v+1, e+1);
-        }
+        tree.get_intervals_overlapping_with(edge.intvl,overlap_cells);
         tree.insert(edge.intvl);
       } else {
         tree.remove(edge.intvl);
@@ -80,5 +76,14 @@ TEST_SUITE("[OpenDRC] odrc::core interval tree tests") {
       CHECK_EQ(overlap_cells.at(i),
                brute_force_query_result.at(i));  // check every pair
     }
+    // for (int i = 0; i != brute_force_query_result.size(); i++) {
+    //  std::cout<<overlap_cells.at(i).first<<" "<<overlap_cells.at(i).second<<std::endl;
+    //  }
+    //  std::cout<<"------------------------"<<std::endl;
+    //  for (int i = 0; i != brute_force_query_result.size(); i++) {
+    //    std::cout << brute_force_query_result.at(i).first << " "
+    //              << brute_force_query_result.at(i).second
+    //              << std::endl;  // check every pair
+    //  }
   }
 }

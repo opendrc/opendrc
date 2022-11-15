@@ -17,58 +17,47 @@ int main(int argc, char* argv[]) {
     help();
     return 2;
   }
+  int                  layer1 = 20;
+  int                  layer2 = 20;
+  if(argc == 3) {
+    layer1 = std::stoi(argv[2]);
+    layer2 = std::stoi(argv[2]);
+  } else if(argc == 4) {
+    layer1 = std::stoi(argv[2]);
+    layer2 = std::stoi(argv[3]);
+  }
+
   odrc::core::database db;
   try {
     {
       odrc::util::logger logger("/dev/null", odrc::util::log_level::info, true);
-      odrc::util::timer  t("t", logger);
-      t.start();
+      odrc::util::timer  t0("t0", logger);
+      t0.start();
       db = odrc::gdsii::read(argv[1]);
-      t.pause();
+      t0.pause();
     }
 
     {
       odrc::util::logger logger("/dev/null", odrc::util::log_level::info, true);
       odrc::util::timer  t("t", logger);
       t.start();
-      db.update_depth_and_mbr();
+      db.update_depth_and_mbr(layer1, layer2);
       t.pause();
     }
-    // for(auto &c: db.cells) {
-    //   std::cout << c.name << ": " << c.depth << std::endl;
-    // }
-    // return 0;
-    // {
-    //   odrc::util::logger logger("/dev/null", odrc::util::log_level::info,
-    //   true); odrc::util::timer  t("t", logger); t.start();
-    //   odrc::width_xcheck(db, 19, 18);
-    //   t.pause();
-    // }
-    // {
-    //   odrc::util::logger logger("/dev/null", odrc::util::log_level::info,
-    //   true); odrc::util::timer  t("t", logger); t.start();
-    //   odrc::width_xcheck(db, 20, 18);
-    //   t.pause();
-    // }
-    // {
-    //   odrc::util::logger logger("/dev/null", odrc::util::log_level::info,
-    //   true); odrc::util::timer  t("t", logger); t.start();
-    //   odrc::width_xcheck(db, 30, 18);
-    //   t.pause();
-    // }
-    // odrc::width_check(db, 11, 650);
-    // {
-    //   odrc::util::logger logger("/dev/null", odrc::util::log_level::info,
-    //   true); odrc::util::timer  t("t", logger); t.start();
-    //   odrc::space_check_dac23(db, 19, 19, 18);
-    //   t.pause();
-    // }
+    {
+      odrc::util::logger logger("/dev/null", odrc::util::log_level::info,true);
+      odrc::util::timer  space("space", logger); 
+      space.start();
+      odrc::space_check_dac23(db, layer1, layer2,5);
+      //odrc::enclosing_check_dac23(db, layer1, layer2,5);
+      space.pause();
+    }
 #ifdef AREA_TEST
     {
       odrc::util::logger logger("/dev/null", odrc::util::log_level::info, true);
       odrc::util::timer  t("t", logger);
       t.start();
-      odrc::area_check_cpu(db, 19, 10000);
+      odrc::area_check_cpu(db, 20, 10000);
       t.pause();
     }
 #endif

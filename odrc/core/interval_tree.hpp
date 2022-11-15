@@ -71,20 +71,20 @@ struct node {
     intvl_l.erase(intvl);
     intvl_r.erase(intvl);
   }
-  void get_intervals_containing(const T& p, std::vector<V>& v) const {
-    if (p <= mid) {  // iff intvl.l <= p
+  void get_intervals_containing(const T& p, const V& v,std::vector<std::pair<T, V>>& ovlp) const {
+    if (p <= mid) {  
       for (auto it = intvl_l.begin(); it != intvl_l.end(); ++it) {
         if (it->l > p) {
           break;
         }
-        v.emplace_back(it->v);
+        ovlp.emplace_back(std::make_pair(v,it->v));
       }
     } else {
       for (auto it = intvl_r.begin(); it != intvl_r.end(); ++it) {
         if (it->r < p) {
           break;
         }
-        v.emplace_back(it->v);
+        ovlp.emplace_back(std::make_pair(v,it->v));
       }
     }
   }
@@ -95,9 +95,8 @@ class interval_tree {
  public:
   using Intvl = interval<T, V>;
   using Node  = node<T, V>;
-  int deepest = 0;
 
-  void insert(const Intvl& intvl, const std::size_t n = 0, int depth = 0) {
+  void insert(const Intvl& intvl, const std::size_t n = 0) {
     if (nodes.empty()) {
       nodes.emplace_back(intvl);
       return;
@@ -109,31 +108,29 @@ class interval_tree {
       node.insert(intvl);
     } else if (intvl.r < node.mid) {  // insert to left subtree
       if (node.has_left_child()) {
-        insert(intvl, node.lc, depth + 1);
+        insert(intvl, node.lc);
       } else {
         nodes.emplace_back(intvl);  // deactiavtes reference of node!
         nodes.at(n).lc = nodes.size() - 1;
-        if (depth + 1 > deepest) {
-          deepest = depth + 1;
-          std::cout << "New depth: " << depth + 1 << std::endl;
-        }
       }
     } else {  // insert to right subtree
       if (node.has_right_child()) {
-        insert(intvl, node.rc, depth + 1);
+        insert(intvl, node.rc);
       } else {
         nodes.emplace_back(intvl);  // deactiavtes reference of node!
         nodes.at(n).rc = nodes.size() - 1;
-        if (depth + 1 > deepest) {
-          deepest = depth + 1;
-          std::cout << "New depth: " << depth + 1 << std::endl;
-        }
       }
     }
   };
 
   void remove(const Intvl& intvl, const std::size_t n = 0) {
-    assert(n >= 0 and n < nodes.size());
+    if(n >= 0 and n < nodes.size())
+    {}
+    else{
+       std::cout << n << std::endl;
+       std::cout << intvl.l<<" "<<intvl.r<<" "<<intvl.mid()<<" "<<intvl.v<<std::endl; 
+        }
+      assert(n >= 0 and n < nodes.size());
     Node& node = nodes.at(n);
     if (intvl.contains(node.mid)) {
       node.remove(intvl);
@@ -148,17 +145,15 @@ class interval_tree {
         !node.has_right_child() or nodes.at(node.rc).is_subtree_empty;
     node.is_subtree_empty = node.empty() and is_left_empty and is_right_empty;
   }
-  std::vector<V> get_intervals_overlapping_with(const Intvl&      intvl,
+ void get_intervals_overlapping_with(const Intvl&      intvl,std::vector<std::pair<T, V>>& ovlp,
                                                 const std::size_t n = 0) {
-    std::vector<V> intvls;
-    _run_query(intvl, 0, intvls);
-    return intvls;
+     _run_query(intvl, 0, ovlp);
   }
 
   // returns a vector of Intvl::v
   void _run_query(const Intvl&      intvl,
                   const std::size_t n,
-                  std::vector<V>&   rtn) {
+                  std::vector<std::pair<T, V>>&   rtn) {
     if (nodes.empty()) {
       return;
     }
@@ -168,17 +163,17 @@ class interval_tree {
     assert(n >= 0 and n < nodes.size());
     const Node& node = nodes.at(n);
     if (intvl.r <= node.mid) {
-      node.get_intervals_containing(intvl.r, rtn);
+      node.get_intervals_containing(intvl.r,intvl.v, rtn);
       if (node.has_left_child()) {
         _run_query(intvl, node.lc, rtn);
       }
     } else if (intvl.l >= node.mid) {
-      node.get_intervals_containing(intvl.l, rtn);
+      node.get_intervals_containing(intvl.l,intvl.v, rtn);
       if (node.has_right_child()) {
         _run_query(intvl, node.rc, rtn);
       }
     } else {
-      node.get_intervals_containing(node.mid, rtn);
+      node.get_intervals_containing(node.mid,intvl.v, rtn);
       if (node.has_left_child()) {
         _run_query(intvl, node.lc, rtn);
       }

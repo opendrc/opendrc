@@ -16,7 +16,7 @@ class timer {
   }
 
   ~timer() {
-    _logger->info("Timer", "[{}] {} ms", _tag, int64_t(elapsed_ms / 1000.0));
+    _logger->info("Timer", "[{}] {} ms", _tag, double(elapsed_ms / 1000.0));
   }
 
   void start() {

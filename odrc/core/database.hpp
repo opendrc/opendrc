@@ -40,7 +40,7 @@ class database {
       _name_to_idx.emplace(cells.at(i).name, i);
     }
   }
-  void update_depth_and_mbr() {
+  void update_depth_and_mbr(int layer1, int layer2) {
     // convert polygons to cells
     std::vector<cell> pcells;
     auto&             top_cell = cells.back();
@@ -57,7 +57,6 @@ class database {
     for (int i = _name_to_idx.size() - 1; i < cells.size(); ++i) {
       _name_to_idx[cells.at(i).name] = i;
     }
-
     for (auto& cell : cells) {
       if (cell.cell_refs.size() == 0) {
         cell.depth = 1;
@@ -72,7 +71,7 @@ class database {
           cell_ref.mbr[3] = -1;
           if (the_cell.depth == 1) {  // lowest cells that only contains polys
             for (const auto& polygon : the_cell.polygons) {
-              if (polygon.layer != 19)
+              if (polygon.layer != layer1 and polygon.layer != layer2)
                 continue;
               cell_ref.mbr[0]    = std::min(polygon.mbr[0], cell_ref.mbr[0]);
               cell_ref.mbr[1]    = std::max(polygon.mbr[1], cell_ref.mbr[1]);
@@ -92,13 +91,13 @@ class database {
                              points.at(i).y + cell_ref.ref_point.y});
                 }
               }
-              std::sort(
-                  cell_ref.v_edges.begin(), cell_ref.v_edges.end(),
-                  [](const auto& e1, const auto& e2) { return e1.x < e2.x; });
-              std::sort(
-                  cell_ref.h_edges.begin(), cell_ref.h_edges.end(),
-                  [](const auto& e1, const auto& e2) { return e1.y < e2.y; });
             }
+            std::sort(
+                cell_ref.v_edges.begin(), cell_ref.v_edges.end(),
+                [](const auto& e1, const auto& e2) { return e1.x < e2.x; });
+            std::sort(
+                cell_ref.h_edges.begin(), cell_ref.h_edges.end(),
+                [](const auto& e1, const auto& e2) { return e1.y < e2.y; });
           }
           cell_ref.mbr[0] += cell_ref.ref_point.x;
           cell_ref.mbr[1] += cell_ref.ref_point.x + 17;
