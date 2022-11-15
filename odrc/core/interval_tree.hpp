@@ -115,7 +115,7 @@ class interval_tree {
         nodes.at(n).lc = nodes.size() - 1;
         if (depth + 1 > deepest) {
           deepest = depth + 1;
-          std::cout << "New depth: " << depth + 1 << std::endl;
+          // std::cout << "New depth: " << depth + 1 << std::endl;
         }
       }
     } else {  // insert to right subtree
@@ -126,7 +126,7 @@ class interval_tree {
         nodes.at(n).rc = nodes.size() - 1;
         if (depth + 1 > deepest) {
           deepest = depth + 1;
-          std::cout << "New depth: " << depth + 1 << std::endl;
+          // std::cout << "New depth: " << depth + 1 << std::endl;
         }
       }
     }

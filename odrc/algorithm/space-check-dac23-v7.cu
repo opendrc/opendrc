@@ -400,108 +400,6 @@ __global__ void init(event* array, int* keys, int* indices, int size) {
   indices[tid] = tid;
 }
 
-__global__ void hori_search(h_edge* hedges,
-                            int     size,
-                            int     threshold,
-                            int*    estarts) {
-  int tid = threadIdx.x + blockDim.x * blockIdx.x;
-  if (tid >= size)
-    return;
-  int l   = 0;
-  int r   = tid - 1;
-  int y   = hedges[tid].y;
-  int res = l;
-  int mid = tid;
-  while (l <= r) {
-    mid       = (l + r) / 2;
-    int mid_y = hedges[mid].y;
-    if (y - mid_y >= threshold) {
-      l = mid + 1;
-    } else {
-      r = mid - 1;
-    }
-  }
-  estarts[tid] = tid - mid;
-}
-
-__global__ void hori_check(int*          estarts,
-                           h_edge*       hedges,
-                           int           size,
-                           int           threshold,
-                           check_result* results) {
-  int tid = threadIdx.x + blockDim.x * blockIdx.x;
-  if (tid >= size)
-    return;
-  __shared__ int vio_offset;
-  if (tid == 0) {
-    vio_offset = blockIdx.x * 1000;
-  }
-  __syncthreads();
-  int l = 0;
-  int r = size - 1;
-  int mid;
-  while (l <= r) {
-    mid     = (l + r) / 2;
-    int sum = estarts[mid];
-    if (sum < tid) {
-      l = mid + 1;
-    } else {
-      r = mid - 1;
-    }
-  }
-  if (estarts[mid] < tid)
-    ++mid;
-  int     d    = estarts[mid] - tid + 1;
-  h_edge& e    = hedges[mid];
-  int     e11x = e.x1;
-  int     e11y = e.y;
-  int     e12x = e.x2;
-  int     e12y = e.y;
-  for (int i = tid; i > 0; --i) {
-    h_edge& ee           = hedges[mid - d];
-    int     e21x         = ee.x1;
-    int     e21y         = ee.y;
-    int     e22x         = ee.x2;
-    int     e22y         = ee.y;
-    bool    is_violation = false;
-    if (e11y - e21y >= threshold)
-      break;
-
-    if (e11y < e22y) {
-      // e22 e21
-      // e11 e12
-      bool is_outside_to_outside = e11x < e12x and e21x > e22x;
-      bool is_too_close          = e21y - e11y < threshold;
-      bool is_projection_overlap = e21x < e11x and e12x < e22x;
-      is_violation =
-          is_outside_to_outside and is_too_close and is_projection_overlap;
-    } else {
-      // e12 e11
-      // e21 e22
-      bool is_outside_to_outside = e21x < e22x and e11x > e12x;
-      bool is_too_close          = e11y - e21y < threshold;
-      bool is_projection_overlap = e11x < e21x and e22x < e12x;
-      is_violation =
-          is_outside_to_outside and is_too_close and is_projection_overlap;
-    }
-    if (is_violation) {
-      int offset = atomicAdd(&vio_offset, 1);
-      if (offset < (blockIdx.x + 1) * 1000 and offset < 90000) {
-        check_result& res = results[offset];
-        res.e11x          = e11x;
-        res.e11y          = e11y;
-        res.e12x          = e12x;
-        res.e12y          = e12y;
-        res.e21x          = e21x;
-        res.e21y          = e21y;
-        res.e22x          = e22x;
-        res.e22y          = e22y;
-        res.is_violation  = false;
-      }
-    }
-  }
-}
-
 void space_check_dac23(const odrc::core::database& db,
                        int                         layer1,
                        int                         layer2,
@@ -549,11 +447,8 @@ void space_check_dac23(const odrc::core::database& db,
   }
   hidx.emplace_back(hes.size());
   vidx.emplace_back(ves.size());
-  cudaError_t  err;
   cudaStream_t stream1;
   cudaStreamCreate(&stream1);
-  err = cudaGetLastError();
-  std::cout << cudaGetErrorString(err) << std::endl;
   t.pause();
 
   std::cout << "loop through: " << t.get_elapsed() << std::endl;
@@ -568,30 +463,29 @@ void space_check_dac23(const odrc::core::database& db,
   int*          cells_d;
   int*          mbrs_d;
   check_result* results;
-  // cudaMallocAsync((void**)&h_edges, sizeof(h_edge) * hes.size(), stream1);
-  // cudaMallocAsync((void**)&v_edges, sizeof(v_edge) * ves.size(), stream1);
-  // cudaMemcpyAsync(h_edges, hes.data(), sizeof(h_edge) * hes.size(),
-  //                 cudaMemcpyHostToDevice, stream1);
-  // cudaMemcpyAsync(v_edges, ves.data(), sizeof(v_edge) * ves.size(),
-  //                 cudaMemcpyHostToDevice, stream1);
-  // cudaMallocAsync((void**)&h_idx, sizeof(int) * hidx.size(), stream1);
-  // cudaMallocAsync((void**)&v_idx, sizeof(int) * vidx.size(), stream1);
-  // cudaMemcpyAsync(h_idx, hidx.data(), sizeof(int) * hidx.size(),
-  //                 cudaMemcpyHostToDevice, stream1);
-  // cudaMemcpyAsync(v_idx, vidx.data(), sizeof(int) * vidx.size(),
-  //                 cudaMemcpyHostToDevice, stream1);
-  // cudaMallocAsync((void**)&mbrs_d, sizeof(int) * mbrs.size(), stream1);
-  // cudaMemcpyAsync(mbrs_d, mbrs.data(), sizeof(int) * mbrs.size(),
-  //                 cudaMemcpyHostToDevice, stream1);
+  cudaMallocAsync((void**)&h_edges, sizeof(h_edge) * hes.size(), stream1);
+  cudaMallocAsync((void**)&v_edges, sizeof(v_edge) * ves.size(), stream1);
+  cudaMemcpyAsync(h_edges, hes.data(), sizeof(h_edge) * hes.size(),
+                  cudaMemcpyHostToDevice, stream1);
+  cudaMemcpyAsync(v_edges, ves.data(), sizeof(v_edge) * ves.size(),
+                  cudaMemcpyHostToDevice, stream1);
+  cudaMallocAsync((void**)&h_idx, sizeof(int) * hidx.size(), stream1);
+  cudaMallocAsync((void**)&v_idx, sizeof(int) * vidx.size(), stream1);
+  cudaMemcpyAsync(h_idx, hidx.data(), sizeof(int) * hidx.size(),
+                  cudaMemcpyHostToDevice, stream1);
+  cudaMemcpyAsync(v_idx, vidx.data(), sizeof(int) * vidx.size(),
+                  cudaMemcpyHostToDevice, stream1);
+  cudaMallocAsync((void**)&mbrs_d, sizeof(int) * mbrs.size(), stream1);
+  cudaMemcpyAsync(mbrs_d, mbrs.data(), sizeof(int) * mbrs.size(),
+                  cudaMemcpyHostToDevice, stream1);
   cudaMallocAsync((void**)&cells_d, sizeof(int) * cells.size(), stream1);
   cudaMemcpyAsync(cells_d, cells.data(), sizeof(int) * cells.size(),
                   cudaMemcpyHostToDevice, stream1);
-  cudaMallocAsync((void**)&results, sizeof(check_result) * 100000, stream1);
+  cudaMallocAsync((void**)&results, sizeof(check_result) * 150000, stream1);
 
   std::vector<int> yv(y.begin(), y.end());
   std::sort(yv.begin(), yv.end());
   std::vector<int> y_comp(yv.back() + 5);
-  std::cout << "UNIQUE Y: " << yv.size() << std::endl;
   std::cout << yv.back() << std::endl;
   for (int i = 0; i < yv.size(); ++i) {
     y_comp[yv[i]] = i;
@@ -637,80 +531,70 @@ void space_check_dac23(const odrc::core::database& db,
   eidx.emplace_back(0);
   event* events_d = nullptr;
   int*   eidx_d   = nullptr;
-  // cudaMallocAsync((void**)&events_d, cells.size() * sizeof(event) * 2,
-  // stream1); cudaMallocAsync((void**)&eidx_d, (rows.size() + 1) * sizeof(int),
-  // stream1);
+  cudaMallocAsync((void**)&events_d, cells.size() * sizeof(event) * 2, stream1);
+  cudaMallocAsync((void**)&eidx_d, (rows.size() + 1) * sizeof(int), stream1);
   int bs = 128;
   for (int i = 0; i < rows.size(); ++i) {
+    // if(i != 49) continue;
     int bs          = 128;
     int rsize       = rows[i].size();
     int total_check = rsize * (rsize + 1) / 2;
     h1.start();
-
-    std::vector<h_edge> rhes;
-    std::vector<v_edge> rves;
-
+    // int*   keys;
+    // int*   indices;
+    // event* tmp;
+    // cudaMallocAsync((void**)&keys, sizeof(int) * rows[i].size() * 2,
+    // stream1); cudaMallocAsync((void**)&indices, sizeof(int) * rows[i].size()
+    // * 2,
+    //                 stream1);
+    // cudaMallocAsync((void**)&tmp, sizeof(event) * rows[i].size() * 2,
+    // stream1);
     int start_offset = events.size();
     for (int j = 0; j < rows[i].size(); ++j) {
-      int cid = cells.at(rows[i][j]);
-      rhes.insert(rhes.end(), cell_refs.at(cid).h_edges.begin(),
-                  cell_refs.at(cid).h_edges.end());
-      rves.insert(rves.end(), cell_refs.at(cid).v_edges.begin(),
-                  cell_refs.at(cid).v_edges.end());
+      int* mbrj = &mbrs[rows[i][j] * 4];
+      events.emplace_back(event{mbrj[0], mbrj[2], mbrj[3], rows[i][j] + 1});
+      events.emplace_back(event{mbrj[1], mbrj[2], mbrj[3], -rows[i][j] - 1});
     }
+    int end_offset = events.size();
+    eidx.emplace_back(end_offset);
+    cudaStreamSynchronize(stream1);
+    cudaMemcpyAsync(events_d + start_offset, &events[start_offset],
+                    sizeof(event) * (end_offset - start_offset),
+                    cudaMemcpyHostToDevice, stream1);
     h1.pause();
     h2.start();
-    // int end_offset = events.size();
-    // eidx.emplace_back(end_offset);
-    // cudaStreamSynchronize(stream1);
-    thrust::device_vector<h_edge> rhes_d(rhes);
-    thrust::device_vector<v_edge> rves_d(rves);
-    // cudaMemcpyAsync(events_d + start_offset, &events[start_offset],
-    //                 sizeof(event) * (end_offset - start_offset),
-    //                 cudaMemcpyHostToDevice, stream1);
     // event* array = thrust::raw_pointer_cast(events_d.data());
     // int    N     = events.size();
     // auto   serr  = cudaGetLastError();
-    // init<<<(events.size() + bs - 1), bs, 0, stream1>>>(array, keys,
-    // indices, N); cudaStreamSynchronize(stream1);
-    // thrust::sort_by_key(thrust::device, keys, keys + 10, indices);
-    // thrust::copy_n(thrust::device,
+    // init<<<(events.size() + bs - 1), bs, 0, stream1>>>(array, keys, indices,
+    // N); cudaStreamSynchronize(stream1); thrust::sort_by_key(thrust::device,
+    // keys, keys + 10, indices); thrust::copy_n(thrust::device,
     //                thrust::make_permutation_iterator(array, indices), N,
     //                tmp);
     // cudaStreamSynchronize(stream1);
+    thrust::async::sort(thrust::device, events_d + start_offset,
+                        events_d + end_offset,
+                        [] __device__(const auto& e1, const auto& e2) {
+                          return e1.x == e2.x ? e1.id > e2.id : e1.x < e2.x;
+                        });
     h2.pause();
-    h3.start();
-    thrust::async::sort(thrust::device, rhes_d.begin(), rhes_d.end(),
-                        [] __device__(const h_edge& h1, const h_edge& h2) {
-                          return h1.y < h2.y;
-                        });
-    thrust::async::sort(thrust::device, rves_d.begin(), rves_d.end(),
-                        [] __device__(const v_edge& v1, const v_edge& v2) {
-                          return v1.x < v2.x;
-                        });
-
+    // h3.start();
     // std::sort(events.begin(), events.end(), [](const auto& e1, const auto&
     // e2) {
     //   return e1.x == e2.x ? e1.id > e2.id : e1.x < e2.x;
     // });
-    h3.pause();
-    bs           = 128;
-    int* estarts = nullptr;
-    cudaMalloc((void**)&estarts, sizeof(int) * rhes.size());
-    hori_search<<<(rhes.size() + bs - 1) / bs, bs, 0, stream1>>>(
-        thrust::raw_pointer_cast(rhes_d.data()), rhes.size(), threshold,
-        estarts);
-    cudaStreamSynchronize(stream1);
-    thrust::inclusive_scan(thrust::device, estarts, estarts + rhes.size(),
-                           estarts);
-    int total_checks;
-    cudaMemcpy(&total_checks, estarts + rhes.size() - 1, sizeof(int),
-               cudaMemcpyDeviceToHost);
-    bs = 4096;
-    hori_check<<<(total_checks + bs - 1) / bs, bs, 0, stream1>>>(
-        estarts, thrust::raw_pointer_cast(rhes_d.data()), rhes.size(),
-        threshold, results);
+    // h3.pause();
   }
+  cudaMemcpy(eidx_d, eidx.data(), sizeof(int) * eidx.size(),
+             cudaMemcpyHostToDevice);
+  bs = 32;
+  run_row<<<((rows.size() + 1) / 2 + bs - 1), bs>>>(
+      h_edges, v_edges, h_idx, v_idx, mbrs_d, results, events_d, eidx_d,
+      int(eidx.size()), threshold, 0);
+  run_row<<<((rows.size() + 1) / 2 + bs - 1), bs>>>(
+      h_edges, v_edges, h_idx, v_idx, mbrs_d, results, events_d, eidx_d,
+      int(eidx.size()), threshold, 1);
+  cudaDeviceSynchronize();
   loop.pause();
   return;
 }
