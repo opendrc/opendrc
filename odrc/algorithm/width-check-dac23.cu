@@ -1,10 +1,14 @@
+
 #include <cassert>
 #include <odrc/algorithm/width-check.hpp>
 
 #include <iostream>
+#include <odrc/utility/logger.hpp>
+#include <odrc/utility/timer.hpp>
 
 namespace odrc {
 
+using odrc::core::coord;
 using odrc::core::polygon;
 
 struct check_result {
@@ -19,17 +23,26 @@ struct check_result {
   bool is_violation = false;
 };
 
-void _check_polygon(const polygon& poly, int threshold, std::vector<check_result>& vios) {
-  for (int i = 0; i < poly.points.size() - 1; ++i) {
-    for (int j = i + 2; j < poly.points.size() - 1; ++j) {
-      int  e11x         = poly.points.at(i).x;
-      int  e11y         = poly.points.at(i).y;
-      int  e12x         = poly.points.at(i + 1).x;
-      int  e12y         = poly.points.at(i + 1).y;
-      int  e21x         = poly.points.at(j).x;
-      int  e21y         = poly.points.at(j).y;
-      int  e22x         = poly.points.at(j + 1).x;
-      int  e22y         = poly.points.at(j + 1).y;
+__global__ void run_check(coord*        points,
+                          int           num_polygons,
+                          int*          offsets,
+                          int           threshold,
+                          check_result* vios) {
+  int tid = threadIdx.x + blockDim.x * blockIdx.x;
+  if (tid >= num_polygons)
+    return;
+  int s = offsets[tid];
+  int e = offsets[tid + 1];
+  for (int i = s; i < e - 1; ++i) {
+    for (int j = i + 2; j < e - 1; ++j) {
+      int  e11x         = points[i].x;
+      int  e11y         = points[i].y;
+      int  e12x         = points[i + 1].x;
+      int  e12y         = points[i + 1].y;
+      int  e21x         = points[j].x;
+      int  e21y         = points[j].y;
+      int  e22x         = points[j + 1].x;
+      int  e22y         = points[j + 1].y;
       bool is_violation = false;
       // width check
       if (e11x == e12x) {  // vertical
@@ -69,24 +82,51 @@ void _check_polygon(const polygon& poly, int threshold, std::vector<check_result
               is_inside_to_inside and is_too_close and is_projection_overlap;
         }
       }
-      if(is_violation) {
-        vios.emplace_back(check_result{e11x, e11y, e12x, e12y, e21x, e21y, e22x, e22y, true});
+      if (is_violation) {
+        check_result& res = vios[tid];
+        res.e11x          = e11x;
+        res.e11y          = e11y;
+        res.e12x          = e12x;
+        res.e12y          = e12y;
+        res.e21x          = e21x;
+        res.e21y          = e21y;
+        res.e22x          = e22x;
+        res.e22y          = e22y;
+        res.is_violation  = true;
       }
     }
   }
 }
 
-void width_check_cpu(const odrc::core::database& db, int layer, int threshold) {
+void width_check_dac23(const odrc::core::database& db,
+                       int                         layer,
+                       int                         threshold) {
+  odrc::util::logger logger("/dev/null", odrc::util::log_level::info, true);
+  odrc::util::timer  t1("uf", logger);
+  odrc::util::timer  t2("gpu", logger);
   // result memoization
   std::unordered_map<std::string, int> checked_results;
 
-  static int checked_poly = 0;
-  static int saved_poly   = 0;
-  static int rotated      = 0;
-  static int magnified    = 0;
-  static int reflected    = 0;
+  static int    checked_poly = 0;
+  static int    saved_poly   = 0;
+  static int    rotated      = 0;
+  static int    magnified    = 0;
+  static int    reflected    = 0;
+  coord*        dp;
+  int*          doff;
+  check_result* dv;
+  cudaStream_t  stream1 = nullptr;
+  cudaStreamCreate(&stream1);
+  t1.start();
+  cudaMallocAsync((void**)&dp, sizeof(coord) * 100000, stream1);
+  cudaMallocAsync((void**)&doff, sizeof(int) * 1000, stream1);
+  cudaMallocAsync((void**)&dv, sizeof(check_result) * 1000, stream1);
+
 
   std::vector<check_result> vios;
+
+  std::vector<coord> points;
+  std::vector<int>   offsets;
 
   for (const auto& cell : db.cells) {
     if (not cell.is_touching(layer)) {
@@ -98,7 +138,8 @@ void width_check_cpu(const odrc::core::database& db, int layer, int threshold) {
         continue;
       }
       ++local_poly;
-      _check_polygon(polygon, threshold, vios);
+      offsets.emplace_back(points.size());
+      points.insert(points.end(), polygon.points.begin(), polygon.points.end());
     }
     for (const auto& cell_ref : cell.cell_refs) {
       // should have been checked
@@ -126,8 +167,21 @@ void width_check_cpu(const odrc::core::database& db, int layer, int threshold) {
     checked_results.emplace(cell.name, local_poly);
     checked_poly += local_poly;
   }
-  std::cout << "checked: " << checked_poly << ", saved: " << saved_poly
-            << "(mag: " << magnified << ", ref: " << reflected
-            << ", rot: " << rotated << ")\n";
+  offsets.emplace_back(points.size());
+  t1.pause();
+  t2.start();
+  cudaStreamSynchronize(stream1);
+  cudaMemcpy(dp, points.data(), sizeof(coord) * points.size(),
+             cudaMemcpyHostToDevice);
+  cudaMemcpy(doff, offsets.data(), sizeof(int) * offsets.size(),
+             cudaMemcpyHostToDevice);
+  int np = offsets.size() - 1;
+  int bs = 128;
+  run_check<<<(np + bs - 1) / bs, bs>>>(dp, np, doff, threshold, dv);
+  cudaDeviceSynchronize();
+  //   std::cout << "checked: " << checked_poly << ", saved: " << saved_poly
+  //             << "(mag: " << magnified << ", ref: " << reflected
+  //             << ", rot: " << rotated << ")\n";
+  t2.pause();
 }
 }  // namespace odrc

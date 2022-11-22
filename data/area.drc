@@ -1,0 +1,99 @@
+
+# avaiable ASAP7 designs
+designs = ["aes", "ethmac", "gcd", "ibex", "jpeg", "sha3", "uart"]
+modes = ["flat", "deep", "tile"]
+rules = ["e1", "e2", "e3"]
+
+for design in designs do
+	puts "########## " + design + " ##########"
+	source("./asap7/" + design + ".gds") #GDS input
+# target(design + "_ret.gds") # output database
+	report(design + "_ret.gds") # output database
+
+	metal1 = input(19, 0)
+	via1   = input(21, 0)
+	metal2 = input(20, 0)
+	via2   = input(25, 0)
+	metal3 = input(30, 0)
+	via3   = input(35, 0)
+
+	for r in rules do
+		if r == "e1"
+ 			flat()
+			ts1 = Time.new
+			metal1.with_area(nil, 504).output("m1_space", "M1 space violations")
+			te1 = Time.new
+
+			source("./asap7/" + design + ".gds") #GDS input
+			metal1 = input(19, 0)
+			deep()
+			ts2 = Time.new
+			metal1.with_area(nil, 504).output("m1_space", "M1 space violations")
+			te2 = Time.new
+
+			source("./asap7/" + design + ".gds") #GDS input
+			metal1 = input(19, 0)
+			tiles(20.um)
+			tile_borders(20.nm)
+			threads(8)
+			ts3 = Time.new
+			metal1.with_area(nil, 504).output("m1_space", "M1 space violations")
+			te3 = Time.new
+
+			puts sprintf("M1.A.1 & %0.02f & %0.02f & %0.02f ", (te1-ts1).to_s, (te2-ts2).to_s, (te3-ts3).to_s)
+		elsif r == "e2"
+			source("./asap7/" + design + ".gds") #GDS input
+			metal2 = input(20, 0)
+ 			flat()
+			ts1 = Time.new
+			metal2.with_area(nil, 504).output("m1_space", "M1 space violations")
+			te1 = Time.new
+
+			source("./asap7/" + design + ".gds") #GDS input
+			metal2 = input(20, 0)
+			deep()
+			ts2 = Time.new
+			metal2.with_area(nil, 504).output("m1_space", "M1 space violations")
+			te2 = Time.new
+
+			source("./asap7/" + design + ".gds") #GDS input
+			metal2 = input(20, 0)
+			tiles(20.um)
+			tile_borders(20.nm)
+			threads(8)
+			ts3 = Time.new
+			metal2.with_area(nil, 504).output("m1_space", "M1 space violations")
+			te3 = Time.new
+
+			puts sprintf("M2.A.1 & %0.02f & %0.02f & %0.02f ", (te1-ts1).to_s, (te2-ts2).to_s, (te3-ts3).to_s)
+		else
+			source("./asap7/" + design + ".gds") #GDS input
+			metal3 = input(30, 0)
+ 			flat()
+			ts1 = Time.new
+			metal3.with_area(nil, 504).output("m1_space", "M1 space violations")
+			te1 = Time.new
+
+			source("./asap7/" + design + ".gds") #GDS input
+			metal3 = input(30, 0)
+			deep()
+			ts2 = Time.new
+			metal3.with_area(nil, 504).output("m1_space", "M1 space violations")
+			te2 = Time.new
+
+			source("./asap7/" + design + ".gds") #GDS input
+			metal3 = input(30, 0)
+			tiles(20.um)
+			tile_borders(20.nm)
+			threads(8)
+			ts3 = Time.new
+			metal3.with_area(nil, 504).output("m1_space", "M1 space violations")
+			te3 = Time.new
+
+			puts sprintf("M3.A.1 & %0.02f & %0.02f & %0.02f ", (te1-ts1).to_s, (te2-ts2).to_s, (te3-ts3).to_s)
+		end
+
+
+	end
+
+end

@@ -1,0 +1,39 @@
+
+# avaiable ASAP7 designs
+designs = ["aes", "ethmac", "gcd", "ibex", "jpeg", "sha3", "uart"]
+
+for design in designs do
+	puts "########## " + design + " ##########"
+	source("./asap7/" + design + ".gds") #GDS input
+# target(design + "_ret.gds") # output database
+	report(design + "_ret.gds") # output database
+
+	tiles(20.um)
+	tile_borders(20.nm)
+	threads(8)
+#flat()
+#deep()
+
+	metal1 = input(19, 0)
+	via1   = input(21, 0)
+	metal2 = input(20, 0)
+	via2   = input(25, 0)
+	metal3 = input(30, 0)
+	via3   = input(35, 0)
+
+	time_start = Time.new
+	metal1.space(18).output("m1_space", "M1 space violations")
+	time_end = Time.new
+	puts design + " metal1 space check runtime: " + (time_end - time_start).to_s
+
+	time_start = Time.new
+	metal2.space(18).output("m2_space", "M2 space violations")
+	time_end = Time.new
+	puts design + " metal2 space check runtime: " + (time_end - time_start).to_s
+
+	time_start = Time.new
+	metal3.space(18).output("m3_space", "M3 space violations")
+	time_end = Time.new
+	puts design + " metal3 space check runtime: " + (time_end - time_start).to_s
+
+end

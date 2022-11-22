@@ -7,7 +7,9 @@ namespace odrc {
 
 using odrc::core::polygon;
 
-void _check_polygon_area(const polygon& poly, int threshold) {
+void _check_polygon_area(const polygon&         poly,
+                         int                    threshold,
+                         std::vector<const polygon*>& vios) {
   int         area = 0;
   const auto& points =
       poly.points;  // TODO: I need to ensure the sequence of points is correct
@@ -16,11 +18,8 @@ void _check_polygon_area(const polygon& poly, int threshold) {
     area += points.at(i).x * points.at(j).y - points.at(j).x * points.at(i).y;
   }
   area = abs(area / 2);
-  if (area > threshold) {
-    for (auto& p : points) {
-      printf("(%d,%d),", p.x, p.y);
-    }
-    printf("area: %d %d\n ", area, area < threshold);
+  if (area < threshold) {
+    vios.emplace_back(&poly);
   }
 }
 
@@ -31,6 +30,7 @@ void area_check_cpu(const odrc::core::database& db, int layer, int threshold) {
   static int checked_poly = 0;
   static int saved_poly   = 0;
 
+  std::vector<const polygon*> vios;
   for (const auto& cell : db.cells) {
     if (not cell.is_touching(layer))
       continue;
@@ -41,7 +41,7 @@ void area_check_cpu(const odrc::core::database& db, int layer, int threshold) {
         continue;
       }
       ++local_poly;
-      _check_polygon_area(polygon, threshold);
+      _check_polygon_area(polygon, threshold, vios);
     }
 
     for (const auto& cell_ref : cell.cell_refs) {

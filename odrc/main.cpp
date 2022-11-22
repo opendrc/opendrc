@@ -12,9 +12,15 @@ void help() {
 }
 
 int main(int argc, char* argv[]) {
+  int layer1 = 20; // 19, 20, 30
+  int layer2 = 25; // 21, 25, 35
   if (argc < 2) {
     help();
     return 2;
+  } else if(argc == 4) {
+    layer1 = std::stoi(argv[2]);
+    layer2 = std::stoi(argv[3]);
+
   }
   odrc::core::database db;
   try {
@@ -30,7 +36,7 @@ int main(int argc, char* argv[]) {
       odrc::util::logger logger("/dev/null", odrc::util::log_level::info, true);
       odrc::util::timer  t("t", logger);
       t.start();
-      db.update_depth_and_mbr();
+      db.update_depth_and_mbr(layer1, layer2);
       t.pause();
     }
     // for(auto &c: db.cells) {
@@ -58,10 +64,18 @@ int main(int argc, char* argv[]) {
     // odrc::width_check(db, 11, 650);
     {
       odrc::util::logger logger("/dev/null", odrc::util::log_level::info, true);
-      odrc::util::timer  t("t", logger);
-      t.start();
-      odrc::space_check_dac23(db, 19, 19, 18);
-      t.pause();
+      odrc::util::timer  t1("area1", logger);
+      odrc::util::timer  t2("area2", logger);
+      odrc::util::timer  t3("area3", logger);
+      t1.start();
+      odrc::area_check_dac23(db, 19, 504);
+      t1.pause();
+      t2.start();
+      odrc::area_check_dac23(db, 20, 504);
+      t2.pause();
+      t3.start();
+      odrc::area_check_dac23(db, 30, 504);
+      t3.pause();
     }
     // {
     //   odrc::util::logger logger("/dev/null", odrc::util::log_level::info,
