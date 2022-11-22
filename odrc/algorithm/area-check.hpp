@@ -4,4 +4,5 @@
 
 namespace odrc {
 void area_check_cpu(const odrc::core::database& db, int layer, int threshold);
+void area_check_dac23(const odrc::core::database& db, int layer, int threshold);
 }

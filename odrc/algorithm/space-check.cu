@@ -1,20 +1,26 @@
 #include <odrc/algorithm/space-check.hpp>
 
 #include <cassert>
+
+#include <iostream>
 #include <stack>
-#include <string>
 #include <stdexcept>
+#include <string>
 #include <type_traits>
 #include <unordered_map>
 #include <variant>
 
 #include <cuda_runtime.h>
 
+#include <odrc/core/cell.hpp>
+
 namespace odrc {
 
 using coord    = odrc::core::coord;
 using polygon  = odrc::core::polygon;
 using cell_ref = odrc::core::cell_ref;
+using h_edge   = odrc::core::h_edge;
+using v_edge   = odrc::core::v_edge;
 
 struct check_result {
   int  e11x;
@@ -188,6 +194,98 @@ void run_space_check(const polygon&   polygon1,
   }
 }
 
+__global__ void check_vertical(v_edge*       v1,
+                               v_edge*       v2,
+                               int           size1,
+                               int           size2,
+                               int           threshold,
+                               check_result* results) {
+  int tid = threadIdx.x + blockIdx.x * blockDim.x;
+  if (tid >= size1 * size2) {
+    return;
+  }
+  int p1 = tid / size2;
+  int p2 = tid % size2;
+
+  check_result& res = results[tid];
+
+  res.e11x = v1[p1].x;
+  res.e11y = v1[p1].y1;
+  res.e12x = v1[p1].x;
+  res.e12y = v1[p1].y2;
+  res.e21x = v2[p2].x;
+  res.e21y = v2[p2].y1;
+  res.e22x = v2[p2].x;
+  res.e22y = v2[p2].y2;
+
+  if (res.e11x < res.e21x) {
+    // e11 e22
+    // e12 e21
+    bool is_outside_to_outside = res.e11y > res.e12y and res.e21y < res.e22y;
+    bool is_too_close          = res.e21x - res.e11x < threshold;
+    bool is_projection_overlap = res.e11y < res.e21y and res.e22y < res.e12y;
+    res.is_violation =
+        is_outside_to_outside and is_too_close and is_projection_overlap;
+    if (res.is_violation) {
+      printf("T[%d]: (%d, %d), (%d, %d), (%d, %d), (%d, %d)\n", tid, res.e11x,
+             res.e11y, res.e12x, res.e12y, res.e21x, res.e21y, res.e22x,
+             res.e22y);
+    }
+
+  } else {
+    // e21 e12
+    // e22 e11
+    bool is_outside_to_outside = res.e21y > res.e22y and res.e11y < res.e21y;
+    bool is_too_close          = res.e11x - res.e21x < threshold;
+    bool is_projection_overlap = res.e21y < res.e11y and res.e12y < res.e22y;
+    res.is_violation =
+        is_outside_to_outside and is_too_close and is_projection_overlap;
+  }
+}
+
+__global__ void check_horizontal(h_edge*       h1,
+                                 h_edge*       h2,
+                                 int           size1,
+                                 int           size2,
+                                 int           threshold,
+                                 check_result* results) {
+  int tid = threadIdx.x + blockIdx.x * blockDim.x;
+  if (tid >= size1 * size2) {
+    return;
+  }
+  int p1 = tid / size2;
+  int p2 = tid % size2;
+
+  check_result& res = results[tid];
+
+  res.e11x = h1[p1].x1;
+  res.e11y = h1[p1].y;
+  res.e12x = h1[p1].x2;
+  res.e12y = h1[p1].y;
+  res.e21x = h2[p2].x1;
+  res.e21y = h2[p2].y;
+  res.e22x = h2[p2].x2;
+  res.e22y = h2[p2].y;
+
+  if (res.e11y < res.e22y) {
+    // e22 e21
+    // e11 e12
+    bool is_outside_to_outside = res.e11x < res.e12x and res.e21x > res.e22x;
+    bool is_too_close          = res.e21y - res.e11y < threshold;
+    bool is_projection_overlap = res.e21x < res.e11x and res.e12x < res.e22x;
+    res.is_violation =
+        is_outside_to_outside and is_too_close and is_projection_overlap;
+  } else {
+    // e12 e11
+    // e21 e22
+    bool is_outside_to_outside = res.e21x < res.e22x and res.e11x > res.e12x;
+    bool is_too_close          = res.e11y - res.e21y < threshold;
+    bool is_projection_overlap = res.e11x < res.e21x and res.e22x < res.e12x;
+    res.is_violation =
+        is_outside_to_outside and is_too_close and is_projection_overlap;
+  }
+}
+
 void space_check(const odrc::core::database& db,
                  const int                   layer1,
                  const int                   layer2,
@@ -230,6 +328,7 @@ void space_check(const odrc::core::database& db,
   tasks.push(_task{&top_cell_ref, &top_cell_ref, false});
 
   while (not tasks.empty()) {
+    std::cout << tasks.size() << std::endl;
     auto task = tasks.top();
     tasks.pop();
     const cell_ref** r1    = std::get_if<const cell_ref*>(&task.object1);
@@ -241,11 +340,14 @@ void space_check(const odrc::core::database& db,
       continue;
     }
     if (r1 == nullptr) {  // object1 is polygon
+      std::cout << "object1 is polygon" << std::endl;
       tasks.push(_task{task.object1, task.object2, true});
       const auto& polygon1 = *std::get<const polygon*>(task.object1);
       assert(polygon1.layer == layer1);  // should be enqueued otherwise
 
       // polygon vs polygon are sent to run_space_check directly
+      std::cout << "polygon vs polygon are sent to run_space_check directly"
+                << std::endl;
 
       for (const auto& polygon2 : cell2.polygons) {
         if (polygon2.layer == layer2 and polygon1.is_touching(polygon2)) {
@@ -256,6 +358,7 @@ void space_check(const odrc::core::database& db,
       }
 
       // polygon vs cell_ref are enqueued
+      std::cout << "polygon vs cell_ref are enqueued" << std::endl;
 
       for (const auto& cell_ref2 : cell2.cell_refs) {
         const auto& the_cell = db.get_cell(cell_ref2.cell_name);
@@ -265,17 +368,21 @@ void space_check(const odrc::core::database& db,
       }
 
     } else {  // object1 is cell
+      std::cout << "object1 is cell" << std::endl;
 
       // NOTE: (a^M b^M) and (b^M a^M) duplicates
       // to fix, assign arbitrary id to cells to mark unique checks
       const auto& cell1 =
           db.get_cell(std::get<const cell_ref*>(task.object1)->cell_name);
+      std::cout << "  cell name:" << cell1.name << std::endl;
       tasks.push(_task{task.object1, task.object2, true});
       for (const auto& polygon1 : cell1.polygons) {
         if (polygon1.layer != layer1) {
           continue;
         }
         // polygon vs polygon are sent to run_space_check directly
+        std::cout << "polygon vs polygon are sent to run_space_check directly"
+                  << std::endl;
         for (const auto& polygon2 : cell2.polygons) {
           if (polygon2.layer == layer2 and polygon1.is_touching(polygon2)) {
             run_space_check(polygon1, polygon2, threshold, coord_buffer1,
@@ -284,6 +391,7 @@ void space_check(const odrc::core::database& db,
           }
         }
         // polygon vs cell_ref are enqueued
+        std::cout << "polygon vs cell_ref are enqueued" << std::endl;
         for (const auto& cell_ref2 : cell2.cell_refs) {
           const auto& the_cell = db.get_cell(cell_ref2.cell_name);
           if (the_cell.is_touching(layer2) and
@@ -294,6 +402,7 @@ void space_check(const odrc::core::database& db,
       }
 
       // cell_ref vs cell_ref are enqueued
+      std::cout << "cell_ref vs cell_ref are enqueued" << std::endl;
       for (const auto& cell_ref1 : cell1.cell_refs) {
         const auto& the_cell1 = db.get_cell(cell_ref1.cell_name);
         if (the_cell1.is_touching(layer1)) {
@@ -301,7 +410,61 @@ void space_check(const odrc::core::database& db,
             const auto& the_cell2 = db.get_cell(cell_ref2.cell_name);
             if (the_cell2.is_touching(layer2) and
                 cell_ref1.is_touching(cell_ref2)) {
-              tasks.push(_task{&cell_ref1, &cell_ref2, false});
+              std::cout << the_cell1.name << " vs " << the_cell2.name
+                        << std::endl;
+              if (false and the_cell1.depth == 1 and the_cell2.depth == 1) {
+                h_edge* h_edges1;
+                v_edge* v_edges1;
+                h_edge* h_edges2;
+                v_edge* v_edges2;
+                cudaMalloc((void**)&h_edges1,
+                           sizeof(h_edge) * cell_ref1.h_edges.size());
+                cudaMalloc((void**)&v_edges1,
+                           sizeof(h_edge) * cell_ref1.v_edges.size());
+                cudaMalloc((void**)&h_edges2,
+                           sizeof(h_edge) * cell_ref2.h_edges.size());
+                cudaMalloc((void**)&v_edges2,
+                           sizeof(h_edge) * cell_ref2.v_edges.size());
+                cudaMemcpy(h_edges1, cell_ref1.h_edges.data(),
+                           sizeof(h_edge) * cell_ref1.h_edges.size(),
+                           cudaMemcpyHostToDevice);
+                cudaMemcpy(v_edges1, cell_ref1.v_edges.data(),
+                           sizeof(v_edge) * cell_ref1.h_edges.size(),
+                           cudaMemcpyHostToDevice);
+                cudaMemcpy(h_edges2, cell_ref2.h_edges.data(),
+                           sizeof(h_edge) * cell_ref2.h_edges.size(),
+                           cudaMemcpyHostToDevice);
+                cudaMemcpy(v_edges2, cell_ref2.v_edges.data(),
+                           sizeof(v_edge) * cell_ref2.h_edges.size(),
+                           cudaMemcpyHostToDevice);
+
+                check_result* check_results_fast = nullptr;
+                cudaMalloc((void**)&check_results_fast,
+                           sizeof(check_result) * cell_ref1.h_edges.size() *
+                               cell_ref2.h_edges.size());
+                check_result* check_results_fast_host = nullptr;
+                cudaMallocHost((void**)&check_results_fast,
+                               sizeof(check_result) * cell_ref1.h_edges.size() *
+                                   cell_ref2.h_edges.size());
+                int size1 = cell_ref1.h_edges.size();
+                int size2 = cell_ref2.h_edges.size();
+                check_horizontal<<<(size1 * size2 + 127) / 128, 128>>>(
+                    h_edges1, h_edges2, cell_ref1.h_edges.size(),
+                    cell_ref2.h_edges.size(), threshold, check_results);
+                cudaDeviceSynchronize();
+                cudaMemcpy(check_results_fast_host, check_results_fast,
+                           sizeof(check_result) * size1 * size2,
+                           cudaMemcpyDeviceToHost);
+                check_vertical<<<(size1 * size2 + 127) / 128, 128>>>(
+                    v_edges1, v_edges2, cell_ref1.v_edges.size(),
+                    cell_ref2.v_edges.size(), threshold, check_results);
+                cudaDeviceSynchronize();
+                cudaMemcpy(check_results_fast_host, check_results_fast,
+                           sizeof(check_result) * size1 * size2,
+                           cudaMemcpyDeviceToHost);
+              } else {
+                tasks.push(_task{&cell_ref1, &cell_ref2, false});
+              }
             }
           }
         }

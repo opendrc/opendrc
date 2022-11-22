@@ -20,7 +20,7 @@ class polygon {
   int datatype;
 
   std::vector<coord> points;
-  int                mbr[4] = {};
+  int                mbr[4] = {99999999, -9999999, 99999999, -9999999};
 
   bool is_touching(const polygon& other) const {
     return mbr[0] < other.mbr[1] and mbr[1] > other.mbr[0] and
@@ -55,8 +55,14 @@ class cell_ref {
   coord               ref_point;
   transform           trans;
   int                 mbr[4] = {};
+  int                 mbr1[4] = {};
+  int                 mbr2[4] = {};
   std::vector<h_edge> h_edges;
+  std::vector<h_edge> h_edges1;
+  std::vector<h_edge> h_edges2;
   std::vector<v_edge> v_edges;
+  std::vector<v_edge> v_edges1;
+  std::vector<v_edge> v_edges2;
 
   cell_ref() = default;
   cell_ref(const std::string& name, const coord& p)
