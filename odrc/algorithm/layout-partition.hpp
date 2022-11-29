@@ -59,7 +59,7 @@ inline std::vector<std::vector<int>> layout_partition(
   auto             current_rpoint = -1;
   std::vector<int> coordinate_to_rows(coordinates.size());
   for (auto i = 0UL; i < rpoints.size(); ++i) {
-    if (rpoints[i] > current_rpoint) {
+    if (int(i) > current_rpoint) {
       ++row_id;
     }
     coordinate_to_rows[i] = row_id;
