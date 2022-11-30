@@ -21,12 +21,12 @@ inline std::vector<std::vector<int>> layout_partition(
   std::unordered_set<int>          coordinates;
   std::vector<std::pair<int, int>> intervals;
   std::vector<int>                 cell_ids;
-  
-  for (auto id = 0UL ; id < cell_refs.size() ; ++id) {
-    const auto& cell_ref = cell_refs[id];
-    const auto& the_cell    = db.get_cell(cell_ref.cell_name);
 
-    bool        is_touching = false;
+  for (auto id = 0UL; id < cell_refs.size(); ++id) {
+    const auto& cell_ref = cell_refs[id];
+    const auto& the_cell = db.get_cell(cell_ref.cell_name);
+
+    bool is_touching = false;
     for (auto layer : layers) {
       if (the_cell.is_touching(layer)) {
         is_touching = true;
@@ -49,8 +49,6 @@ inline std::vector<std::vector<int>> layout_partition(
   std::sort(index_to_coordinate.begin(), index_to_coordinate.end());
 
   std::vector<int> coordinate_to_index(index_to_coordinate.back() + 1);
-
-  
 
   for (auto i = 0UL; i < index_to_coordinate.size(); ++i)
     coordinate_to_index[index_to_coordinate[i]] = i;
@@ -86,7 +84,7 @@ inline std::vector<std::vector<int>> layout_partition(
   // get the sub-rows
   std::vector<std::vector<int>> sub_rows(row_id + 1);
   for (auto id = 0UL; id < cell_ids.size(); ++id) {
-    auto cell_id = cell_ids[id];
+    auto        cell_id  = cell_ids[id];
     const auto& interval = intervals[id];
     auto        rpoint   = interval.second;
     sub_rows[coordinate_to_rows[rpoint]].push_back(cell_id);

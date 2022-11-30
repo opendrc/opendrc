@@ -78,16 +78,16 @@ bool _check(const odrc::core::database&          db,
   }
   merged_intervals.emplace_back(start, end);
 
-  for(auto row_id = 0 ; row_id < sub_rows.size(); row_id++){
+  for (auto row_id = 0; row_id < sub_rows.size(); row_id++) {
     const auto& sub_row = sub_rows.at(row_id);
-    for(auto cell_ref_idx: sub_row) {
-        int l = cell_refs.at(cell_ref_idx).mbr[2];
-        int r = cell_refs.at(cell_ref_idx).mbr[3];
-        if(l < merged_intervals.at(row_id).first || r > merged_intervals.at(row_id).second)
-            return false;
+    for (auto cell_ref_idx : sub_row) {
+      int l = cell_refs.at(cell_ref_idx).mbr[2];
+      int r = cell_refs.at(cell_ref_idx).mbr[3];
+      if (l < merged_intervals.at(row_id).first ||
+          r > merged_intervals.at(row_id).second)
+        return false;
     }
   }
-
 
   return true;
 }
