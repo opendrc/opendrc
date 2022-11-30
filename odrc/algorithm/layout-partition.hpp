@@ -14,15 +14,22 @@
 namespace odrc {
 inline std::vector<std::vector<int>> layout_partition(
     const odrc::core::database& db,
-    int                         layer) {
+    std::vector<int>            layers) {
   const auto& cell_refs = db.cells.back().cell_refs;
 
   // get unique cell y-axis coordinates and store intervals need to merge
   std::unordered_set<int>          coordinates;
   std::vector<std::pair<int, int>> intervals;
   for (const auto& cell_ref : cell_refs) {
-    const auto& the_cell = db.get_cell(cell_ref.cell_name);
-    if (not the_cell.is_touching(layer))
+    const auto& the_cell    = db.get_cell(cell_ref.cell_name);
+    bool        is_touching = false;
+    for (auto layer : layers) {
+      if (the_cell.is_touching(layer)) {
+        is_touching = true;
+        break;
+      }
+    }
+    if (not is_touching)
       continue;
     coordinates.insert(cell_ref.mbr[2]);
     coordinates.insert(cell_ref.mbr[3]);
@@ -34,7 +41,7 @@ inline std::vector<std::vector<int>> layout_partition(
 
   std::vector<int> index_to_coordinate(coordinates.begin(), coordinates.end());
   std::sort(index_to_coordinate.begin(), index_to_coordinate.end());
-  std::vector<int> coordinate_to_index(index_to_coordinate.back()+1);
+  std::vector<int> coordinate_to_index(index_to_coordinate.back() + 1);
   for (auto i = 0UL; i < index_to_coordinate.size(); ++i)
     coordinate_to_index[index_to_coordinate[i]] = i;
 
