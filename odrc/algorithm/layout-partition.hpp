@@ -20,8 +20,12 @@ inline std::vector<std::vector<int>> layout_partition(
   // get unique cell y-axis coordinates and store intervals need to merge
   std::unordered_set<int>          coordinates;
   std::vector<std::pair<int, int>> intervals;
-  for (const auto& cell_ref : cell_refs) {
+  std::vector<int>                 cell_ids;
+  
+  for (auto id = 0UL ; id < cell_refs.size() ; ++id) {
+    const auto& cell_ref = cell_refs[id];
     const auto& the_cell    = db.get_cell(cell_ref.cell_name);
+
     bool        is_touching = false;
     for (auto layer : layers) {
       if (the_cell.is_touching(layer)) {
@@ -31,17 +35,23 @@ inline std::vector<std::vector<int>> layout_partition(
     }
     if (not is_touching)
       continue;
+
+    cell_ids.emplace_back(id);
     coordinates.insert(cell_ref.mbr[2]);
     coordinates.insert(cell_ref.mbr[3]);
     intervals.emplace_back(cell_ref.mbr[2], cell_ref.mbr[3]);
   }
-
+  if (cell_ids.empty())
+    return {};
   /*since we discrete the y-axis coordinates, we preserve the coordinate->index
    * and index->coordinate mapping*/
-
   std::vector<int> index_to_coordinate(coordinates.begin(), coordinates.end());
   std::sort(index_to_coordinate.begin(), index_to_coordinate.end());
+
   std::vector<int> coordinate_to_index(index_to_coordinate.back() + 1);
+
+  
+
   for (auto i = 0UL; i < index_to_coordinate.size(); ++i)
     coordinate_to_index[index_to_coordinate[i]] = i;
 
@@ -75,11 +85,11 @@ inline std::vector<std::vector<int>> layout_partition(
 
   // get the sub-rows
   std::vector<std::vector<int>> sub_rows(row_id + 1);
-
-  for (auto i = 0UL; i < intervals.size(); ++i) {
-    const auto& interval = intervals[i];
+  for (auto id = 0UL; id < cell_ids.size(); ++id) {
+    auto cell_id = cell_ids[id];
+    const auto& interval = intervals[id];
     auto        rpoint   = interval.second;
-    sub_rows[coordinate_to_rows[rpoint]].push_back(i);
+    sub_rows[coordinate_to_rows[rpoint]].push_back(cell_id);
   }
 
   return sub_rows;
