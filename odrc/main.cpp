@@ -14,24 +14,14 @@ int main(int argc, char* argv[]) {
     return 2;
   }
   try {
-    auto               db = odrc::gdsii::read(argv[1]);
-    odrc::core::engine e(db);
-    e.rectilinear();
-    // e.width(1,std::pair<108,NULL>);
-    // e.width(1, std::pair<54, NULL>);
-    // e.spacing(1,std::pair<108,NULL>);
-    // e.spacing(1, std::pair<54, NULL>);
-    // e.area(1, 5832);
-    // e.extension(1, 7, std::pair<7, NULL>,10);
-
-    // e.width(2, std::pair<7, 7>);
-    // e.width(2,std::pair<108,NULL>);
-    // e.not_bend(2);
-
-    // e.spacing(7,std::pair<27, NULL>);
-    // e.not_bend(7);
-    // e.not_overlapping(7, 11);
-    // e.spacing(10,11,std::pair<4,NULL>)
+    auto db = odrc::gdsii::read(argv[1]);
+    auto e  = odrc::core::engine();
+    e.add_rules({
+        e.polygons().is_rectilinear(), e.layer(19).width().greater_than(18)
+        // e.layer(20).width().ensures(
+        //     [](const auto& p) { return !p.name.empty();
+    });
+    e.check(db);
   } catch (std::exception& e) {
     std::cerr << e.what() << std::endl;
     return 1;
