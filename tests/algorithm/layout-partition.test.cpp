@@ -11,12 +11,12 @@ bool _check(const odrc::core::database&          db,
 TEST_SUITE("[OpenDRC] odrc::layout-partition tests") {
   TEST_CASE("test layout partition") {
     auto db = odrc::gdsii::read("./gcd.gds");
-    db.update_depth_and_mbr(19,20);
-    std::vector<std::vector<int>> space_layers   = {{19},{20}};
+
+    std::vector<std::vector<int>> space_layers   = {{19}, {20}};
     std::vector<std::vector<int>> enclose_layers = {
         {19, 21}, {20, 21}, {25, 20}};
-
     for (auto& space_layer : space_layers) {
+      db.update_depth_and_mbr(19, 20);
       auto sub_rows = odrc::layout_partition(db, space_layer);
       CHECK_EQ(_check(db, space_layer, sub_rows), true);
     }
