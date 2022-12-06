@@ -188,7 +188,7 @@ TEST_SUITE("[OpenDRC] odrc::gdsii library tests") {
   }
   TEST_CASE("read test gdsii file") {
     auto db = odrc::gdsii::read("./test.gds");
-    CHECK_EQ(db.dbu_in_user_unit ,doctest::Approx(1e-3));
+    CHECK_EQ(db.dbu_in_user_unit, doctest::Approx(1e-3));
     CHECK_EQ(db.dbu_in_meter / db.dbu_in_user_unit, doctest::Approx(1e-6));
     CHECK_EQ(db.name, "LIB.DB");
     CHECK_EQ(db.version, 600);
@@ -207,10 +207,9 @@ TEST_SUITE("[OpenDRC] odrc::gdsii library tests") {
     CHECK_EQ(std::string(db.cells.at(0).name), "TRANS");
     CHECK_EQ(std::string(db.cells.at(1).name), "INV2");
     CHECK_EQ(std::string(db.cells.at(2).name), "RINGO");
-
   }
   TEST_CASE("open gdsii file error") {
-    CHECK_THROWS_AS(odrc::gdsii::read("./not_exist.gds"), odrc::open_file_error);
+    CHECK_THROWS_AS(odrc::gdsii::read("./not_exist.gds"),
+                    odrc::open_file_error);
   }
-  
 }

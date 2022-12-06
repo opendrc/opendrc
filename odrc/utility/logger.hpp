@@ -92,4 +92,4 @@ class logger {
       {log_level::off, spdlog::level::level_enum::off},
   };
 };
-}  // namespace odrc::utility
+}  // namespace odrc::util
