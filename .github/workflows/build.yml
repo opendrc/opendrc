@@ -22,6 +22,11 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - name: Run clang-format style check for C/C++ programs.
+        uses: jidicula/clang-format-action@v4.2.0
+        with:
+          clang-format-version: '13'
+
       - name: Configure CMake & build
         run: |
           cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
@@ -33,4 +38,4 @@ jobs:
           cp ${{ github.workspace }}/data/test/test.gds ${{ github.workspace }}/build/tests/
       - name: Test
         run: |
-          cd ${{ github.workspace }}/build/tests && srun -p AIEDA --gres=gpu:1 ./tests
+          cd ${{ github.workspace }}/build/tests && ./tests
