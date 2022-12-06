@@ -1,4 +1,4 @@
-# Devloper Guide
+# Developer Guide
 
 ## Design Philosophy
 
