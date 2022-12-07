@@ -20,11 +20,13 @@ int main(int argc, char* argv[]) {
     e.add_rules({
         // e.polygons().is_rectilinear(),
         // e.layer(19).width().greater_than(18),
-        e.layer(20).spacing().greater_than(18)
+        e.layer(19).spacing().greater_than(18)
         // e.layer(20).width().ensures(
         //     [](const auto& p) { return !p.name.empty();
     });
     e.set_mode(mode::sequence);
+    e.check(db);
+    e.set_mode(mode::parallel);
     e.check(db);
   } catch (std::exception& e) {
     std::cerr << e.what() << std::endl;

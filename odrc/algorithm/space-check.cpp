@@ -7,16 +7,27 @@
 #include <unordered_set>
 #include <vector>
 
+#include <odrc/algorithm/layout-partition.hpp>
 #include <odrc/core/engine.hpp>
 #include <odrc/core/interval_tree.hpp>
+
 namespace odrc {
 
+using odrc::core::h_edge;
+using odrc::core::v_edge;
 using coord        = odrc::core::coord;
 using polygon      = odrc::core::polygon;
 using cell_ref     = odrc::core::cell_ref;
 using check_result = odrc::check_result;
-using odrc::core::h_edge;
-using odrc::core::v_edge;
+using Intvl        = core::interval<int, int>;
+
+
+struct event {
+  Intvl intvl;
+  int   y;
+  bool  is_polygon;
+  bool  is_inevent;
+};
 
 void run_h_check(std::vector<std::pair<int, int>>& ovlpairs,
                  h_edge*                           hes,
@@ -34,7 +45,6 @@ void run_h_check(std::vector<std::pair<int, int>>& ovlpairs,
     int h1max = hes[(h1e - 1)].y;
     int h2min = hes[h2s].y - threshold;
     int h2max = hes[(h2e - 1)].y + threshold;
-
     for (auto p1 = h1s; p1 < h1e; ++p1) {
       int p1y = hes[p1].y;
       if (hes[p1].y < h2min)
@@ -97,7 +107,6 @@ void run_v_check(std::vector<std::pair<int, int>>& ovlpairs,
     int h1max = ves[(h1e - 1)].x;
     int h2min = ves[h2s].x - threshold;
     int h2max = ves[(h2e - 1)].x + threshold;
-
     for (auto p1 = h1s; p1 < h1e; ++p1) {
       int p1y = ves[p1].x;
       if (ves[p1].x < h2min)
@@ -144,202 +153,103 @@ void run_v_check(std::vector<std::pair<int, int>>& ovlpairs,
     }
   }
 }
-using coord    = odrc::core::coord;
-using polygon  = odrc::core::polygon;
-using cell_ref = odrc::core::cell_ref;
-using odrc::core::h_edge;
-using odrc::core::v_edge;
 
-class DisjointSet {
- public:
-  std::vector<int> parent;
-  std::vector<int> rank;
-
-  // perform MakeSet operation
-  void makeSet(int n) {
-    parent.resize(n, 0);
-    rank.resize(n, 0);
-    for (int i = 0; i < n; ++i) {
-      parent[i] = i;
-    }
-  }
-  void makeSet(std::vector<int> const& universe) {
-    assert(false);
-    // create `n` disjoint sets (one for each item)
-    for (int i : universe) {
-      parent[i] = i;
-      rank[i]   = 0;
-    }
-  }
-
-  // Find the root of the set in which element `k` belongs
-  int Find(int k) {
-    return parent[k] == k ? k : parent[k] = Find(parent[k]);
-    // if (parent[k] == k)
-    //   return k;  // If i am my own parent/rep
-    // Find with Path compression, meaning we update the parent for this node
-    // once recursion returns
-    // parent[k] = Find(parent[k]);
-    // return parent[k];
-  }
-
-  // Perform Union of two subsets
-  void Union(int u, int v) {
-    // find the root of the sets in which elements `x` and `y` belongs
-    int ru = Find(u);
-    int rv = Find(v);
-    if (ru == rv)
-      return;
-    if (rank[ru] > rank[rv]) {
-      parent[rv] = parent[ru];
-    } else if (rank[rv] > rank[ru]) {
-      parent[ru] = parent[rv];
-    } else {
-      parent[rv] = parent[ru];
-      rank[ru]++;
-    }
-  }
-  void union_range(int start, int end) {
-    int p = Find(start);
-    for (int i = start; i <= end; ++i) {
-      parent[i] = p;
-    }
-  }
-};
-
-void space_check_seq(const odrc::core::database& db,
-                     int                         layer1,
-                     int                         layer2,
-                     int                         threshold,
-                     std::vector<check_result>&  vios) {
-  const auto&             cell_refs = db.cells.back().cell_refs;
-  std::unordered_set<int> y;
-  y.reserve(cell_refs.size() * 2);
-
-  std::vector<int> cells;
-  std::vector<int> lrs;
-  cells.reserve(cell_refs.size());
-  lrs.reserve(cell_refs.size() * 2);
-  int cnt         = 0;
-  int polygon_cnt = 0;
-  for (int i = 0; i < cell_refs.size(); ++i) {
-    const auto& cr       = cell_refs[i];
-    const auto& the_cell = db.get_cell(cr.cell_name);
-    if (!the_cell.is_touching(layer1) and !the_cell.is_touching(layer2)) {
+std::vector<std::pair<int, int>> get_ovlpairs(
+    const odrc::core::database&    db,
+    std::vector<int>&              layers,
+    std::vector<std::vector<int>>& rows,
+    int                            row) {
+  std::vector<std::pair<int, int>> ovlpairs;
+  std::vector<event>               events;
+  const auto&                      top_cell = db.cells.back();
+  events.reserve(rows[row].size() * 2);
+  for (int i = 0; i < rows[row].size(); i++) {
+    const auto& cell_ref = top_cell.cell_refs.at(rows[row][i]);
+    const auto& the_cell = db.get_cell(cell_ref.cell_name);
+    if (!the_cell.is_touching(layers.front()) and
+        !the_cell.is_touching(layers.back())) {
       continue;
     }
-    cells.emplace_back(i);
-    y.insert(cr.mbr[2]);
-    y.insert(cr.mbr[3]);
-    lrs.emplace_back(cr.mbr[2]);
-    lrs.emplace_back(cr.mbr[3]);
+    events.emplace_back(event{Intvl{cell_ref.mbr[2], cell_ref.mbr[3], i},
+                              cell_ref.mbr[0], false, true});
+    events.emplace_back(event{Intvl{cell_ref.mbr[2], cell_ref.mbr[3], i},
+                              cell_ref.mbr[1], false, false});
   }
-
-  std::vector<int> yv(y.begin(), y.end());
-  std::sort(yv.begin(), yv.end());
-  std::vector<int> y_comp(yv.back() + 5);
-
-  for (int i = 0; i < yv.size(); ++i) {
-    y_comp[yv[i]] = i;
+  {
+    std::sort(events.begin(), events.end(), [](const auto& e1, const auto& e2) {
+      return e1.y == e2.y ? (e1.is_inevent and !e2.is_inevent) : e1.y < e2.y;
+    });
   }
-  for (int i = 0; i < lrs.size(); ++i) {
-    lrs[i] = y_comp[lrs[i]];
-  }
-
-  const int        csize = cells.size();
-  std::vector<int> ufv(y_comp.size(), 0);
-  std::iota(ufv.begin(), ufv.end(), 0);
-
-  int lrs_size = lrs.size();
-  for (int i = 0; i < lrs_size; i += 2) {
-    int ufb  = lrs[i];
-    int ufu  = lrs[i + 1];
-    ufv[ufb] = ufv[ufb] > ufu ? ufv[ufb] : ufu;
-  }
-
-  int lidx  = -1;
-  int label = 0;
-  int start = 0;
-  int end   = -1;
-  for (int i = 0; i < ufv.size(); ++i) {
-    if (i > end) {
-      start = i;
-      end   = ufv[i];
-      ++lidx;
+  core::interval_tree<int, int> tree;
+  ovlpairs.reserve(events.size() * 2);
+  for (int i = 0; i < events.size(); ++i) {
+    const auto& e = events[i];
+    if (e.is_inevent) {
+      tree.get_intervals_overlapping_with(e.intvl, ovlpairs);
+      tree.insert(e.intvl);
+    } else {
+      tree.remove(e.intvl);
     }
-    end    = std::max(end, ufv[i]);
-    ufv[i] = lidx;
   }
+  return ovlpairs;
+}
 
-  std::vector<std::vector<int>> rows(yv.size());
-  for (int i = 0; i < csize; ++i) {
-    rows[ufv[lrs[i * 2]]].emplace_back(cells[i]);
-  }
-
+void space_check_seq(const odrc::core::database& db,
+                     std::vector<int>            layers,
+                     int                         threshold,
+                     rule_type                   ruletype,
+                     std::vector<check_result>&  vios) {
+  auto        rows     = layout_partition(db, layers);
   const auto& top_cell = db.cells.back();
-  int         sum      = 0;
-  for (int row = 0; row < rows.size(); row++) {
-    std::vector<h_edge> hes;
-    std::vector<v_edge> ves;
-    std::vector<int>    hidx;
-    std::vector<int>    vidx;
-    for (int i = 0; i < rows[row].size(); i++) {
-      int cr = rows[row][i];
+  if (ruletype == rule_type::spacing_both) {
+    for (int row = 0; row < rows.size(); row++) {
+      std::vector<h_edge> hes;
+      std::vector<v_edge> ves;
+      std::vector<int>    hidx;
+      std::vector<int>    vidx;
+      for (int i = 0; i < rows[row].size(); i++) {
+        int cr = rows[row][i];
+        hidx.emplace_back(hes.size());
+        vidx.emplace_back(ves.size());
+        hes.insert(hes.end(), top_cell.cell_refs.at(cr).h_edges1.begin(),
+                   top_cell.cell_refs.at(cr).h_edges1.end());
+        ves.insert(ves.end(), top_cell.cell_refs.at(cr).v_edges1.begin(),
+                   top_cell.cell_refs.at(cr).v_edges1.end());
+      }
       hidx.emplace_back(hes.size());
       vidx.emplace_back(ves.size());
-      hes.insert(hes.end(), top_cell.cell_refs.at(cr).h_edges.begin(),
-                 top_cell.cell_refs.at(cr).h_edges.end());
-      ves.insert(ves.end(), top_cell.cell_refs.at(cr).v_edges.begin(),
-                 top_cell.cell_refs.at(cr).v_edges.end());
+      auto ovlpairs = get_ovlpairs(db, layers, rows, row);
+      run_h_check(ovlpairs, hes.data(), hidx.data(), threshold, vios);
+      run_v_check(ovlpairs, ves.data(), vidx.data(), threshold, vios);
     }
-    hidx.emplace_back(hes.size());
-    vidx.emplace_back(ves.size());
-
-    using Intvl = core::interval<int, int>;
-    struct event {
-      Intvl intvl;
-      int   y;
-      bool  is_polygon;
-      bool  is_inevent;
-    };
-
-    std::vector<event> events;
-    events.reserve(rows[row].size() * 2);
-    for (int i = 0; i < rows[row].size(); i++) {
-      const auto& cell_ref = top_cell.cell_refs.at(rows[row][i]);
-      const auto& the_cell = db.get_cell(cell_ref.cell_name);
-      if (!the_cell.is_touching(layer1) and !the_cell.is_touching(layer2)) {
-        continue;
+  } else if (ruletype == rule_type::spacing_h_edge) {
+    for (int row = 0; row < rows.size(); row++) {
+      std::vector<h_edge> hes;
+      std::vector<int>    hidx;
+      for (int i = 0; i < rows[row].size(); i++) {
+        int cr = rows[row][i];
+        hidx.emplace_back(hes.size());
+        hes.insert(hes.end(), top_cell.cell_refs.at(cr).h_edges1.begin(),
+                   top_cell.cell_refs.at(cr).h_edges1.end());
       }
-      events.emplace_back(event{Intvl{cell_ref.mbr[2], cell_ref.mbr[3], i},
-                                cell_ref.mbr[0], false, true});
-      events.emplace_back(event{Intvl{cell_ref.mbr[2], cell_ref.mbr[3], i},
-                                cell_ref.mbr[1], false, false});
+      hidx.emplace_back(hes.size());
+      auto ovlpairs = get_ovlpairs(db, layers, rows, row);
+      run_h_check(ovlpairs, hes.data(), hidx.data(), threshold, vios);
     }
-    {
-      std::sort(events.begin(), events.end(),
-                [](const auto& e1, const auto& e2) {
-                  return e1.y == e2.y ? (e1.is_inevent and !e2.is_inevent)
-                                      : e1.y < e2.y;
-                });
-    }
-
-    core::interval_tree<int, int>    tree;
-    std::vector<std::pair<int, int>> ovlpairs;
-    ovlpairs.reserve(events.size() * 2);
-
-    for (int i = 0; i < events.size(); ++i) {
-      const auto& e = events[i];
-      if (e.is_inevent) {
-        tree.get_intervals_overlapping_with(e.intvl, ovlpairs);
-        tree.insert(e.intvl);
-      } else {
-        tree.remove(e.intvl);
+  } else if (ruletype == rule_type::spacing_v_edge) {
+    for (int row = 0; row < rows.size(); row++) {
+      std::vector<v_edge> ves;
+      std::vector<int>    vidx;
+      for (int i = 0; i < rows[row].size(); i++) {
+        int cr = rows[row][i];
+        vidx.emplace_back(ves.size());
+        ves.insert(ves.end(), top_cell.cell_refs.at(cr).v_edges1.begin(),
+                   top_cell.cell_refs.at(cr).v_edges1.end());
       }
+      vidx.emplace_back(ves.size());
+      auto ovlpairs = get_ovlpairs(db, layers, rows, row);
+      run_v_check(ovlpairs, ves.data(), vidx.data(), threshold, vios);
     }
-    sum += ovlpairs.size();
-    run_h_check(ovlpairs, hes.data(), hidx.data(), threshold, vios);
-    run_v_check(ovlpairs, ves.data(), vidx.data(), threshold, vios);
   }
 }
 

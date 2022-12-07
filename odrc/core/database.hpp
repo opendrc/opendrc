@@ -54,7 +54,7 @@ class database {
       top_cell.cell_refs.emplace_back(pcells.back().name, coord{0, 0});
     }
     cells.insert(cells.end() - 1, pcells.begin(), pcells.end());
-    for (int i = _name_to_idx.size() - 1; i < cells.size(); ++i) {
+    for (long unsigned int i = _name_to_idx.size() - 1; i < cells.size(); ++i) {
       _name_to_idx[cells.at(i).name] = i;
     }
 
@@ -104,7 +104,7 @@ class database {
               std::vector<h_edge>& hedges = polygon.layer == layer1
                                                 ? cell_ref.h_edges1
                                                 : cell_ref.h_edges2;
-              for (auto i = 0; i < points.size() - 1; ++i) {
+              for (long unsigned int i = 0; i < points.size() - 1; ++i) {
                 if (points.at(i).x == points.at(i + 1).x) {  // v_edge
                   vedges.emplace_back(
                       v_edge{points.at(i).x + cell_ref.ref_point.x,
