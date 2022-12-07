@@ -28,9 +28,8 @@ void check_message_count(const std::string& filename,
 }
 
 TEST_SUITE("[OpenDRC] odrc::logger tests") {
-  const std::string     log_filename = "log_test.txt";
-  odrc::util::logger logger(log_filename, odrc::util::log_level::trace,
-                               false);
+  const std::string  log_filename = "log_test.txt";
+  odrc::util::logger logger(log_filename, odrc::util::log_level::trace, false);
   TEST_CASE("test info level") {
     logger.trace("doctest", "Test message level {}", "TRACE");
     logger.debug("doctest", "Test message level {}", "DEBUG");
