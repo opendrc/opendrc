@@ -21,7 +21,6 @@ using cell_ref     = odrc::core::cell_ref;
 using check_result = odrc::check_result;
 using Intvl        = core::interval<int, int>;
 
-
 struct event {
   Intvl intvl;
   int   y;
@@ -170,10 +169,10 @@ std::vector<std::pair<int, int>> get_ovlpairs(
         !the_cell.is_touching(layers.back())) {
       continue;
     }
-    events.emplace_back(event{Intvl{cell_ref.mbr[2], cell_ref.mbr[3], i},
-                              cell_ref.mbr[0], false, true});
-    events.emplace_back(event{Intvl{cell_ref.mbr[2], cell_ref.mbr[3], i},
-                              cell_ref.mbr[1], false, false});
+    events.emplace_back(event{Intvl{cell_ref.mbr1[2], cell_ref.mbr1[3], i},
+                              cell_ref.mbr1[0], false, true});
+    events.emplace_back(event{Intvl{cell_ref.mbr1[2], cell_ref.mbr1[3], i},
+                              cell_ref.mbr1[1], false, false});
   }
   {
     std::sort(events.begin(), events.end(), [](const auto& e1, const auto& e2) {

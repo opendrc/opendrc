@@ -20,11 +20,11 @@ class polygon {
   int datatype;
 
   std::vector<coord> points;
-  int                mbr[4] = {99999999, -9999999, 99999999, -9999999};
+  int mbr1[4] = {2147483647, -2147483648, 2147483647, -2147483648};
 
   bool is_touching(const polygon& other) const {
-    return mbr[0] < other.mbr[1] and mbr[1] > other.mbr[0] and
-           mbr[2] < other.mbr[3] and mbr[3] > other.mbr[2];
+    return mbr1[0] < other.mbr1[1] and mbr1[1] > other.mbr1[0] and
+           mbr1[2] < other.mbr1[3] and mbr1[3] > other.mbr1[2];
   }
   bool is_touching(const cell& other) const;
 };
@@ -51,12 +51,11 @@ struct v_edge {
 
 class cell_ref {
  public:
-  std::string         cell_name;
-  coord               ref_point;
-  transform           trans;
-  int                 mbr[4]  = {};
-  int                 mbr1[4] = {};
-  int                 mbr2[4] = {};
+  std::string cell_name;
+  coord       ref_point;
+  transform   trans;
+  int         mbr1[4] = {2147483647, -2147483648, 2147483647, -2147483648};
+  int         mbr2[4] = {2147483647, -2147483648, 2147483647, -2147483648};
   std::vector<h_edge> h_edges;
   std::vector<h_edge> h_edges1;
   std::vector<h_edge> h_edges2;
@@ -72,12 +71,12 @@ class cell_ref {
       : cell_name(name), ref_point(p), trans(t) {}
 
   bool is_touching(const polygon& other) const {
-    return mbr[0] < other.mbr[1] and mbr[1] > other.mbr[0] and
-           mbr[2] < other.mbr[3] and mbr[3] > other.mbr[2];
+    return mbr1[0] < other.mbr1[1] and mbr1[1] > other.mbr1[0] and
+           mbr1[2] < other.mbr1[3] and mbr1[3] > other.mbr1[2];
   }
   bool is_touching(const cell_ref& other) const {
-    return mbr[0] < other.mbr[1] and mbr[1] > other.mbr[0] and
-           mbr[2] < other.mbr[3] and mbr[3] > other.mbr[2];
+    return mbr1[0] < other.mbr1[1] and mbr1[1] > other.mbr1[0] and
+           mbr1[2] < other.mbr1[3] and mbr1[3] > other.mbr1[2];
   }
 };
 
@@ -99,13 +98,13 @@ class cell {
   }
 
   bool is_touching(const cell& other) const {
-    return mbr[0] < other.mbr[1] and mbr[1] > other.mbr[0] and
-           mbr[2] < other.mbr[3] and mbr[3] > other.mbr[2];
+    return mbr1[0] < other.mbr1[1] and mbr1[1] > other.mbr1[0] and
+           mbr1[2] < other.mbr1[3] and mbr1[3] > other.mbr1[2];
   }
 
   bool is_touching(const polygon& other) const {
-    return mbr[0] < other.mbr[1] and mbr[1] > other.mbr[0] and
-           mbr[2] < other.mbr[3] and mbr[3] > other.mbr[2];
+    return mbr1[0] < other.mbr1[1] and mbr1[1] > other.mbr1[0] and
+           mbr1[2] < other.mbr1[3] and mbr1[3] > other.mbr1[2];
   }
 
   // a bit-wise representation of layers it spans across
@@ -115,12 +114,11 @@ class cell {
   odrc::util::datetime  atime;
   std::vector<polygon>  polygons;
   std::vector<cell_ref> cell_refs;
-  int                   mbr[4] = {};
-  int                   depth  = -1;
+  int                   mbr1[4] = {};
 };
 
 inline bool polygon::is_touching(const cell& other) const {
-  return mbr[0] < other.mbr[1] and mbr[1] > other.mbr[0] and
-         mbr[2] < other.mbr[3] and mbr[3] > other.mbr[2];
+  return mbr1[0] < other.mbr1[1] and mbr1[1] > other.mbr1[0] and
+         mbr1[2] < other.mbr1[3] and mbr1[3] > other.mbr1[2];
 }
 }  // namespace odrc::core

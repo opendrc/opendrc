@@ -35,10 +35,10 @@ enum class rule_type {
   aux_is_rectilinear
 };
 void space_check_seq(const odrc::core::database& db,
-                     std::vector<int>           layers,
-                     int                        threshold,
-                     rule_type                  ruletype,
-                     std::vector<check_result>& vios);
+                     std::vector<int>            layers,
+                     int                         threshold,
+                     rule_type                   ruletype,
+                     std::vector<check_result>&  vios);
 
 void space_check_pal(const odrc::core::database& db,
                      int                         layer1,

@@ -38,21 +38,20 @@ class engine {
   void add_rules(std::vector<int> value) {
     std::cout << "ALL rules have been added." << std::endl;
   };
-
   void set_mode(mode md) { mod = md; };
-  
   void check(odrc::core::database& db) {
     for (const auto& rule : rules) {
       switch (rule.ruletype) {
         case rule_type::spacing_both: {
-          db.update_depth_and_mbr(rule.layer.front(), rule.layer.back());
+          // db.update_depth_and_mbr(rule.layer);
+          db.update_depth_and_mbr(rule.layer.front(), rule.without_layer);
           if (mod == mode::sequence) {
             space_check_seq(db, rule.layer, rule.region.first, rule.ruletype,
                             vlts);
             std::cout << vlts.size() << std::endl;
           } else if (mod == mode::parallel) {
-            // space_check_pal(db, rule.layer.front(), rule.layer.back(),
-            // rule.region.first, vlts);
+            space_check_pal(db, rule.layer.front(), rule.layer.back(),
+                            rule.region.first, vlts);
             std::cout << vlts.size() << std::endl;
           }
           break;

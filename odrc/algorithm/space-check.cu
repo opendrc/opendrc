@@ -676,18 +676,18 @@ void space_check_pal(const odrc::core::database& db,
       continue;
     }
     cells.emplace_back(i);
-    y.insert(cr.mbr[2]);
-    y.insert(cr.mbr[3]);
-    lrs.emplace_back(cr.mbr[2]);
-    lrs.emplace_back(cr.mbr[3]);
+    y.insert(cr.mbr1[2]);
+    y.insert(cr.mbr1[3]);
+    lrs.emplace_back(cr.mbr1[2]);
+    lrs.emplace_back(cr.mbr1[3]);
     hidx.emplace_back(hes.size());
     vidx.emplace_back(ves.size());
     hes.insert(hes.end(), cr.h_edges.begin(), cr.h_edges.end());
     ves.insert(ves.end(), cr.v_edges.begin(), cr.v_edges.end());
-    mbrs.emplace_back(cr.mbr[0]);
-    mbrs.emplace_back(cr.mbr[1]);
-    mbrs.emplace_back(cr.mbr[2]);
-    mbrs.emplace_back(cr.mbr[3]);
+    mbrs.emplace_back(cr.mbr1[0]);
+    mbrs.emplace_back(cr.mbr1[1]);
+    mbrs.emplace_back(cr.mbr1[2]);
+    mbrs.emplace_back(cr.mbr1[3]);
   }
   hidx.emplace_back(hes.size());
   vidx.emplace_back(ves.size());
