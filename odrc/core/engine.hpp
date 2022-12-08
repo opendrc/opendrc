@@ -1,11 +1,11 @@
 #pragma once
 
+#include <deque>
 #include <odrc/algorithm/space-check.hpp>
 #include <odrc/algorithm/width-check.hpp>
 #include <odrc/core/cell.hpp>
 #include <odrc/core/database.hpp>
 #include <vector>
-
 namespace odrc::core {
 enum class object {
   polygon,
@@ -44,7 +44,7 @@ class engine {
     for (const auto& rule : rules) {
       switch (rule.ruletype) {
         case rule_type::spacing_both: {
-          db.update_mbr(rule.layer.front(), rule.without_layer);
+          db.update_depth_and_mbr(rule.layer.front(), rule.without_layer);
           if (mod == mode::sequence) {
             space_check_seq(db, rule.layer, rule.region.first, rule.ruletype,
                             vlts);
@@ -108,6 +108,7 @@ class engine {
  private:
   unsigned int      rule_num = 0;
   std::vector<rule> rules;
+  std::deque<bool>  ensure_rules;
 };
 
 }  // namespace odrc::core

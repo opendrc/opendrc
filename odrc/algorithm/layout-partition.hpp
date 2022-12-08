@@ -35,11 +35,17 @@ inline std::vector<std::vector<int>> layout_partition(
     }
     if (not is_touching)
       continue;
-
-    cell_ids.emplace_back(id);
-    coordinates.insert(cell_ref.mbr1[2]);
-    coordinates.insert(cell_ref.mbr1[3]);
-    intervals.emplace_back(cell_ref.mbr1[2], cell_ref.mbr1[3]);
+    if (the_cell.is_touching(layers.front())) {
+      cell_ids.emplace_back(id);
+      coordinates.insert(cell_ref.mbr1[2]);
+      coordinates.insert(cell_ref.mbr1[3]);
+      intervals.emplace_back(cell_ref.mbr1[2], cell_ref.mbr1[3]);
+    } else {
+      cell_ids.emplace_back(id);
+      coordinates.insert(cell_ref.mbr2[2]);
+      coordinates.insert(cell_ref.mbr2[3]);
+      intervals.emplace_back(cell_ref.mbr2[2], cell_ref.mbr2[3]);
+    }
   }
   if (cell_ids.empty())
     return {};

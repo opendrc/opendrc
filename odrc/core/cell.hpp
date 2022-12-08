@@ -1,10 +1,10 @@
 #pragma once
 
+#include <climits>
 #include <cstdint>
+#include <odrc/utility/datetime.hpp>
 #include <string>
 #include <vector>
-
-#include <odrc/utility/datetime.hpp>
 
 namespace odrc::core {
 
@@ -20,7 +20,7 @@ class polygon {
   int datatype;
 
   std::vector<coord> points;
-  int mbr1[4] = {2147483647, -2147483648, 2147483647, -2147483648};
+  int                mbr1[4] = {INT_MAX, INT_MIN, INT_MAX, INT_MIN};
 
   bool is_touching(const polygon& other) const {
     return mbr1[0] < other.mbr1[1] and mbr1[1] > other.mbr1[0] and
@@ -51,11 +51,11 @@ struct v_edge {
 
 class cell_ref {
  public:
-  std::string cell_name;
-  coord       ref_point;
-  transform   trans;
-  int         mbr1[4] = {2147483647, -2147483648, 2147483647, -2147483648};
-  int         mbr2[4] = {2147483647, -2147483648, 2147483647, -2147483648};
+  std::string         cell_name;
+  coord               ref_point;
+  transform           trans;
+  int                 mbr1[4] = {INT_MAX, INT_MIN, INT_MAX, INT_MIN};
+  int                 mbr2[4] = {INT_MAX, INT_MIN, INT_MAX, INT_MIN};
   std::vector<h_edge> h_edges;
   std::vector<h_edge> h_edges1;
   std::vector<h_edge> h_edges2;
@@ -114,7 +114,8 @@ class cell {
   odrc::util::datetime  atime;
   std::vector<polygon>  polygons;
   std::vector<cell_ref> cell_refs;
-  int                   mbr1[4] = {};
+  int                   mbr1[4] = {INT_MAX, INT_MIN, INT_MAX, INT_MIN};
+  int                   depth   = -1;
 };
 
 inline bool polygon::is_touching(const cell& other) const {

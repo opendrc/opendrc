@@ -1,10 +1,10 @@
 #include <iostream>
 
+#include <functional>
 #include <odrc/core/engine.hpp>
 #include <odrc/gdsii/gdsii.hpp>
-
 using mode = odrc::core::mode;
-
+using cell = odrc::core::cell;
 void help() {
   std::cerr << "Usage: ./odrc <gds_in>" << std::endl;
 }
@@ -20,9 +20,9 @@ int main(int argc, char* argv[]) {
     e.add_rules({
         // e.polygons().is_rectilinear(),
         e.layer(20).width().greater_than(18),
-        e.layer(19).spacing().greater_than(18)
-        // e.layer(20).width().ensures(
-        //     [](const auto& p) { return !p.name.empty();
+        e.layer(19).spacing().greater_than(18),
+        //  e.layer(20).polygons().ensures(
+        //      [](const auto& p) { return !p.name.empty(); })
     });
     e.set_mode(mode::sequence);
     e.check(db);
