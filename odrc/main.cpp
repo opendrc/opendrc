@@ -19,7 +19,7 @@ int main(int argc, char* argv[]) {
     auto e  = odrc::core::engine();
     e.add_rules({
         // e.polygons().is_rectilinear(),
-        // e.layer(19).width().greater_than(18),
+        e.layer(20).width().greater_than(18),
         e.layer(19).spacing().greater_than(18)
         // e.layer(20).width().ensures(
         //     [](const auto& p) { return !p.name.empty();

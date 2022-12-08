@@ -2,17 +2,6 @@
 
 #include <odrc/core/database.hpp>
 namespace odrc {
-struct check_result {
-  int  e11x;
-  int  e11y;
-  int  e12x;
-  int  e12y;
-  int  e21x;
-  int  e21y;
-  int  e22x;
-  int  e22y;
-  bool is_violation = false;
-};
 enum class rule_type {
   area,
   enclosure,

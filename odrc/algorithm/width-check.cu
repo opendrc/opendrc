@@ -1,30 +1,16 @@
 #include <odrc/algorithm/width-check.hpp>
 
+#include <cuda_runtime.h>
 #include <cassert>
 #include <stdexcept>
 #include <string>
-#include <stdexcept>
 #include <unordered_map>
 
-#include <cuda_runtime.h>
-
 #include <odrc/core/cell.hpp>
+#include <odrc/core/database.hpp>
 
 namespace odrc {
-
 using coord = odrc::core::coord;
-
-struct check_result {
-  int  e11x;
-  int  e11y;
-  int  e12x;
-  int  e12y;
-  int  e21x;
-  int  e21y;
-  int  e22x;
-  int  e22y;
-  bool is_violation = false;
-};
 
 __global__ void check_kernel(coord*        coords,
                              int           start,
@@ -78,7 +64,6 @@ __global__ void check_kernel(coord*        coords,
                res.e11y, res.e12x, res.e12y, res.e21x, res.e21y, res.e22x,
                res.e22y);
       }
-
     } else {
       // e22 e11
       // e21 e12
@@ -109,7 +94,10 @@ __global__ void check_kernel(coord*        coords,
   }
 }
 
-void width_check(const odrc::core::database& db, int layer, int threshold) {
+void width_check_pal(const odrc::core::database& db,
+                     int                         layer,
+                     int                         threshold,
+                     std::vector<check_result>&  vios) {
   cudaStream_t stream1;
   cudaStream_t stream2;
   cudaStreamCreate(&stream1);

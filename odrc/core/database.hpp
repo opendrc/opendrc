@@ -9,6 +9,19 @@
 
 #include <odrc/core/cell.hpp>
 #include <odrc/utility/datetime.hpp>
+namespace odrc {
+struct check_result {
+  int  e11x;
+  int  e11y;
+  int  e12x;
+  int  e12y;
+  int  e21x;
+  int  e21y;
+  int  e22x;
+  int  e22y;
+  bool is_violation = false;
+};
+}  // namespace odrc
 
 namespace odrc::core {
 
@@ -40,7 +53,7 @@ class database {
       _name_to_idx.emplace(cells.at(i).name, i);
     }
   }
-  void update_depth_and_mbr(int layer, std::vector<int> without_layer) {
+  void update_mbr(int layer, std::vector<int> without_layer) {
     // convert polygons to cells
     std::vector<cell> pcells;
     auto&             top_cell = cells.back();
@@ -96,8 +109,7 @@ class database {
     }
   }
 
-  void update_depth_and_mbr(std::vector<int> layers,
-                            std::vector<int> without_layer) {
+  void update_mbr(std::vector<int> layers, std::vector<int> without_layer) {
     // convert polygons to cells
     std::vector<cell> pcells;
     auto&             top_cell = cells.back();

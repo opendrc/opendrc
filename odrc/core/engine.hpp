@@ -1,6 +1,7 @@
 #pragma once
 
 #include <odrc/algorithm/space-check.hpp>
+#include <odrc/algorithm/width-check.hpp>
 #include <odrc/core/cell.hpp>
 #include <odrc/core/database.hpp>
 #include <vector>
@@ -43,8 +44,7 @@ class engine {
     for (const auto& rule : rules) {
       switch (rule.ruletype) {
         case rule_type::spacing_both: {
-          // db.update_depth_and_mbr(rule.layer);
-          db.update_depth_and_mbr(rule.layer.front(), rule.without_layer);
+          db.update_mbr(rule.layer.front(), rule.without_layer);
           if (mod == mode::sequence) {
             space_check_seq(db, rule.layer, rule.region.first, rule.ruletype,
                             vlts);
@@ -55,6 +55,15 @@ class engine {
             std::cout << vlts.size() << std::endl;
           }
           break;
+        }
+        case rule_type::width: {
+          if (mod == mode::sequence) {
+            width_check_seq(db, rule.layer.front(), rule.region.first, vlts);
+            std::cout << vlts.size() << std::endl;
+          } else if (mod == mode::parallel) {
+            width_check_pal(db, rule.layer.front(), rule.region.first);
+            std::cout << vlts.size() << std::endl;
+          }
         }
         default:
           break;
