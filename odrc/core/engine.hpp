@@ -61,7 +61,7 @@ class engine {
             width_check_seq(db, rule.layer.front(), rule.region.first, vlts);
             std::cout << vlts.size() << std::endl;
           } else if (mod == mode::parallel) {
-            width_check_pal(db, rule.layer.front(), rule.region.first);
+            width_check_pal(db, rule.layer.front(), rule.region.first, vlts);
             std::cout << vlts.size() << std::endl;
           }
         }
