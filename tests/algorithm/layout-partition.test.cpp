@@ -36,15 +36,10 @@ bool _check(const odrc::core::database&          db,
     for (auto& cell_ref_idx : sub_row) {
       const auto& cell_ref = db.cells.back().cell_refs.at(cell_ref_idx);
       const auto& the_cell = db.get_cell(cell_ref.cell_name);
-
-      bool is_touching = false;
-      for (auto& layer : layers) {
-        if (the_cell.is_touching(layer)) {
-          is_touching = true;
-          break;
-        }
-      }
-      if (not is_touching) {
+      if (the_cell.is_touching(layers.front()) or
+          the_cell.is_touching(layers.back())) {
+        break;
+      } else {
         return false;
       }
     }
@@ -53,20 +48,13 @@ bool _check(const odrc::core::database&          db,
   std::vector<std::pair<int, int>> intervals;
   const auto&                      cell_refs = db.cells.back().cell_refs;
   for (auto& cell_ref : cell_refs) {
-    const auto& the_cell    = db.get_cell(cell_ref.cell_name);
-    bool        is_touching = false;
-    for (auto& layer : layers) {
-      if (the_cell.is_touching(layer)) {
-        is_touching = true;
-        break;
-      }
-    }
-    if (not is_touching)
-      continue;
+    const auto& the_cell = db.get_cell(cell_ref.cell_name);
     if (the_cell.is_touching(layers.front())) {
       intervals.push_back(std::make_pair(cell_ref.mbr1[2], cell_ref.mbr1[3]));
-    } else {
+    } else if (the_cell.is_touching(layers.back())) {
       intervals.push_back(std::make_pair(cell_ref.mbr2[2], cell_ref.mbr2[3]));
+    } else {
+      continue;
     }
   }
   std::sort(intervals.begin(), intervals.end());

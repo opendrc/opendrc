@@ -25,26 +25,18 @@ inline std::vector<std::vector<int>> layout_partition(
   for (auto id = 0UL; id < cell_refs.size(); ++id) {
     const auto& cell_ref = cell_refs[id];
     const auto& the_cell = db.get_cell(cell_ref.cell_name);
-
-    bool is_touching = false;
-    for (auto layer : layers) {
-      if (the_cell.is_touching(layer)) {
-        is_touching = true;
-        break;
-      }
-    }
-    if (not is_touching)
-      continue;
     if (the_cell.is_touching(layers.front())) {
       cell_ids.emplace_back(id);
       coordinates.insert(cell_ref.mbr1[2]);
       coordinates.insert(cell_ref.mbr1[3]);
       intervals.emplace_back(cell_ref.mbr1[2], cell_ref.mbr1[3]);
-    } else {
+    } else if (the_cell.is_touching(layers.back())) {
       cell_ids.emplace_back(id);
       coordinates.insert(cell_ref.mbr2[2]);
       coordinates.insert(cell_ref.mbr2[3]);
       intervals.emplace_back(cell_ref.mbr2[2], cell_ref.mbr2[3]);
+    } else {
+      continue;
     }
   }
   if (cell_ids.empty())

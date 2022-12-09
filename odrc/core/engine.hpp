@@ -1,11 +1,14 @@
 #pragma once
 
-#include <deque>
+#include <vector>
+
+#include <odrc/algorithm/area-check.hpp>
+#include <odrc/algorithm/enclosing-check.hpp>
 #include <odrc/algorithm/space-check.hpp>
 #include <odrc/algorithm/width-check.hpp>
 #include <odrc/core/cell.hpp>
 #include <odrc/core/database.hpp>
-#include <vector>
+
 namespace odrc::core {
 enum class object {
   polygon,
@@ -42,31 +45,60 @@ class engine {
   void set_mode(mode md) { mod = md; };
   void check(odrc::core::database& db) {
     for (const auto& rule : rules) {
-      switch (rule.ruletype) {
-        case rule_type::spacing_both: {
-          db.update_depth_and_mbr(rule.layer.front(), rule.without_layer);
-          if (mod == mode::sequence) {
+      if (mod == mode::sequence) {
+        switch (rule.ruletype) {
+          case rule_type::spacing_both: {
+            int num = db.cells.back().polygons.size();
+            db.update_depth_and_mbr(rule.layer, rule.without_layer);
             space_check_seq(db, rule.layer, rule.region.first, rule.ruletype,
                             vlts);
             std::cout << vlts.size() << std::endl;
-          } else if (mod == mode::parallel) {
-            space_check_pal(db, rule.layer.front(), rule.layer.back(),
-                            rule.region.first, vlts);
-            std::cout << vlts.size() << std::endl;
+            db.cells.erase(db.cells.end() - num, db.cells.end());
+            break;
           }
-          break;
-        }
-        case rule_type::width: {
-          if (mod == mode::sequence) {
+          case rule_type::width: {
             width_check_seq(db, rule.layer.front(), rule.region.first, vlts);
             std::cout << vlts.size() << std::endl;
-          } else if (mod == mode::parallel) {
+            break;
+          }
+          case rule_type::enclosure: {
+            int num = db.cells.back().polygons.size();
+            db.update_depth_and_mbr(rule.layer, rule.without_layer);
+            enclosing_check_seq(db, rule.layer, rule.region.first,
+                                rule.ruletype, vlts);
+            db.cells.erase(db.cells.end() - num, db.cells.end());
+            std::cout << vlts.size() << std::endl;
+            break;
+          }
+          case rule_type::area: {
+            area_check_seq(db, rule.layer.front(), rule.region.first);
+            std::cout << vlts.size() << std::endl;
+            break;
+          }
+          default:
+            break;
+        }
+      } else if (mod == mode::parallel) {
+        switch (rule.ruletype) {
+          case rule_type::spacing_both: {
+            space_check_pal(db, rule.layer.front(), rule.layer.back(),
+                            rule.region.first, vlts);
+            break;
+          }
+          case rule_type::width: {
             width_check_pal(db, rule.layer.front(), rule.region.first, vlts);
             std::cout << vlts.size() << std::endl;
+            break;
           }
+          case rule_type::enclosure: {
+            break;
+          }
+          case rule_type::area: {
+            break;
+          }
+          default:
+            break;
         }
-        default:
-          break;
       }
     }
   };
@@ -84,7 +116,14 @@ class engine {
     rules.back().layer.emplace_back(layer);
     return *this;
   }
-
+  engine& with_layer(int layer) {
+    rules.back().layer.emplace_back(layer);
+    return *this;
+  }
+  engine& without_layer(int layer) {
+    rules.back().without_layer.emplace_back(layer);
+    return *this;
+  }
   engine& width() {
     rules.back().ruletype = rule_type::width;
     return *this;
@@ -94,7 +133,14 @@ class engine {
     rules.back().ruletype = rule_type::spacing_both;
     return *this;
   }
-
+  engine& enclosure() {
+    rules.back().ruletype = rule_type::enclosure;
+    return *this;
+  }
+  engine& area() {
+    rules.back().ruletype = rule_type::area;
+    return *this;
+  }
   int is_rectilinear() {
     rules.back().ruletype = rule_type::aux_is_rectilinear;
     return -1;
@@ -108,7 +154,6 @@ class engine {
  private:
   unsigned int      rule_num = 0;
   std::vector<rule> rules;
-  std::deque<bool>  ensure_rules;
 };
 
 }  // namespace odrc::core
