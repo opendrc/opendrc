@@ -48,12 +48,16 @@ class engine {
       if (mod == mode::sequence) {
         switch (rule.ruletype) {
           case rule_type::spacing_both: {
-            int num = db.cells.back().polygons.size();
-            db.update_depth_and_mbr(rule.layer, rule.without_layer);
-            space_check_seq(db, rule.layer, rule.region.first, rule.ruletype,
-                            vlts);
+            space_check_seq(db, rule.layer, rule.without_layer,
+                            rule.region.first, rule.ruletype, vlts);
             std::cout << vlts.size() << std::endl;
-            db.cells.erase(db.cells.end() - num, db.cells.end());
+            // for (const auto& vio : vlts) {
+            //   std::cout << "e11x: " << vio.e11x << " e11y: " << vio.e11y
+            //             << " e12x: " << vio.e12x << " e12y: " << vio.e12y
+            //             << " e21x: " << vio.e21x << " e21y: " << vio.e21y
+            //             << " e22x: " << vio.e22x << " e22y: " << vio.e22y
+            //             << std::endl;
+            // }
             break;
           }
           case rule_type::width: {
@@ -62,11 +66,8 @@ class engine {
             break;
           }
           case rule_type::enclosure: {
-            int num = db.cells.back().polygons.size();
-            db.update_depth_and_mbr(rule.layer, rule.without_layer);
-            enclosing_check_seq(db, rule.layer, rule.region.first,
-                                rule.ruletype, vlts);
-            db.cells.erase(db.cells.end() - num, db.cells.end());
+            enclosing_check_seq(db, rule.layer, rule.without_layer,
+                                rule.region.first, rule.ruletype, vlts);
             std::cout << vlts.size() << std::endl;
             break;
           }
@@ -81,12 +82,12 @@ class engine {
       } else if (mod == mode::parallel) {
         switch (rule.ruletype) {
           case rule_type::spacing_both: {
-            space_check_pal(db, rule.layer.front(), rule.layer.back(),
+            space_check_par(db, rule.layer.front(), rule.layer.back(),
                             rule.region.first, vlts);
             break;
           }
           case rule_type::width: {
-            width_check_pal(db, rule.layer.front(), rule.region.first, vlts);
+            width_check_par(db, rule.layer.front(), rule.region.first, vlts);
             std::cout << vlts.size() << std::endl;
             break;
           }
@@ -102,7 +103,7 @@ class engine {
       }
     }
   };
-
+  void    _schedular(){};
   engine& polygons() {
     rules.emplace_back();
     rules.back().rule_num = rule_num;
@@ -141,11 +142,11 @@ class engine {
     rules.back().ruletype = rule_type::area;
     return *this;
   }
+
   int is_rectilinear() {
     rules.back().ruletype = rule_type::aux_is_rectilinear;
     return -1;
   }
-
   int greater_than(int min) {
     rules.back().region = std::make_pair(min, 2147483647);
     return -1;

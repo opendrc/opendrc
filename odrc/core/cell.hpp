@@ -2,10 +2,10 @@
 
 #include <climits>
 #include <cstdint>
+#include <odrc/core/common_structs.hpp>
 #include <odrc/utility/datetime.hpp>
 #include <string>
 #include <vector>
-
 namespace odrc::core {
 
 struct coord {
@@ -51,33 +51,15 @@ struct v_edge {
 
 class cell_ref {
  public:
-  std::string         cell_name;
-  coord               ref_point;
-  transform           trans;
-  int                 mbr1[4] = {INT_MAX, INT_MIN, INT_MAX, INT_MIN};
-  int                 mbr2[4] = {INT_MAX, INT_MIN, INT_MAX, INT_MIN};
-  std::vector<h_edge> h_edges;
-  std::vector<h_edge> h_edges1;
-  std::vector<h_edge> h_edges2;
-  std::vector<v_edge> v_edges;
-  std::vector<v_edge> v_edges1;
-  std::vector<v_edge> v_edges2;
-
+  std::string cell_name;
+  coord       ref_point;
+  transform   trans;
   cell_ref() = default;
   cell_ref(const std::string& name, const coord& p)
       : cell_name(name), ref_point(p) {}
 
   cell_ref(const std::string& name, const coord& p, const transform& t)
       : cell_name(name), ref_point(p), trans(t) {}
-
-  bool is_touching(const polygon& other) const {
-    return mbr1[0] < other.mbr1[1] and mbr1[1] > other.mbr1[0] and
-           mbr1[2] < other.mbr1[3] and mbr1[3] > other.mbr1[2];
-  }
-  bool is_touching(const cell_ref& other) const {
-    return mbr1[0] < other.mbr1[1] and mbr1[1] > other.mbr1[0] and
-           mbr1[2] < other.mbr1[3] and mbr1[3] > other.mbr1[2];
-  }
 };
 
 class cell {
@@ -95,6 +77,11 @@ class cell {
   bool is_touching(int layer) const {  // might need a better name
     uint64_t mask = 1 << layer;
     return (layers & mask) != 0;
+  }
+  bool is_touching(std::vector<int> layers) const {  // might need a better name
+    uint64_t mask_f = 1 << layers.front();
+    uint64_t mask_s = 1 << layers.back();
+    return (layers.front() & mask_f) != 0 & (layers.back() & mask_s) != 0;
   }
 
   bool is_touching(const cell& other) const {
@@ -122,4 +109,13 @@ inline bool polygon::is_touching(const cell& other) const {
   return mbr1[0] < other.mbr1[1] and mbr1[1] > other.mbr1[0] and
          mbr1[2] < other.mbr1[3] and mbr1[3] > other.mbr1[2];
 }
+class edge {
+ public:
+  std::vector<std::vector<h_edge>> h_edges;
+  std::vector<std::vector<v_edge>> v_edges;
+  std::vector<mbr>                 mbrs;
+  std::vector<mbr>                 cell_ref_mbrs;
+
+ private:
+};
 }  // namespace odrc::core

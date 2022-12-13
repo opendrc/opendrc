@@ -1,69 +1,51 @@
 #include <odrc/algorithm/space-check.hpp>
 
 #include <algorithm>
-#include <iostream>
-#include <numeric>
-#include <unordered_map>
-#include <unordered_set>
 #include <vector>
 
 #include <odrc/algorithm/layout-partition.hpp>
+#include <odrc/core/common_structs.hpp>
 #include <odrc/core/engine.hpp>
 #include <odrc/core/interval_tree.hpp>
-
 namespace odrc {
-
 using odrc::core::h_edge;
 using odrc::core::v_edge;
-using coord        = odrc::core::coord;
-using polygon      = odrc::core::polygon;
-using cell_ref     = odrc::core::cell_ref;
-using check_result = odrc::check_result;
-using Intvl        = core::interval<int, int>;
+using Intvl = core::interval<int, int>;
 
-struct event {
-  Intvl intvl;
-  int   y;
-  bool  is_polygon;
-  bool  is_inevent;
-};
-
+/// @brief detail horizontal edges check for overlapping polygons
+/// @param ovlpairs overlapping polygon pairs
+/// @param h_edges1 the horizontal edges of first polygon
+/// @param h_edges2 the horizontal edges of second polygon
+/// @param threshold the max spacing
+/// @param vios  violation informations
 void run_h_check(std::vector<std::pair<int, int>>& ovlpairs,
-                 h_edge*                           hes,
-                 int*                              hidx,
+                 std::vector<std::vector<h_edge>>& hes,
                  int                               threshold,
                  std::vector<check_result>&        vios) {
-  for (const auto& pair : ovlpairs) {
-    int c1    = pair.first;
-    int c2    = pair.second;
-    int h1s   = hidx[c1];
-    int h1e   = hidx[c1 + 1];
-    int h2s   = hidx[c2];
-    int h2e   = hidx[c2 + 1];
-    int h1min = hes[h1s].y;
-    int h1max = hes[(h1e - 1)].y;
-    int h2min = hes[h2s].y - threshold;
-    int h2max = hes[(h2e - 1)].y + threshold;
-    for (auto p1 = h1s; p1 < h1e; ++p1) {
-      int p1y = hes[p1].y;
-      if (hes[p1].y < h2min)
+  for (const auto& [f_poly, s_poly] : ovlpairs) {
+    const auto& f_edges    = hes[f_poly];
+    const auto& s_edges    = hes[s_poly];
+    int         s_edge_min = s_edges.front().y - threshold;
+    int         s_edge_max = s_edges.back().y + threshold;
+    for (const auto& f_edge : f_edges) {
+      if (f_edge.y < s_edge_min)
         continue;
-      if (hes[p1].y > h2max)
+      if (f_edge.y > s_edge_max)
         break;
-      for (auto p2 = h2s; p2 < h2e; ++p2) {
-        if (hes[p2].y < p1y - threshold)
+      for (const auto& s_edge : s_edges) {
+        if (s_edge.y < f_edge.y - threshold)
           continue;
-        if (hes[p2].y > p1y + threshold)
+        if (s_edge.y > f_edge.y + threshold)
           break;
         // space
-        auto e11x         = hes[p1].x1;
-        auto e11y         = hes[p1].y;
-        auto e12x         = hes[p1].x2;
-        auto e12y         = hes[p1].y;
-        auto e21x         = hes[p2].x1;
-        auto e21y         = hes[p2].y;
-        auto e22x         = hes[p2].x2;
-        auto e22y         = hes[p2].y;
+        auto e11x         = f_edge.x1;
+        auto e11y         = f_edge.y;
+        auto e12x         = f_edge.x2;
+        auto e12y         = f_edge.y;
+        auto e21x         = s_edge.x1;
+        auto e21y         = s_edge.y;
+        auto e22x         = s_edge.x2;
+        auto e22y         = s_edge.y;
         bool is_violation = false;
         if (e11y < e22y) {
           // e22 e21
@@ -90,42 +72,41 @@ void run_h_check(std::vector<std::pair<int, int>>& ovlpairs,
     }
   }
 }
+
+/// @brief detail vertical edges check for overlapping polygons
+/// @param ovlpairs overlapping polygon pairs
+/// @param v_edges1 the vertical edges of first polygon
+/// @param v_edges2 the vertical edges of second polygon
+/// @param threshold the max spacing
+/// @param vios  violation informations
 void run_v_check(std::vector<std::pair<int, int>>& ovlpairs,
-                 v_edge*                           ves,
-                 int*                              vidx,
+                 std::vector<std::vector<v_edge>>& ves,
                  int                               threshold,
                  std::vector<check_result>&        vios) {
-  for (const auto& pair : ovlpairs) {
-    int c1    = pair.first;
-    int c2    = pair.second;
-    int h1s   = vidx[c1];
-    int h1e   = vidx[c1 + 1];
-    int h2s   = vidx[c2];
-    int h2e   = vidx[c2 + 1];
-    int h1min = ves[h1s].x;
-    int h1max = ves[(h1e - 1)].x;
-    int h2min = ves[h2s].x - threshold;
-    int h2max = ves[(h2e - 1)].x + threshold;
-    for (auto p1 = h1s; p1 < h1e; ++p1) {
-      int p1y = ves[p1].x;
-      if (ves[p1].x < h2min)
+  for (const auto& [f_poly, s_poly] : ovlpairs) {
+    const auto& f_edges    = ves[f_poly];
+    const auto& s_edges    = ves[s_poly];
+    int         s_edge_min = s_edges.front().x - threshold;
+    int         s_edge_max = s_edges.back().x + threshold;
+    for (const auto& f_edge : f_edges) {
+      if (f_edge.x < s_edge_min)
         continue;
-      if (ves[p1].x > h2max)
+      if (f_edge.x > s_edge_max)
         break;
-      for (auto p2 = h2s; p2 < h2e; ++p2) {
-        if (ves[p2].x < p1y - threshold)
+      for (const auto& s_edge : s_edges) {
+        if (s_edge.x < f_edge.x - threshold)
           continue;
-        if (ves[p2].x > p1y + threshold)
+        if (s_edge.x > f_edge.x + threshold)
           break;
         // space
-        auto e11y         = ves[p1].y1;
-        auto e11x         = ves[p1].x;
-        auto e12y         = ves[p1].y2;
-        auto e12x         = ves[p1].x;
-        auto e21y         = ves[p2].y1;
-        auto e21x         = ves[p2].x;
-        auto e22y         = ves[p2].y2;
-        auto e22x         = ves[p2].x;
+        auto e11y         = f_edge.y1;
+        auto e11x         = f_edge.x;
+        auto e12y         = f_edge.y2;
+        auto e12x         = f_edge.x;
+        auto e21y         = s_edge.y1;
+        auto e21x         = s_edge.x;
+        auto e22y         = s_edge.y2;
+        auto e22x         = s_edge.x;
         bool is_violation = false;
         if (e11x < e22x) {
           // e22 e21
@@ -153,8 +134,14 @@ void run_v_check(std::vector<std::pair<int, int>>& ovlpairs,
   }
 }
 
+/// @brief get overlapping pairs by interval tree
+/// @param db database
+/// @param layers the layer which two polygons should be in
+/// @param rows  the number of divided layout row
+/// @param row   the polygon number in the row
+/// @return    the overlapping pairs
 std::vector<std::pair<int, int>> get_ovlpairs(
-    const odrc::core::database&    db,
+    odrc::core::database&          db,
     std::vector<int>&              layers,
     std::vector<std::vector<int>>& rows,
     int                            row) {
@@ -164,25 +151,23 @@ std::vector<std::pair<int, int>> get_ovlpairs(
   events.reserve(rows[row].size() * 2);
   for (int i = 0; i < rows[row].size(); i++) {
     const auto& cell_ref = top_cell.cell_refs.at(rows[row][i]);
-    const auto& the_cell = db.get_cell(cell_ref.cell_name);
-    if (!the_cell.is_touching(layers.front()) and
-        !the_cell.is_touching(layers.back())) {
-      continue;
+    int         idx      = db.get_cell_idx(cell_ref.cell_name);
+    if (db.cells.at(idx).is_touching(layers)) {
+      auto& mbr = db.edges[layers.front()].cell_ref_mbrs.at(idx);
+      events.emplace_back(
+          event{Intvl{mbr.y_min, mbr.y_max, i}, mbr.x_min, false, true});
+      events.emplace_back(
+          event{Intvl{mbr.y_min, mbr.y_max, i}, mbr.x_max, false, false});
     }
-    events.emplace_back(event{Intvl{cell_ref.mbr1[2], cell_ref.mbr1[3], i},
-                              cell_ref.mbr1[0], false, true});
-    events.emplace_back(event{Intvl{cell_ref.mbr1[2], cell_ref.mbr1[3], i},
-                              cell_ref.mbr1[1], false, false});
   }
-  {
-    std::sort(events.begin(), events.end(), [](const auto& e1, const auto& e2) {
-      return e1.y == e2.y ? (e1.is_inevent and !e2.is_inevent) : e1.y < e2.y;
-    });
-  }
+
+  std::sort(events.begin(), events.end(), [](const auto& e1, const auto& e2) {
+    return std::tie(e1.y, e2.is_inevent) < std::tie(e2.y, e1.is_inevent);
+  });
+
   core::interval_tree<int, int> tree;
   ovlpairs.reserve(events.size() * 2);
-  for (int i = 0; i < events.size(); ++i) {
-    const auto& e = events[i];
+  for (const auto& e : events) {
     if (e.is_inevent) {
       tree.get_intervals_overlapping_with(e.intvl, ovlpairs);
       tree.insert(e.intvl);
@@ -193,63 +178,61 @@ std::vector<std::pair<int, int>> get_ovlpairs(
   return ovlpairs;
 }
 
-void space_check_seq(const odrc::core::database& db,
-                     std::vector<int>            layers,
-                     int                         threshold,
-                     rule_type                   ruletype,
-                     std::vector<check_result>&  vios) {
-  auto        rows     = layout_partition(db, layers);
-  const auto& top_cell = db.cells.back();
+/// @brief  sequence mode for spacing check between two polygons
+/// @param db     database
+/// @param layers the layer which two polygons should be in
+/// @param without_layer  the layer which two polygons should be not in
+/// @param threshold  the max spacing
+/// @param ruletype some other limitation
+/// @param vios return violations
+void space_check_seq(odrc::core::database&      db,
+                     std::vector<int>           layers,
+                     std::vector<int>           without_layer,
+                     int                        threshold,
+                     rule_type                  ruletype,
+                     std::vector<check_result>& vios) {
+  db.update_mbr(layers, without_layer);
+  auto        rows  = layout_partition(db, layers);
+  const auto& edges = db.edges[layers.front()];
   if (ruletype == rule_type::spacing_both) {
     for (int row = 0; row < rows.size(); row++) {
-      std::vector<h_edge> hes;
-      std::vector<v_edge> ves;
-      std::vector<int>    hidx;
-      std::vector<int>    vidx;
-      for (int i = 0; i < rows[row].size(); i++) {
-        int cr = rows[row][i];
-        hidx.emplace_back(hes.size());
-        vidx.emplace_back(ves.size());
-        hes.insert(hes.end(), top_cell.cell_refs.at(cr).h_edges1.begin(),
-                   top_cell.cell_refs.at(cr).h_edges1.end());
-        ves.insert(ves.end(), top_cell.cell_refs.at(cr).v_edges1.begin(),
-                   top_cell.cell_refs.at(cr).v_edges1.end());
+      std::vector<std::vector<h_edge>> h_edges;
+      std::vector<std::vector<v_edge>> v_edges;
+      for (const auto& i : rows[row]) {
+        h_edges.emplace_back();
+        v_edges.emplace_back();
+        h_edges.back().insert(h_edges.back().end(), edges.h_edges.at(i).begin(),
+                              edges.h_edges.at(i).end());
+        v_edges.back().insert(v_edges.back().end(), edges.v_edges.at(i).begin(),
+                              edges.v_edges.at(i).end());
       }
-      hidx.emplace_back(hes.size());
-      vidx.emplace_back(ves.size());
       auto ovlpairs = get_ovlpairs(db, layers, rows, row);
-      run_h_check(ovlpairs, hes.data(), hidx.data(), threshold, vios);
-      run_v_check(ovlpairs, ves.data(), vidx.data(), threshold, vios);
+      run_h_check(ovlpairs, h_edges, threshold, vios);
+      run_v_check(ovlpairs, v_edges, threshold, vios);
     }
   } else if (ruletype == rule_type::spacing_h_edge) {
     for (int row = 0; row < rows.size(); row++) {
-      std::vector<h_edge> hes;
-      std::vector<int>    hidx;
-      for (int i = 0; i < rows[row].size(); i++) {
-        int cr = rows[row][i];
-        hidx.emplace_back(hes.size());
-        hes.insert(hes.end(), top_cell.cell_refs.at(cr).h_edges1.begin(),
-                   top_cell.cell_refs.at(cr).h_edges1.end());
+      std::vector<std::vector<h_edge>> h_edges;
+      for (const auto& i : rows[row]) {
+        h_edges.emplace_back();
+        h_edges.back().insert(h_edges.back().end(), edges.h_edges.at(i).begin(),
+                              edges.h_edges.at(i).end());
       }
-      hidx.emplace_back(hes.size());
       auto ovlpairs = get_ovlpairs(db, layers, rows, row);
-      run_h_check(ovlpairs, hes.data(), hidx.data(), threshold, vios);
+      run_h_check(ovlpairs, h_edges, threshold, vios);
     }
   } else if (ruletype == rule_type::spacing_v_edge) {
     for (int row = 0; row < rows.size(); row++) {
-      std::vector<v_edge> ves;
-      std::vector<int>    vidx;
-      for (int i = 0; i < rows[row].size(); i++) {
-        int cr = rows[row][i];
-        vidx.emplace_back(ves.size());
-        ves.insert(ves.end(), top_cell.cell_refs.at(cr).v_edges1.begin(),
-                   top_cell.cell_refs.at(cr).v_edges1.end());
+      std::vector<std::vector<v_edge>> v_edges;
+      for (const auto& i : rows[row]) {
+        v_edges.emplace_back();
+        v_edges.back().insert(v_edges.back().end(), edges.v_edges.at(i).begin(),
+                              edges.v_edges.at(i).end());
       }
-      vidx.emplace_back(ves.size());
       auto ovlpairs = get_ovlpairs(db, layers, rows, row);
-      run_v_check(ovlpairs, ves.data(), vidx.data(), threshold, vios);
+      run_v_check(ovlpairs, v_edges, threshold, vios);
     }
   }
+  db.erase_mbr();
 }
-
 }  // namespace odrc

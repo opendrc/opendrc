@@ -10,9 +10,8 @@ using odrc::core::polygon;
 void _check_polygon_area(const polygon&               poly,
                          int                          threshold,
                          std::vector<const polygon*>& vios) {
-  int         area = 0;
-  const auto& points =
-      poly.points;  // TODO: I need to ensure the sequence of points is correct
+  int         area   = 0;
+  const auto& points = poly.points;
   for (auto i = 0UL; i < points.size(); ++i) {
     auto j = (i + 1) % points.size();
     area += points.at(i).x * points.at(j).y - points.at(j).x * points.at(i).y;

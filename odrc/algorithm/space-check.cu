@@ -307,7 +307,7 @@ __device__ inline void run_check(h_edge*       h_edges,
   }
 }
 
-struct event {
+struct event_par {
   int x;
   int y1;
   int y2;
@@ -320,7 +320,7 @@ __global__ void run_row(h_edge*       h_edges,
                         int*          v_idx,
                         int*          mbrs_d,
                         check_result* results,
-                        event*        events,
+                        event_par*    events,
                         int*          eidx,
                         int           nrows,
                         int           threshold,
@@ -342,7 +342,7 @@ __global__ void run_row(h_edge*       h_edges,
   int re = eidx[tid + 1];
   __syncthreads();
   for (int i = rs; i < re; ++i) {
-    event& e = events[i];
+    event_par& e = events[i];
     if (e.id > 0) {  // check and insert
       int  eid  = e.id - 1;
       int* mbre = &mbrs_d[eid * 4];
@@ -652,7 +652,7 @@ __global__ void hori_check_bak(int*          estarts,
   }
 }
 
-void space_check_pal(const odrc::core::database& db,
+void space_check_par(const odrc::core::database& db,
                      int                         layer1,
                      int                         layer2,
                      int                         threshold,
@@ -670,24 +670,30 @@ void space_check_pal(const odrc::core::database& db,
   cells.reserve(cell_refs.size());
   lrs.reserve(cell_refs.size() * 2);
   for (int i = 0; i < cell_refs.size(); ++i) {
-    const auto& cr       = cell_refs[i];
-    const auto& the_cell = db.get_cell(cr.cell_name);
-    if (!the_cell.is_touching(layer1)) {
+    // const auto& cr       = cell_refs[i];
+    // const auto& the_cell = db.get_cell(cr.cell_name);
+
+    const auto& cr       = db.edges.at(layer1).cell_ref_mbrs;
+    const auto& cell_ref = db.cells.back().cell_refs.at(i);
+    int         idx      = db.get_cell_idx(cell_ref.cell_name);
+    if (!db.cells.at(idx).is_touching(std::vector<int>{layer1, layer2})) {
       continue;
     }
     cells.emplace_back(i);
-    y.insert(cr.mbr1[2]);
-    y.insert(cr.mbr1[3]);
-    lrs.emplace_back(cr.mbr1[2]);
-    lrs.emplace_back(cr.mbr1[3]);
+    y.insert(cr.at(i).y_min);
+    y.insert(cr.at(i).y_max);
+    lrs.emplace_back(cr.at(i).y_min);
+    lrs.emplace_back(cr.at(i).y_max);
     hidx.emplace_back(hes.size());
     vidx.emplace_back(ves.size());
-    hes.insert(hes.end(), cr.h_edges.begin(), cr.h_edges.end());
-    ves.insert(ves.end(), cr.v_edges.begin(), cr.v_edges.end());
-    mbrs.emplace_back(cr.mbr1[0]);
-    mbrs.emplace_back(cr.mbr1[1]);
-    mbrs.emplace_back(cr.mbr1[2]);
-    mbrs.emplace_back(cr.mbr1[3]);
+    hes.insert(hes.end(), db.edges.at(layer1).h_edges.at(i).begin(),
+               db.edges.at(layer1).h_edges.at(i).end());
+    ves.insert(ves.end(), db.edges.at(layer1).v_edges.at(i).begin(),
+               db.edges.at(layer1).v_edges.at(i).end());
+    mbrs.emplace_back(cr.at(i).x_min);
+    mbrs.emplace_back(cr.at(i).x_max);
+    mbrs.emplace_back(cr.at(i).y_min);
+    mbrs.emplace_back(cr.at(i).y_max);
   }
   hidx.emplace_back(hes.size());
   vidx.emplace_back(ves.size());
@@ -773,14 +779,14 @@ void space_check_pal(const odrc::core::database& db,
   }
   // t.pause();
   // std::cout << "UF and data transfer: " << t.get_elapsed() << std::endl;
-  // std::vector<event> events;
+  // std::vector<event_par> events;
   // std::vector<int>   eidx;
   // events.reserve(cells.size() * 2);
   // eidx.reserve(rows.size() + 1);
   // eidx.emplace_back(0);
-  // event* events_d = nullptr;
+  // event_par* events_d = nullptr;
   // int*   eidx_d   = nullptr;
-  // cudaMallocAsync((void**)&events_d, cells.size() * sizeof(event) * 2,
+  // cudaMallocAsync((void**)&events_d, cells.size() * sizeof(event_par) * 2,
   // stream1); cudaMallocAsync((void**)&eidx_d, (rows.size() + 1) *
   // sizeof(int), stream1); thrust::device_vector<int>    keysv(5000 * 100);
   // thrust::device_vector<int>    indicesv(5000 * 100);
@@ -799,10 +805,10 @@ void space_check_pal(const odrc::core::database& db,
     int sync_end   = 2048;
     for (int j = 0; j < rows[i].size(); ++j) {
       int cid = cells.at(rows[i][j]);
-      rhes.insert(rhes.end(), cell_refs.at(cid).h_edges.begin(),
-                  cell_refs.at(cid).h_edges.end());
-      rves.insert(rves.end(), cell_refs.at(cid).v_edges.begin(),
-                  cell_refs.at(cid).v_edges.end());
+      rhes.insert(rhes.end(), db.edges.at(layer1).h_edges.at(cid).begin(),
+                  db.edges.at(layer1).h_edges.at(cid).end());
+      rves.insert(rves.end(), db.edges.at(layer1).v_edges.at(cid).begin(),
+                  db.edges.at(layer1).v_edges.at(cid).end());
       // if (rhes.size() >= sync_end) {
       //   if (rhes.size() >= 5000 * 100) {
       //     assert(false);
@@ -976,9 +982,9 @@ void space_check_pal(const odrc::core::database& db,
     // eidx.emplace_back(end_offset);
     // cudaStreamSynchronize(stream1);
     // cudaMemcpyAsync(events_d + start_offset, &events[start_offset],
-    //                 sizeof(event) * (end_offset - start_offset),
+    //                 sizeof(event_par) * (end_offset - start_offset),
     //                 cudaMemcpyHostToDevice, stream1);
-    // event* array = thrust::raw_pointer_cast(events_d.data());
+    // event_par* array = thrust::raw_pointer_cast(events_d.data());
     // int    N     = events.size();
     // auto   serr  = cudaGetLastError();
     // int     N   = rhes.size();

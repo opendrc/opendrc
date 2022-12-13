@@ -12,9 +12,8 @@
 // layout_partition() declaration: partitions the whole cells in a specific
 // layer into a set of sub-rows(sub-regions).
 namespace odrc {
-inline std::vector<std::vector<int>> layout_partition(
-    const odrc::core::database& db,
-    std::vector<int>            layers) {
+inline std::vector<std::vector<int>> layout_partition(odrc::core::database& db,
+                                                      std::vector<int> layers) {
   const auto& cell_refs = db.cells.back().cell_refs;
 
   // get unique cell y-axis coordinates and store intervals need to merge
@@ -27,14 +26,16 @@ inline std::vector<std::vector<int>> layout_partition(
     const auto& the_cell = db.get_cell(cell_ref.cell_name);
     if (the_cell.is_touching(layers.front())) {
       cell_ids.emplace_back(id);
-      coordinates.insert(cell_ref.mbr1[2]);
-      coordinates.insert(cell_ref.mbr1[3]);
-      intervals.emplace_back(cell_ref.mbr1[2], cell_ref.mbr1[3]);
+      auto& mbr = db.edges[layers.front()].cell_ref_mbrs.at(id);
+      coordinates.insert(mbr.y_min);
+      coordinates.insert(mbr.y_max);
+      intervals.emplace_back(mbr.y_min, mbr.y_max);
     } else if (the_cell.is_touching(layers.back())) {
       cell_ids.emplace_back(id);
-      coordinates.insert(cell_ref.mbr2[2]);
-      coordinates.insert(cell_ref.mbr2[3]);
-      intervals.emplace_back(cell_ref.mbr2[2], cell_ref.mbr2[3]);
+      auto& mbr = db.edges[layers.back()].cell_ref_mbrs.at(id);
+      coordinates.insert(mbr.y_min);
+      coordinates.insert(mbr.y_max);
+      intervals.emplace_back(mbr.y_min, mbr.y_max);
     } else {
       continue;
     }

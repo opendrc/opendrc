@@ -94,7 +94,7 @@ __global__ void check_kernel(coord*        coords,
   }
 }
 
-void width_check_pal(const odrc::core::database& db,
+void width_check_par(const odrc::core::database& db,
                      int                         layer,
                      int                         threshold,
                      std::vector<check_result>&  vios) {
