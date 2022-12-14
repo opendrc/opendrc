@@ -673,27 +673,28 @@ void space_check_par(const odrc::core::database& db,
     // const auto& cr       = cell_refs[i];
     // const auto& the_cell = db.get_cell(cr.cell_name);
 
-    const auto& cr       = db.edges.at(layer1).cell_ref_mbrs;
+    
     const auto& cell_ref = db.cells.back().cell_refs.at(i);
+    const auto& cr       = cell_ref.cell_ref_mbr;
     int         idx      = db.get_cell_idx(cell_ref.cell_name);
     if (!db.cells.at(idx).is_touching(std::vector<int>{layer1, layer2})) {
       continue;
     }
     cells.emplace_back(i);
-    y.insert(cr.at(i).y_min);
-    y.insert(cr.at(i).y_max);
-    lrs.emplace_back(cr.at(i).y_min);
-    lrs.emplace_back(cr.at(i).y_max);
+    y.insert(cr.y_min);
+    y.insert(cr.y_max);
+    lrs.emplace_back(cr.y_min);
+    lrs.emplace_back(cr.y_max);
     hidx.emplace_back(hes.size());
     vidx.emplace_back(ves.size());
-    hes.insert(hes.end(), db.edges.at(layer1).h_edges.at(i).begin(),
-               db.edges.at(layer1).h_edges.at(i).end());
-    ves.insert(ves.end(), db.edges.at(layer1).v_edges.at(i).begin(),
-               db.edges.at(layer1).v_edges.at(i).end());
-    mbrs.emplace_back(cr.at(i).x_min);
-    mbrs.emplace_back(cr.at(i).x_max);
-    mbrs.emplace_back(cr.at(i).y_min);
-    mbrs.emplace_back(cr.at(i).y_max);
+    hes.insert(hes.end(), db.cell_edges.at(layer1).h_edges.at(i).begin(),
+               db.cell_edges.at(layer1).h_edges.at(i).end());
+    ves.insert(ves.end(), db.cell_edges.at(layer1).v_edges.at(i).begin(),
+               db.cell_edges.at(layer1).v_edges.at(i).end());
+    mbrs.emplace_back(cr.x_min);
+    mbrs.emplace_back(cr.x_max);
+    mbrs.emplace_back(cr.y_min);
+    mbrs.emplace_back(cr.y_max);
   }
   hidx.emplace_back(hes.size());
   vidx.emplace_back(ves.size());
@@ -805,10 +806,10 @@ void space_check_par(const odrc::core::database& db,
     int sync_end   = 2048;
     for (int j = 0; j < rows[i].size(); ++j) {
       int cid = cells.at(rows[i][j]);
-      rhes.insert(rhes.end(), db.edges.at(layer1).h_edges.at(cid).begin(),
-                  db.edges.at(layer1).h_edges.at(cid).end());
-      rves.insert(rves.end(), db.edges.at(layer1).v_edges.at(cid).begin(),
-                  db.edges.at(layer1).v_edges.at(cid).end());
+      rhes.insert(rhes.end(), db.cell_edges.at(layer1).h_edges.at(cid).begin(),
+                  db.cell_edges.at(layer1).h_edges.at(cid).end());
+      rves.insert(rves.end(), db.cell_edges.at(layer1).v_edges.at(cid).begin(),
+                  db.cell_edges.at(layer1).v_edges.at(cid).end());
       // if (rhes.size() >= sync_end) {
       //   if (rhes.size() >= 5000 * 100) {
       //     assert(false);

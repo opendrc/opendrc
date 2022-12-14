@@ -3,47 +3,54 @@
 #include <cassert>
 #include <iostream>
 
-#include <odrc/core/common_structs.hpp>
+#include <odrc/core/structs.hpp>
 
 namespace odrc {
 using odrc::core::polygon;
 
+template <typename edge>
+bool is_enclosing_violationvio(edge f_edge, edge s_edge, int threshold) {
+  auto [start_point1, end_point1, distance1] = f_edge;
+  auto [start_point2, end_point2, distance2] = s_edge;
+  bool is_too_close = std::abs(distance1 - distance2) < threshold;
+  bool is_projection_overlap =
+      distance2 < distance1
+          ? (start_point2 > start_point1 and end_point1 > end_point2)
+          : (start_point1 > start_point2 and end_point2 > end_point1);
+  return is_too_close and is_projection_overlap;
+}
+
 void _check_polygon(const polygon&             poly,
                     int                        threshold,
                     std::vector<check_result>& vios) {
-  int num = poly.points.size() - 1;
+  int         num   = poly.points.size() - 1;
+  const auto& point = poly.points;
   // Loop through all pairs of edges
-  for (int i = 0; i < num; ++i) {
-    int e11x = poly.points.at(i).x;
-    int e11y = poly.points.at(i).y;
-    int e12x = poly.points.at(i + 1).x;
-    int e12y = poly.points.at(i + 1).y;
+  for (auto i = 0; i < num; ++i) {
+    bool is_h_edge    = point.at(i).x == point.at(i + 1).x;
+    int  distance1    = is_h_edge ? point.at(i).x : point.at(i).y;
+    int  start_point1 = is_h_edge ? point.at(i).y : point.at(i).x;
+    int  end_point1   = is_h_edge ? point.at(i + 1).y : point.at(i + 1).x;
     for (int j = i + 2; j < num; ++j) {
       // Check if the two edges are parallel
-      int e21x = poly.points.at(j).x;
-      int e21y = poly.points.at(j).y;
-      int e22x = poly.points.at(j + 1).x;
-      int e22y = poly.points.at(j + 1).y;
-      // Check the distance between the two edges
-      int dist = 0;
-      if (e11x == e12x) {
-        dist = abs(e11x - e21x);
-      } else {
-        dist = abs(e11y - e21y);
-      }
-      if (dist < threshold) {
-        // Check if the edges overlap
-        bool overlap = false;
-        if (e11x == e12x) {
-          overlap = e11x < e21x ? (e22y < e21y and e12y > e22y and e21y > e11y)
-                                : (e21y < e22y and e12y < e22y and e21y < e11y);
-        } else {
-          overlap = e11y < e21y ? (e22x < e21x and e12x > e22x and e21x > e11x)
-                                : (e21x < e22x and e12x < e22x and e21x < e11x);
-        }
-        if (overlap) {
-          vios.emplace_back(check_result{e11x, e11y, e12x, e12y, e21x, e21y,
-                                         e22x, e22y, true});
+      int  distance2    = is_h_edge ? point.at(j).x : point.at(j).y;
+      int  start_point2 = is_h_edge ? point.at(j).y : point.at(j).x;
+      int  end_point2   = is_h_edge ? point.at(j + 1).y : point.at(j + 1).x;
+      bool is_outside_to_outside =
+          (start_point1 - end_point1) * (start_point2 - end_point2) < 0;
+      if (is_outside_to_outside) {
+        std::tuple<int, int, int> f_edge{start_point1, end_point1, distance1};
+        std::tuple<int, int, int> s_edge{start_point2, end_point2, distance2};
+        bool                      is_violation =
+            is_enclosing_violationvio(f_edge, s_edge, threshold);
+        if (is_h_edge and is_violation) {
+          vios.emplace_back(check_result{start_point1, distance1, end_point1,
+                                         distance1, start_point2, distance2,
+                                         end_point2, distance1, true});
+        } else if ((!is_h_edge) and is_violation) {
+          vios.emplace_back(check_result{distance1, start_point1, distance1,
+                                         end_point1, distance2, start_point2,
+                                         distance2, end_point2, true});
         }
       }
     }

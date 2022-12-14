@@ -2,7 +2,7 @@
 
 #include <climits>
 #include <cstdint>
-#include <odrc/core/common_structs.hpp>
+#include <odrc/core/structs.hpp>
 #include <odrc/utility/datetime.hpp>
 #include <string>
 #include <vector>
@@ -20,11 +20,14 @@ class polygon {
   int datatype;
 
   std::vector<coord> points;
-  int                mbr1[4] = {INT_MAX, INT_MIN, INT_MAX, INT_MIN};
+  // TODO mbr
+  int mbr[4] = {
+      std::numeric_limits<int>::max(), std::numeric_limits<int>::min(),
+      std::numeric_limits<int>::max(), std::numeric_limits<int>::min()};
 
   bool is_touching(const polygon& other) const {
-    return mbr1[0] < other.mbr1[1] and mbr1[1] > other.mbr1[0] and
-           mbr1[2] < other.mbr1[3] and mbr1[3] > other.mbr1[2];
+    return mbr[0] < other.mbr[1] and mbr[1] > other.mbr[0] and
+           mbr[2] < other.mbr[3] and mbr[3] > other.mbr[2];
   }
   bool is_touching(const cell& other) const;
 };
@@ -37,6 +40,7 @@ struct transform {
   double angle;
 };
 
+// TODO
 struct h_edge {
   int x1;
   int x2;
@@ -44,9 +48,9 @@ struct h_edge {
 };
 
 struct v_edge {
-  int x;
   int y1;
   int y2;
+  int x;
 };
 
 class cell_ref {
@@ -54,6 +58,9 @@ class cell_ref {
   std::string cell_name;
   coord       ref_point;
   transform   trans;
+  cell_mbr    cell_ref_mbr{
+      std::numeric_limits<int>::max(), std::numeric_limits<int>::min(),
+      std::numeric_limits<int>::max(), std::numeric_limits<int>::min()};
   cell_ref() = default;
   cell_ref(const std::string& name, const coord& p)
       : cell_name(name), ref_point(p) {}
@@ -79,19 +86,21 @@ class cell {
     return (layers & mask) != 0;
   }
   bool is_touching(std::vector<int> layers) const {  // might need a better name
-    uint64_t mask_f = 1 << layers.front();
-    uint64_t mask_s = 1 << layers.back();
-    return (layers.front() & mask_f) != 0 & (layers.back() & mask_s) != 0;
+    uint64_t mask = 0;
+    for (auto layer : layers) {
+      mask |= 1 << layer;
+    }
+    return (mask & this->layers) != 0;
   }
 
   bool is_touching(const cell& other) const {
-    return mbr1[0] < other.mbr1[1] and mbr1[1] > other.mbr1[0] and
-           mbr1[2] < other.mbr1[3] and mbr1[3] > other.mbr1[2];
+    return mbr.x_min < other.mbr.x_max and mbr.x_max > other.mbr.x_min and
+           mbr.y_min < other.mbr.y_max and mbr.y_max > other.mbr.y_min;
   }
 
   bool is_touching(const polygon& other) const {
-    return mbr1[0] < other.mbr1[1] and mbr1[1] > other.mbr1[0] and
-           mbr1[2] < other.mbr1[3] and mbr1[3] > other.mbr1[2];
+    return mbr.x_min < other.mbr[1] and mbr.x_max > other.mbr[0] and
+           mbr.y_min < other.mbr[3] and mbr.y_max > other.mbr[2];
   }
 
   // a bit-wise representation of layers it spans across
@@ -101,20 +110,19 @@ class cell {
   odrc::util::datetime  atime;
   std::vector<polygon>  polygons;
   std::vector<cell_ref> cell_refs;
-  int                   mbr1[4] = {INT_MAX, INT_MIN, INT_MAX, INT_MIN};
-  int                   depth   = -1;
+  cell_mbr mbr{std::numeric_limits<int>::max(), std::numeric_limits<int>::min(),
+               std::numeric_limits<int>::max(),
+               std::numeric_limits<int>::min()};
 };
 
 inline bool polygon::is_touching(const cell& other) const {
-  return mbr1[0] < other.mbr1[1] and mbr1[1] > other.mbr1[0] and
-         mbr1[2] < other.mbr1[3] and mbr1[3] > other.mbr1[2];
+  return mbr[0] < other.mbr.x_max and mbr[1] > other.mbr.x_min and
+         mbr[2] < other.mbr.y_max and mbr[3] > other.mbr.y_min;
 }
-class edge {
+class edges {
  public:
   std::vector<std::vector<h_edge>> h_edges;
   std::vector<std::vector<v_edge>> v_edges;
-  std::vector<mbr>                 mbrs;
-  std::vector<mbr>                 cell_ref_mbrs;
 
  private:
 };

@@ -157,7 +157,7 @@ int32_t parse_int32(const std::byte* bytes) {
 double parse_real64(const std::byte* bytes) {
   // intepret bytes as big-endian
   uint64_t data = 0;
-  for (int i = 0; i < 8; ++i) {
+  for (auto i = 0UL; i < 8; ++i) {
     data = (data << 8) + std::to_integer<uint64_t>(bytes[i]);
   }
 
@@ -344,17 +344,17 @@ odrc::core::database read(const std::filesystem::path& file_path) {
         if (current_element == record_type::BOUNDARY) {
           int num_coords =
               (record_length - bytes_per_record_head) / bytes_per_coord;
-          for (int i = 0; i < num_coords; ++i) {
+          for (auto i = 0; i < num_coords; ++i) {
             auto coord = parse_coord(begin + bytes_per_coord * i);
             polygon->points.emplace_back(coord);
-            polygon->mbr1[0] = std::min(polygon->mbr1[0], coord.x);
-            polygon->mbr1[1] = std::max(polygon->mbr1[1], coord.x);
-            polygon->mbr1[2] = std::min(polygon->mbr1[2], coord.y);
-            polygon->mbr1[3] = std::max(polygon->mbr1[3], coord.y);
-            cell->mbr1[0]    = std::min(cell->mbr1[0], coord.x);
-            cell->mbr1[1]    = std::max(cell->mbr1[1], coord.x);
-            cell->mbr1[2]    = std::min(cell->mbr1[2], coord.y);
-            cell->mbr1[3]    = std::max(cell->mbr1[3], coord.y);
+            polygon->mbr[0] = std::min(polygon->mbr[0], coord.x);
+            polygon->mbr[1] = std::max(polygon->mbr[1], coord.x);
+            polygon->mbr[2] = std::min(polygon->mbr[2], coord.y);
+            polygon->mbr[3] = std::max(polygon->mbr[3], coord.y);
+            cell->mbr.x_min = std::min(cell->mbr.x_min, coord.x);
+            cell->mbr.x_max = std::max(cell->mbr.x_max, coord.x);
+            cell->mbr.y_min = std::min(cell->mbr.y_min, coord.y);
+            cell->mbr.y_max = std::max(cell->mbr.y_max, coord.y);
           }
         } else if (current_element == record_type::SREF) {
           // sref contains exactly 1 coordinate
@@ -368,10 +368,14 @@ odrc::core::database read(const std::filesystem::path& file_path) {
           auto coord           = parse_coord(begin);
           cell_ref->ref_point  = coord;
           const auto& the_cell = db.get_cell(cell_ref->cell_name);
-          cell->mbr1[0] = std::min(cell->mbr1[0], coord.x + the_cell.mbr1[0]);
-          cell->mbr1[1] = std::max(cell->mbr1[1], coord.x + the_cell.mbr1[1]);
-          cell->mbr1[2] = std::min(cell->mbr1[2], coord.y + the_cell.mbr1[2]);
-          cell->mbr1[3] = std::max(cell->mbr1[3], coord.y + the_cell.mbr1[3]);
+          cell->mbr.x_min =
+              std::min(cell->mbr.x_min, coord.x + the_cell.mbr.x_min);
+          cell->mbr.x_max =
+              std::max(cell->mbr.x_max, coord.x + the_cell.mbr.x_max);
+          cell->mbr.y_min =
+              std::min(cell->mbr.y_min, coord.y + the_cell.mbr.y_min);
+          cell->mbr.y_max =
+              std::max(cell->mbr.y_max, coord.y + the_cell.mbr.y_max);
         }
         break;
       case record_type::ENDEL:

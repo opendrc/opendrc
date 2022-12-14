@@ -14,14 +14,13 @@ TEST_SUITE("[OpenDRC] odrc::layout-partition tests") {
     std::vector<std::vector<int>> space_layers = {{19}, {20}};
     std::vector<std::vector<int>> enclose_layers = {
         {19, 21}, {20, 21}, {25, 20}};
-    std::vector<int> without_layer;
     for (auto& space_layer : space_layers) {
-      db.update_mbr(space_layer, without_layer);
+      db.update_mbr_and_edge(space_layer);
       auto sub_rows = odrc::layout_partition(db, space_layer);
       CHECK_EQ(_check(db, space_layer, sub_rows), true);
     }
     for (auto& enclose_layer : enclose_layers) {
-      db.update_mbr(enclose_layer, without_layer);
+      db.update_mbr_and_edge(enclose_layer);
       auto sub_rows = odrc::layout_partition(db, enclose_layer);
       CHECK_EQ(_check(db, enclose_layer, sub_rows), true);
     }
@@ -50,12 +49,11 @@ bool _check(const odrc::core::database&          db,
   for (auto& cell_ref : cell_refs) {
     const auto& the_cell = db.get_cell(cell_ref.cell_name);
     int         idx      = db.get_cell_idx(cell_ref.cell_name);
+    auto        mbr      = cell_ref.cell_ref_mbr;
     if (the_cell.is_touching(layers.front())) {
-      auto mbr = db.edges.at(layers.front()).cell_ref_mbrs;
-      intervals.push_back(std::make_pair(mbr.at(idx).y_min, mbr.at(idx).y_max));
+      intervals.push_back(std::make_pair(mbr.y_min, mbr.y_max));
     } else if (the_cell.is_touching(layers.back())) {
-      auto mbr = db.edges.at(layers.back()).cell_ref_mbrs;
-      intervals.push_back(std::make_pair(mbr.at(idx).y_min, mbr.at(idx).y_max));
+      intervals.push_back(std::make_pair(mbr.y_min, mbr.y_max));
     } else {
       continue;
     }
@@ -82,14 +80,13 @@ bool _check(const odrc::core::database&          db,
     for (auto cell_ref_idx : sub_row) {
       const auto& the_cell = db.get_cell(cell_refs.at(cell_ref_idx).cell_name);
       int         l, r;
+      auto        mbr = db.cells.back().cell_refs.at(cell_ref_idx).cell_ref_mbr;
       if (the_cell.is_touching(layers.front())) {
-        auto mbr = db.edges.at(layers.front()).cell_ref_mbrs;
-        l        = mbr.at(cell_ref_idx).y_min;
-        r        = mbr.at(cell_ref_idx).y_max;
+        l = mbr.y_min;
+        r = mbr.y_max;
       } else {
-        auto mbr = db.edges.at(layers.back()).cell_ref_mbrs;
-        l        = mbr.at(cell_ref_idx).y_min;
-        r        = mbr.at(cell_ref_idx).y_max;
+        l = mbr.y_min;
+        r = mbr.y_max;
       }
       // if (l < merged_intervals.at(row_id).first ||
       //     r > merged_intervals.at(row_id).second)

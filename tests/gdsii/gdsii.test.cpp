@@ -160,7 +160,7 @@ TEST_SUITE("[OpenDRC] odrc::gdsii data parser tests") {
   TEST_CASE("parse_string of 'hello world'") {
     B           bytes[11];
     std::string golden_str = "hello world";
-    for (int i = 0; i < 11; ++i) {
+    for (auto i = 0UL; i < 11; ++i) {
       bytes[i] = std::byte{static_cast<unsigned char>(golden_str[i])};
     }
     std::string str = odrc::gdsii::parse_string(bytes, bytes + 11);
@@ -169,7 +169,7 @@ TEST_SUITE("[OpenDRC] odrc::gdsii data parser tests") {
   TEST_CASE("parse_string of 'hello world' with padded zero") {
     B           bytes[12];
     std::string golden_str = "hello world";
-    for (int i = 0; i < 11; ++i) {
+    for (auto i = 0UL; i < 11; ++i) {
       bytes[i] = std::byte{static_cast<unsigned char>(golden_str[i])};
     }
     bytes[11]       = {B{0x00}};

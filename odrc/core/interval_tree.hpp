@@ -8,7 +8,7 @@
 #include <set>
 #include <vector>
 
-#include <odrc/core/common_structs.hpp>
+#include <odrc/core/structs.hpp>
 namespace odrc::core {
 
 template <typename T, typename V>
@@ -104,7 +104,7 @@ class interval_tree {
       nodes.emplace_back(intvl);
       return;
     }
-    assert(n >= 0 and n < nodes.size());
+    assert(n < nodes.size());
     Node& node            = nodes.at(n);
     node.is_subtree_empty = false;
     if (intvl.contains(node.mid)) {
@@ -127,13 +127,13 @@ class interval_tree {
   };
 
   void remove(const Intvl& intvl, const std::size_t n = 0) {
-    if (n >= 0 and n < nodes.size()) {
+    if (n < nodes.size()) {
     } else {
       std::cout << n << std::endl;
       std::cout << intvl.l << " " << intvl.r << " " << intvl.mid() << " "
                 << intvl.v << std::endl;
     }
-    assert(n >= 0 and n < nodes.size());
+    assert(n < nodes.size());
     Node& node = nodes.at(n);
     if (intvl.contains(node.mid)) {
       node.remove(intvl);
@@ -149,8 +149,7 @@ class interval_tree {
     node.is_subtree_empty = node.empty() and is_left_empty and is_right_empty;
   }
   void get_intervals_overlapping_with(const Intvl&                  intvl,
-                                      std::vector<std::pair<T, V>>& ovlp,
-                                      const std::size_t             n = 0) {
+                                      std::vector<std::pair<T, V>>& ovlp) {
     _run_query(intvl, 0, ovlp);
   }
 
@@ -164,7 +163,7 @@ class interval_tree {
     if (nodes.at(n).is_subtree_empty) {
       return;
     }
-    assert(n >= 0 and n < nodes.size());
+    assert(n < nodes.size());
     const Node& node = nodes.at(n);
     if (intvl.r <= node.mid) {
       node.get_intervals_containing(intvl.r, intvl.v, rtn, reverse);

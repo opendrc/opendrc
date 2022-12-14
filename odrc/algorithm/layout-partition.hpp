@@ -26,13 +26,13 @@ inline std::vector<std::vector<int>> layout_partition(odrc::core::database& db,
     const auto& the_cell = db.get_cell(cell_ref.cell_name);
     if (the_cell.is_touching(layers.front())) {
       cell_ids.emplace_back(id);
-      auto& mbr = db.edges[layers.front()].cell_ref_mbrs.at(id);
+      auto& mbr = cell_ref.cell_ref_mbr;
       coordinates.insert(mbr.y_min);
       coordinates.insert(mbr.y_max);
       intervals.emplace_back(mbr.y_min, mbr.y_max);
     } else if (the_cell.is_touching(layers.back())) {
       cell_ids.emplace_back(id);
-      auto& mbr = db.edges[layers.back()].cell_ref_mbrs.at(id);
+      auto& mbr = cell_ref.cell_ref_mbr;
       coordinates.insert(mbr.y_min);
       coordinates.insert(mbr.y_max);
       intervals.emplace_back(mbr.y_min, mbr.y_max);

@@ -1,13 +1,16 @@
 #pragma once
 
+#include <set>
 #include <vector>
 
 #include <odrc/algorithm/area-check.hpp>
 #include <odrc/algorithm/enclosing-check.hpp>
 #include <odrc/algorithm/space-check.hpp>
 #include <odrc/algorithm/width-check.hpp>
+
 #include <odrc/core/cell.hpp>
 #include <odrc/core/database.hpp>
+#include <odrc/core/structs.hpp>
 
 namespace odrc::core {
 enum class object {
@@ -20,10 +23,11 @@ enum class sramdrc_set {
   interac_SRAMDRAC = 1,  // interact with the layer SRAMDRC
   outside_SRAMDRAC = 2,  // outside the layer SRAMDRC
 };
-enum class mode { sequence, parallel };
+enum class mode { sequential, parallel };
 struct rule {
   int                 rule_num;
   std::vector<int>    layer;
+  std::vector<int>    with_layer;
   std::vector<int>    without_layer;
   std::pair<int, int> region;
   rule_type           ruletype;
@@ -33,7 +37,7 @@ struct rule {
 
 class engine {
  public:
-  mode                            mod = mode::sequence;
+  mode                            check_mode = mode::sequential;
   std::vector<odrc::check_result> vlts;
   //<rule number, polgon/cell number>
   std::vector<std::pair<int, std::pair<int, int>>> vlt_paires;
@@ -42,10 +46,12 @@ class engine {
   void add_rules(std::vector<int> value) {
     std::cout << "ALL rules have been added." << std::endl;
   };
-  void set_mode(mode md) { mod = md; };
+
+  void set_mode(mode md) { check_mode = md; };
   void check(odrc::core::database& db) {
+    _schedular(db);
     for (const auto& rule : rules) {
-      if (mod == mode::sequence) {
+      if (check_mode == mode::sequential) {
         switch (rule.ruletype) {
           case rule_type::spacing_both: {
             space_check_seq(db, rule.layer, rule.without_layer,
@@ -79,7 +85,7 @@ class engine {
           default:
             break;
         }
-      } else if (mod == mode::parallel) {
+      } else if (check_mode == mode::parallel) {
         switch (rule.ruletype) {
           case rule_type::spacing_both: {
             space_check_par(db, rule.layer.front(), rule.layer.back(),
@@ -103,7 +109,19 @@ class engine {
       }
     }
   };
-  void    _schedular(){};
+
+  void _schedular(odrc::core::database& db) {
+    for (const auto& rule : rules) {
+      if (rule.ruletype <= rule_type::spacing_lup) {
+        layer_set.emplace(rule.layer.front());
+        layer_set.emplace(rule.layer.back());
+      }
+    }
+    std::vector<int> layers(layer_set.begin(), layer_set.end());
+    db.update_mbr_and_edge(layers);
+    db.erase();
+  };
+
   engine& polygons() {
     rules.emplace_back();
     rules.back().rule_num = rule_num;
@@ -117,8 +135,12 @@ class engine {
     rules.back().layer.emplace_back(layer);
     return *this;
   }
-  engine& with_layer(int layer) {
+  engine& inter_layer(int layer) {
     rules.back().layer.emplace_back(layer);
+    return *this;
+  }
+  engine& with_layer(int layer) {
+    rules.back().with_layer.emplace_back(layer);
     return *this;
   }
   engine& without_layer(int layer) {
@@ -155,6 +177,7 @@ class engine {
  private:
   unsigned int      rule_num = 0;
   std::vector<rule> rules;
+  std::set<int>     layer_set;
 };
 
 }  // namespace odrc::core

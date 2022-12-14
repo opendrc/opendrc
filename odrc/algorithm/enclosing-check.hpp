@@ -1,7 +1,7 @@
 #pragma once
 
-#include <odrc/core/common_structs.hpp>
 #include <odrc/core/database.hpp>
+#include <odrc/core/structs.hpp>
 
 namespace odrc {
 void enclosing_check_seq(odrc::core::database&      db,
