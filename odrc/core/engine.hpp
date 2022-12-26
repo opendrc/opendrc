@@ -3,14 +3,11 @@
 #include <set>
 #include <vector>
 
-#include <odrc/algorithm/area-check.hpp>
-#include <odrc/algorithm/enclosing-check.hpp>
-#include <odrc/algorithm/space-check.hpp>
-#include <odrc/algorithm/width-check.hpp>
+#include <odrc/algorithm/sequential_mode.hpp>
+#include <odrc/algorithm/parallel_mode.hpp>
 
 #include <odrc/core/cell.hpp>
 #include <odrc/core/database.hpp>
-#include <odrc/core/structs.hpp>
 
 namespace odrc::core {
 enum class object {
@@ -38,7 +35,7 @@ struct rule {
 class engine {
  public:
   mode                            check_mode = mode::sequential;
-  std::vector<odrc::check_result> vlts;
+  std::vector<odrc::violation_information> vlts;
   //<rule number, polgon/cell number>
   std::vector<std::pair<int, std::pair<int, int>>> vlt_paires;
   //<rule number,<polygons/cells number pair>>
@@ -49,7 +46,6 @@ class engine {
 
   void set_mode(mode md) { check_mode = md; };
   void check(odrc::core::database& db) {
-    _schedular(db);
     for (const auto& rule : rules) {
       if (check_mode == mode::sequential) {
         switch (rule.ruletype) {
@@ -78,7 +74,7 @@ class engine {
             break;
           }
           case rule_type::area: {
-            area_check_seq(db, rule.layer.front(), rule.region.first);
+            area_check_seq(db, rule.layer.front(), rule.region.first,vlts);
             std::cout << vlts.size() << std::endl;
             break;
           }
@@ -88,12 +84,12 @@ class engine {
       } else if (check_mode == mode::parallel) {
         switch (rule.ruletype) {
           case rule_type::spacing_both: {
-            space_check_par(db, rule.layer.front(), rule.layer.back(),
-                            rule.region.first, vlts);
+            // space_check_par(db, rule.layer.front(), rule.layer.back(),
+            //                 rule.region.first, vlts);
             break;
           }
           case rule_type::width: {
-            width_check_par(db, rule.layer.front(), rule.region.first, vlts);
+            //width_check_par(db, rule.layer.front(), rule.region.first, vlts);
             std::cout << vlts.size() << std::endl;
             break;
           }
@@ -110,18 +106,6 @@ class engine {
     }
   };
 
-  void _schedular(odrc::core::database& db) {
-    for (const auto& rule : rules) {
-      if (rule.ruletype <= rule_type::spacing_lup) {
-        layer_set.emplace(rule.layer.front());
-        layer_set.emplace(rule.layer.back());
-      }
-    }
-    std::vector<int> layers(layer_set.begin(), layer_set.end());
-    db.update_mbr_and_edge(layers);
-    db.erase();
-  };
-
   engine& polygons() {
     rules.emplace_back();
     rules.back().rule_num = rule_num;
@@ -135,15 +119,15 @@ class engine {
     rules.back().layer.emplace_back(layer);
     return *this;
   }
-  engine& inter_layer(int layer) {
+  engine& with_layer(int layer) {
     rules.back().layer.emplace_back(layer);
     return *this;
   }
-  engine& with_layer(int layer) {
+  engine& inter_layer(int layer) {
     rules.back().with_layer.emplace_back(layer);
     return *this;
   }
-  engine& without_layer(int layer) {
+engine& not_inter_layer(int layer) {
     rules.back().without_layer.emplace_back(layer);
     return *this;
   }

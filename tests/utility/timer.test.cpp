@@ -11,7 +11,7 @@ void check_elapsed_time(std::vector<int64_t>& elapsed_times,
                         const int             reset_count,
                         const int64_t         sleep_time) {
   bool in_range;
-  for (int i = 0; i < reset_count; ++i) {
+  for (auto i = 0UL; i < reset_count; ++i) {
     in_range =
         elapsed_times[i] >= sleep_time && elapsed_times[i] <= sleep_time * 1.1;
     CHECK(in_range);
@@ -33,7 +33,7 @@ void check_log_file(const std::string&          filename,
   }
 
   std::string log_output;
-  for (int i = 0; i < reset_count; ++i) {
+  for (auto i = 0UL; i < reset_count; ++i) {
     std::getline(ifs, log_output);
     CHECK(log_output.find(std::to_string(elapsed_times[i]) + " ms") !=
           std::string::npos);
@@ -52,10 +52,10 @@ TEST_SUITE("[OpenDRC] odrc::timer tests") {
     std::vector<int64_t> elapsed_times;
     const std::string    log_filename = "log_timer_test.txt";
     odrc::util::logger   logger(log_filename, odrc::util::log_level::trace,
-                                false);
+                              false);
     {
       odrc::util::timer test_timer("test", logger);
-      for (int i = 0; i < sleep_count; ++i) {
+      for (auto i = 0UL; i < sleep_count; ++i) {
         test_timer.start();
         std::this_thread::sleep_for(std::chrono::milliseconds(sleep_time));
         test_timer.pause();

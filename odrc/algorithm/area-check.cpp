@@ -1,15 +1,15 @@
-#include <cassert>
+#include <odrc/algorithm/sequential_mode.hpp>
 
+#include <cassert>
 #include <iostream>
-#include <odrc/algorithm/area-check.hpp>
 
 namespace odrc {
 
 using odrc::core::polygon;
 
-void _check_polygon_area(const polygon&               poly,
-                         int                          threshold,
-                         std::vector<const polygon*>& vios) {
+void _check_polygon_area(const polygon&                      poly,
+                         int                                 threshold,
+                         std::vector<violation_information>& vios) {
   int         area   = 0;
   const auto& points = poly.points;
   for (auto i = 0UL; i < points.size(); ++i) {
@@ -22,14 +22,16 @@ void _check_polygon_area(const polygon&               poly,
   }
 }
 
-void area_check_seq(const odrc::core::database& db, int layer, int threshold) {
+void area_check_seq(const odrc::core::database&         db,
+                    int                                 layer,
+                    int                                 threshold,
+                    std::vector<violation_information>& vios) {
   // result memorization
   std::unordered_map<std::string, int> checked_results;
 
   static int checked_poly = 0;
   static int saved_poly   = 0;
 
-  std::vector<const polygon*> vios;
   for (const auto& cell : db.cells) {
     if (not cell.is_touching(layer))
       continue;
@@ -43,8 +45,9 @@ void area_check_seq(const odrc::core::database& db, int layer, int threshold) {
       _check_polygon_area(polygon, threshold, vios);
     }
 
-    for (const auto& cell_ref : cell.cell_refs) {
-      if (!db.get_cell(cell_ref.cell_name).is_touching(layer)) {
+    for (auto& cell_ref : cell.cell_refs) {
+      int cell_idx = db.get_cell_idx(cell_ref.cell_name);
+      if (!db.cells.at(cell_idx).is_touching(layer)) {
         continue;
       }
       auto cell_checked = checked_results.find(cell_ref.cell_name);

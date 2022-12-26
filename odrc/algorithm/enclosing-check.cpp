@@ -1,4 +1,4 @@
-#include <odrc/algorithm/enclosing-check.hpp>
+#include <odrc/algorithm/sequential_mode.hpp>
 
 #include <algorithm>
 #include <vector>
@@ -6,70 +6,54 @@
 #include <odrc/algorithm/layout-partition.hpp>
 #include <odrc/core/database.hpp>
 #include <odrc/core/interval_tree.hpp>
-#include <odrc/core/structs.hpp>
 
 namespace odrc {
-using odrc::core::h_edge;
-using odrc::core::v_edge;
+
 using Intvl = core::interval<int, int>;
 
-template <typename edge>
-bool is_enclosing_violation(edge f_edge, edge s_edge, int threshold) {
-  auto [start_point1, end_point1, distance1] = f_edge;
-  auto [start_point2, end_point2, distance2] = s_edge;
-  bool is_too_close = std::abs(distance1 - distance2) < threshold;
-  bool is_inside_to_outside =
-      (end_point1 - end_point1) * (start_point2 - start_point2) > 0;
-  bool is_projection_overlap =
-      end_point1 < start_point2 and end_point2 < start_point1;
-  return is_too_close and is_projection_overlap and is_inside_to_outside;
-}
-
-void distance_check(std::vector<std::pair<int, int>>& ovlpairs,
-                    const core::edges&                edges1,
-                    const core::edges&                edges2,
-                    int                               threshold,
-                    std::vector<check_result>&        vios) {
+void distance_check(odrc::core::database&               db,
+                    std::vector<int>                    layers,
+                    std::vector<std::pair<int, int>>&   ovlpairs,
+                    int                                 threshold,
+                    std::vector<violation_information>& vios) {
   for (const auto& [f_cell, s_cell] : ovlpairs) {
-    const auto& f_edges = edges1.h_edges.at(f_cell);
-    const auto& s_edges = edges2.h_edges.at(s_cell);
-    for (const auto& f_edge : f_edges) {
-      for (const auto& s_edge : s_edges) {
-        auto [start_point1, end_point1, distance1] = f_edge;
-        auto [start_point2, end_point2, distance2] = s_edge;
-        bool is_violation = is_enclosing_violation(f_edge, s_edge, threshold);
+    auto& edges1 =
+        db.cells.back().cell_refs.at(f_cell).h_edges.at(layers.front());
+    auto& edges2 =
+        db.cells.back().cell_refs.at(s_cell).h_edges.at(layers.back());
+    for (const auto& edge1 : edges1) {
+      for (const auto& edge2 : edges2) {
+        auto [start_point1, end_point1, distance1] = edge1;
+        auto [start_point2, end_point2, distance2] = edge2;
+        bool is_violation = is_enclosing_violation(edge1, edge2, threshold);
         if (is_violation) {
-          vios.emplace_back(check_result{start_point1, distance1, end_point1,
-                                         distance1, start_point2, distance2,
-                                         end_point2, distance1, true});
+          vios.emplace_back(violation_information{
+              core::edge{start_point1, distance1, end_point1, distance1},
+              core::edge{start_point2, distance2, end_point2, distance1}});
         }
       }
     }
   }
   for (const auto& [f_cell, s_cell] : ovlpairs) {
-    const auto& f_edges = edges1.v_edges.at(f_cell);
-    const auto& s_edges = edges2.v_edges.at(s_cell);
-    for (const auto& f_edge : f_edges) {
-      for (const auto& s_edge : s_edges) {
-        auto [start_point1, end_point1, distance1] = f_edge;
-        auto [start_point2, end_point2, distance2] = s_edge;
-        bool is_violation = is_enclosing_violation(f_edge, s_edge, threshold);
+    auto& edges1 =
+        db.cells.back().cell_refs.at(f_cell).v_edges.at(layers.front());
+    auto& edges2 =
+        db.cells.back().cell_refs.at(s_cell).v_edges.at(layers.back());
+    for (const auto& edge1 : edges1) {
+      for (const auto& edge2 : edges2) {
+        auto [start_point1, end_point1, distance1] = edge1;
+        auto [start_point2, end_point2, distance2] = edge2;
+        bool is_violation = is_enclosing_violation(edge1, edge2, threshold);
         if (is_violation) {
-          vios.emplace_back(check_result{distance1, start_point1, distance1,
-                                         end_point1, distance2, start_point2,
-                                         distance2, end_point2, true});
+          vios.emplace_back(violation_information{
+              core::edge{distance1, start_point1, distance1, end_point1},
+              core::edge{distance2, start_point2, distance2, end_point2}});
         }
       }
     }
   }
 }
 
-/// @brief get overlapping pairs by two interval trees
-/// @param db database
-/// @param layers the layer which two polygons should be in
-/// @param rows  the number of divided layout row
-/// @param row   the polygon number in the row
-/// @return    the overlapping pairs
 std::vector<std::pair<int, int>> get_enclosing_ovlpairs(
     odrc::core::database& db,
     std::vector<int>&     layers,
@@ -127,26 +111,17 @@ std::vector<std::pair<int, int>> get_enclosing_ovlpairs(
   return ovlpairs;
 }
 
-/// @brief  sequence mode for spacing check between two enclosing polygons
-/// @param db     database
-/// @param layers the layer which two polygons should be in
-/// @param without_layer  the layer which two polygons should be not in
-/// @param threshold  the max spacing
-/// @param ruletype some other limitation
-/// @param vios return violations
-void enclosing_check_seq(odrc::core::database&      db,
-                         std::vector<int>           layers,
-                         std::vector<int>           without_layer,
-                         int                        threshold,
-                         rule_type                  ruletype,
-                         std::vector<check_result>& vios) {
-  auto        rows   = layout_partition(db, layers);
-  const auto& edges1 = db.cell_edges[layers.front()];
-  const auto& edges2 = db.cell_edges[layers.back()];
+void enclosing_check_seq(odrc::core::database&               db,
+                         std::vector<int>                    layers,
+                         std::vector<int>                    without_layer,
+                         int                                 threshold,
+                         rule_type                           ruletype,
+                         std::vector<violation_information>& vios) {
+  auto rows = layout_partition(db, layers);
   // get edges from cell
   for (auto row = 0UL; row < rows.size(); row++) {
     auto ovlpairs = get_enclosing_ovlpairs(db, layers, rows[row]);
-    distance_check(ovlpairs, edges1, edges2, threshold, vios);
+    distance_check(db, layers, ovlpairs, threshold, vios);
   }
 }
 

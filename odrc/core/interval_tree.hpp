@@ -8,8 +8,18 @@
 #include <set>
 #include <vector>
 
-#include <odrc/core/structs.hpp>
 namespace odrc::core {
+
+template <typename T, typename V>
+struct interval {
+  T l;
+  T r;
+  V v;
+
+  T    mid() const { return (l + r) / 2; }
+  bool contains(const T& p) const { return l <= p and p <= r; }
+};
+
 
 template <typename T, typename V>
 struct node {
