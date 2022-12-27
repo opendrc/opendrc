@@ -16,7 +16,7 @@ void _check_polygon_area(const polygon&                      poly,
     auto j = (i + 1) % points.size();
     area += points.at(i).x * points.at(j).y - points.at(j).x * points.at(i).y;
   }
-  area = abs(area / 2);
+  area = std::abs(area / 2);
   if (area < threshold) {
     vios.emplace_back(&poly);
   }
