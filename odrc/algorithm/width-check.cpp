@@ -20,24 +20,20 @@ void _check_polygon(const polygon&                      poly,
     int  end_point1   = is_h_edge ? point.at(i + 1).y : point.at(i + 1).x;
     for (int j = i + 2; j < num; ++j) {
       // Check if the two edges are parallel
-      int  distance2    = is_h_edge ? point.at(j).x : point.at(j).y;
-      int  start_point2 = is_h_edge ? point.at(j).y : point.at(j).x;
-      int  end_point2   = is_h_edge ? point.at(j + 1).y : point.at(j + 1).x;
-      bool is_outside_to_outside =
-          (start_point1 - end_point1) * (start_point2 - end_point2) < 0;
-      if (is_outside_to_outside) {
-        std::tuple<int, int, int> f_edge{start_point1, end_point1, distance1};
-        std::tuple<int, int, int> s_edge{start_point2, end_point2, distance2};
-        bool is_violation = is_enclosing_violation(f_edge, s_edge, threshold);
-        if (is_h_edge and is_violation) {
-          vios.emplace_back(violation_information{
-              core::edge{start_point1, distance1, end_point1, distance1},
-              core::edge{start_point2, distance2, end_point2, distance1}});
-        } else if ((!is_h_edge) and is_violation) {
-          vios.emplace_back(violation_information{
-              core::edge{distance1, start_point1, distance1, end_point1},
-              core::edge{distance2, start_point2, distance2, end_point2}});
-        }
+      int distance2    = is_h_edge ? point.at(j).x : point.at(j).y;
+      int start_point2 = is_h_edge ? point.at(j).y : point.at(j).x;
+      int end_point2   = is_h_edge ? point.at(j + 1).y : point.at(j + 1).x;
+      std::tuple<int, int, int> edge1{start_point1, end_point1, distance1};
+      std::tuple<int, int, int> edge2{start_point2, end_point2, distance2};
+      bool is_violation =is_spacing_violation(edge1, edge2, threshold);
+      if (is_h_edge and is_violation) {
+        vios.emplace_back(violation_information{
+            core::edge{start_point1, distance1, end_point1, distance1},
+            core::edge{start_point2, distance2, end_point2, distance1}});
+      } else if ((!is_h_edge) and is_violation) {
+        vios.emplace_back(violation_information{
+            core::edge{distance1, start_point1, distance1, end_point1},
+            core::edge{distance2, start_point2, distance2, end_point2}});
       }
     }
   }

@@ -20,16 +20,12 @@ struct edge {
   int x_endpoint;
   int y_endpoint;
 };
-struct h_edge {
-  int x_startpoint;
-  int x_endpoint;
-  int y;
+struct orthogonal_edge {
+  int start_point;
+  int end_point;
+  int distance;
 };
-struct v_edge {
-  int y_startpoint;
-  int y_endpoint;
-  int x;
-};
+
 struct coord {
   int x;
   int y;
@@ -40,7 +36,6 @@ class polygon {
  public:
   int                layer;
   int                datatype;
-  std::vector<edge>  edges;
   std::vector<coord> points;
   cell_mbr mbr{std::numeric_limits<int>::max(), std::numeric_limits<int>::min(),
                std::numeric_limits<int>::max(),
@@ -57,12 +52,6 @@ class polygon {
     mbr.y_min = std::min(mbr.y_min, points.back().y);
     mbr.y_max = std::max(mbr.y_max, points.back().y);
   }
-  void update_edge() {
-    for (auto j = 0UL; j < points.size() - 1; ++j) {
-      edges.emplace_back(edge{points.at(j).x, points.at(j).y,
-                              points.at(j + 1).x, points.at(j + 1).y});
-    }
-  }
 };
 
 struct transform {
@@ -78,8 +67,8 @@ class cell_ref {
   std::string         cell_name;
   coord               ref_point;
   transform           trans;
-  std::map<int,std::vector<h_edge>> h_edges;
-  std::map<int,std::vector<v_edge>> v_edges;
+  std::map<int,std::vector<orthogonal_edge>> h_edges;
+  std::map<int,std::vector<orthogonal_edge>> v_edges;
 
   cell_mbr            cell_ref_mbr{
       std::numeric_limits<int>::max(), std::numeric_limits<int>::min(),

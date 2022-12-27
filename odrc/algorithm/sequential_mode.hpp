@@ -14,24 +14,16 @@ struct event {
   bool  is_inevent;
 };
 
-// struct check_result {
-//   int  e11x;  // first_edge_start_x
-//   int  e11y;  // first_edge_start_y
-//   int  e12x;  // first_edge_end_x
-//   int  e12y;  // first_edge_end_y
-//   int  e21x;  // second_edge_start_x
-//   int  e21y;  // second_edge_start_y
-//   int  e22x;  // second_edge_end_x
-//   int  e22y;  // second_edge_end_y
-//   bool is_violation = false;
-// };
 struct violation_information {
   const core::polygon* polygon1;
   const core::polygon* polygon2;
-  core::edge     edge1;
-  core::edge     edge2;
-  violation_information(const core::polygon* polygon) { this->polygon1 = polygon; };
-  violation_information(const core::polygon* polygon1,const core::polygon* polygon2) {
+  core::edge           edge1;
+  core::edge           edge2;
+  violation_information(const core::polygon* polygon) {
+    this->polygon1 = polygon;
+  };
+  violation_information(const core::polygon* polygon1,
+                        const core::polygon* polygon2) {
     this->polygon1 = polygon1;
     this->polygon2 = polygon2;
   };
@@ -64,32 +56,32 @@ enum class rule_type {
   aux_ensure         = 19
 };
 
-template <typename edge>
-inline bool is_spacing_violation(edge f_edge, edge s_edge, int threshold) {
-  auto [start_point1, end_point1, distance1] = f_edge;
-  auto [start_point2, end_point2, distance2] = s_edge;
-  bool is_too_close = std::abs(distance1 - distance2) < threshold;
-  bool is_inversive =
-      (end_point1 - start_point1) * (end_point2 - start_point2) <
-      0;  // todo cross-
-  bool is_projection_overlap =
-      distance2 < distance1
-          ? (start_point2 > start_point1 and end_point1 > end_point2)
-          : (start_point1 > start_point2 and end_point2 > end_point1);
-  return is_too_close and is_projection_overlap and is_inversive;
+template <typename N>
+bool compare(N num1, N num2, rule_type ruletype) {
+  if (ruletype == rule_type::enclosure) {
+    return num1 > num2;
+  } else {
+    return num1 < num2;
+  }
 }
 
 template <typename edge>
-inline bool is_enclosing_violation(edge f_edge, edge s_edge, int threshold) {
-  auto [start_point1, end_point1, distance1] = f_edge;
-  auto [start_point2, end_point2, distance2] = s_edge;
-  bool is_too_close = std::abs(distance1 - distance2) < threshold;
-  bool is_inside_to_outside =
-      (end_point1 - end_point1) * (start_point2 - start_point2) > 0;
+inline bool is_spacing_violation(edge      edge1,
+                                 edge      edge2,
+                                 int       threshold,
+                                 rule_type ruletype = rule_type::spacing_both) {
+  auto [start_point1, end_point1, distance1] = edge1;
+  auto [start_point2, end_point2, distance2] = edge2;
+  bool is_too_close  = std::abs(distance1 - distance2) < threshold;
+  bool is_right_side = compare(
+      (end_point1 - start_point1) * (end_point2 - start_point2), 0, ruletype);
   bool is_projection_overlap =
-      end_point1 < start_point2 and end_point2 < start_point1;
-  return is_too_close and is_projection_overlap and is_inside_to_outside;
+      compare(distance2, distance1, ruletype)
+          ? (start_point2 > start_point1 and end_point1 > end_point2)
+          : (start_point1 > start_point2 and end_point2 > end_point1);
+  return is_too_close and is_projection_overlap and is_right_side;
 }
+
 void space_check_seq(odrc::core::database&               db,
                      std::vector<int>                    layers,
                      std::vector<int>                    without_layer,

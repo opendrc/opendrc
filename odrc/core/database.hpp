@@ -70,21 +70,21 @@ class database {
       const auto& cell = get_cell(cell_ref.cell_name);
       for (int layer = 0; layer < 64; layer++) {
         if (cell.is_touching(layer)) {
-          cell_ref.h_edges.emplace(layer, std::vector<h_edge>());
-          cell_ref.v_edges.emplace(layer, std::vector<v_edge>());
+          cell_ref.h_edges.emplace(layer, std::vector<orthogonal_edge>());
+          cell_ref.v_edges.emplace(layer, std::vector<orthogonal_edge>());
         }
       }
       for (const auto& polygon : cell.polygons) {
         const auto& points = polygon.points;
         for (auto j = 0UL; j < points.size() - 1; ++j) {
           if (points.at(j).x == points.at(j + 1).x) {
-            cell_ref.v_edges[polygon.layer].emplace_back(
-                v_edge{points.at(j).x + cell_ref.ref_point.x,
-                       points.at(j).y + cell_ref.ref_point.y,
-                       points.at(j + 1).y + cell_ref.ref_point.y});
+            cell_ref.v_edges[polygon.layer].emplace_back(orthogonal_edge{
+                points.at(j).y + cell_ref.ref_point.y,
+                points.at(j + 1).y + cell_ref.ref_point.y,
+                points.at(j).x + cell_ref.ref_point.x});
           } else {
             cell_ref.h_edges[polygon.layer].emplace_back(
-                h_edge{points.at(j).x + cell_ref.ref_point.x,
+                orthogonal_edge{points.at(j).x + cell_ref.ref_point.x,
                        points.at(j + 1).x + cell_ref.ref_point.x,
                        points.at(j).y + cell_ref.ref_point.y});
           }

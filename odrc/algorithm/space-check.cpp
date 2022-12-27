@@ -7,8 +7,6 @@
 #include <odrc/core/engine.hpp>
 #include <odrc/core/interval_tree.hpp>
 namespace odrc {
-using odrc::core::h_edge;
-using odrc::core::v_edge;
 
 void distance_check(odrc::core::database&               db,
                     std::vector<int>&                   layers,
@@ -23,11 +21,11 @@ void distance_check(odrc::core::database&               db,
           db.cells.back().cell_refs.at(f_cell).h_edges.at(layers.front());
       const auto& edges2 =
           db.cells.back().cell_refs.at(s_cell).h_edges.at(layers.front());
-      for (const auto& f_edge : edges1) {
-        for (const auto& s_edge : edges2) {
-          auto [start_point1, end_point1, distance1] = f_edge;
-          auto [start_point2, end_point2, distance2] = s_edge;
-          bool is_violation = is_spacing_violation(f_edge, s_edge, threshold);
+      for (const auto& edge1 : edges1) {
+        for (const auto& edge2 : edges2) {
+          auto [start_point1, end_point1, distance1] = edge1;
+          auto [start_point2, end_point2, distance2] = edge2;
+          bool is_violation = is_spacing_violation(edge1, edge2, threshold,ruletype);
           if (is_violation) {
             vios.emplace_back(violation_information{
                 core::edge{start_point1, distance1, end_point1, distance1},
@@ -44,11 +42,11 @@ void distance_check(odrc::core::database&               db,
           db.cells.back().cell_refs.at(f_cell).h_edges.at(layers.front());
       const auto& edges2 =
           db.cells.back().cell_refs.at(s_cell).h_edges.at(layers.front());
-      for (const auto& f_edge : edges1) {
-        for (const auto& s_edge : edges2) {
-          auto [start_point1, end_point1, distance1] = f_edge;
-          auto [start_point2, end_point2, distance2] = s_edge;
-          bool is_violation = is_spacing_violation(f_edge, s_edge, threshold);
+      for (const auto& edge1 : edges1) {
+        for (const auto& edge2 : edges2) {
+          auto [start_point1, end_point1, distance1] = edge1;
+          auto [start_point2, end_point2, distance2] = edge2;
+          bool is_violation = is_spacing_violation(edge1, edge2, threshold,ruletype);
           if (is_violation) {
             vios.emplace_back(violation_information{
                 core::edge{distance1, start_point1, distance1, end_point1},

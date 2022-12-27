@@ -20,7 +20,7 @@ int main(int argc, char* argv[]) {
         // e.polygons().is_rectilinear(),
         e.layer(20).width().greater_than(18),
         e.layer(19).spacing().greater_than(18),
-        e.layer(19).with_layer(21).enclosure().greater_than(2),
+        e.layer(19).with_layer(21).enclosure().greater_than(5),
         e.layer(19).area().greater_than(504)
         //  e.layer(19).polygons().ensures(
         //      [](const auto& p) { return !p.name.empty(); })
