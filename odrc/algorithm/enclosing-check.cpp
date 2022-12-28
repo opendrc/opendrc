@@ -19,15 +19,16 @@ void distance_check(odrc::core::database&               db,
                     std::vector<violation_information>& vios) {
   for (const auto& [f_cell, s_cell] : ovlpairs) {
     auto& edges1 =
-        db.cells.back().cell_refs.at(f_cell).h_edges.at(layers.front());
+        db.cells.back().cell_refs.at(f_cell).h_edges.at(layers.back());
     auto& edges2 =
-        db.cells.back().cell_refs.at(s_cell).h_edges.at(layers.back());
+        db.cells.back().cell_refs.at(s_cell).h_edges.at(layers.front());
     for (const auto& edge1 : edges1) {
       for (const auto& edge2 : edges2) {
         auto [start_point1, end_point1, distance1] = edge1;
         auto [start_point2, end_point2, distance2] = edge2;
-        bool is_violation =
-            is_spacing_violation(edge1, edge2, threshold, ruletype);
+        // bool is_violation =
+        //     is_spacing_violation(edge1, edge2, threshold, ruletype);
+        bool is_violation = is_enclosing_violation(edge1, edge2, threshold);
         if (is_violation) {
           vios.emplace_back(violation_information{
               core::edge{start_point1, distance1, end_point1, distance1},
@@ -38,15 +39,16 @@ void distance_check(odrc::core::database&               db,
   }
   for (const auto& [f_cell, s_cell] : ovlpairs) {
     auto& edges1 =
-        db.cells.back().cell_refs.at(f_cell).v_edges.at(layers.front());
+        db.cells.back().cell_refs.at(f_cell).v_edges.at(layers.back());
     auto& edges2 =
-        db.cells.back().cell_refs.at(s_cell).v_edges.at(layers.back());
+        db.cells.back().cell_refs.at(s_cell).v_edges.at(layers.front());
     for (const auto& edge1 : edges1) {
       for (const auto& edge2 : edges2) {
         auto [start_point1, end_point1, distance1] = edge1;
         auto [start_point2, end_point2, distance2] = edge2;
-        bool is_violation =
-            is_spacing_violation(edge1, edge2, threshold, ruletype);
+        // bool is_violation =
+        //     is_spacing_violation(edge1, edge2, threshold, ruletype);
+        bool is_violation = is_enclosing_violation(edge1, edge2, threshold);
         if (is_violation) {
           vios.emplace_back(violation_information{
               core::edge{distance1, start_point1, distance1, end_point1},
@@ -81,9 +83,9 @@ std::vector<std::pair<int, int>> get_enclosing_ovlpairs(
                    layers.front())) {  // layer 1 is metal
       auto& mbr = cell_ref.cell_ref_mbr;
       events.emplace_back(
-          event{Intvl{mbr.y_min, mbr.y_max, ids[i]}, mbr.x_min, false, true});
+          event{Intvl{mbr.y_min, mbr.y_max, ids[i]}, mbr.x_min, true, true});
       events.emplace_back(
-          event{Intvl{mbr.y_min, mbr.y_max, ids[i]}, mbr.x_max, false, false});
+          event{Intvl{mbr.y_min, mbr.y_max, ids[i]}, mbr.x_max, true, false});
     } else {
       continue;
     }
@@ -107,7 +109,7 @@ std::vector<std::pair<int, int>> get_enclosing_ovlpairs(
       }
     } else {
       if (e.is_inevent) {
-        tree_M.get_intervals_overlapping_with(e.intvl, ovlpairs);
+        tree_M.get_intervals_overlapping_with(e.intvl, ovlpairs, e.is_polygon);
         tree_V.insert(e.intvl);
       } else {
         tree_V.remove(e.intvl);

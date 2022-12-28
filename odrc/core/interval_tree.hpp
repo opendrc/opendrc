@@ -20,7 +20,6 @@ struct interval {
   bool contains(const T& p) const { return l <= p and p <= r; }
 };
 
-
 template <typename T, typename V>
 struct node {
   using Intvl = interval<T, V>;
@@ -159,14 +158,16 @@ class interval_tree {
     node.is_subtree_empty = node.empty() and is_left_empty and is_right_empty;
   }
   void get_intervals_overlapping_with(const Intvl&                  intvl,
-                                      std::vector<std::pair<T, V>>& ovlp) {
-    _run_query(intvl, 0, ovlp);
+                                      std::vector<std::pair<T, V>>& ovlp,
+                                      bool is_polygon = true) {
+    _run_query(intvl, 0, ovlp, is_polygon);
   }
 
   // returns a vector of Intvl::v
   void _run_query(const Intvl&                  intvl,
                   const std::size_t             n,
-                  std::vector<std::pair<T, V>>& rtn) {
+                  std::vector<std::pair<T, V>>& rtn,
+                  bool                          is_polygon) {
     if (nodes.empty()) {
       return;
     }
@@ -176,26 +177,25 @@ class interval_tree {
     assert(n < nodes.size());
     const Node& node = nodes.at(n);
     if (intvl.r <= node.mid) {
-      node.get_intervals_containing(intvl.r, intvl.v, rtn, reverse);
+      node.get_intervals_containing(intvl.r, intvl.v, rtn, is_polygon);
       if (node.has_left_child()) {
-        _run_query(intvl, node.lc, rtn);
+        _run_query(intvl, node.lc, rtn, is_polygon);
       }
     } else if (intvl.l >= node.mid) {
-      node.get_intervals_containing(intvl.l, intvl.v, rtn, reverse);
+      node.get_intervals_containing(intvl.l, intvl.v, rtn, is_polygon);
       if (node.has_right_child()) {
-        _run_query(intvl, node.rc, rtn);
+        _run_query(intvl, node.rc, rtn, is_polygon);
       }
     } else {
-      node.get_intervals_containing(node.mid, intvl.v, rtn, reverse);
+      node.get_intervals_containing(node.mid, intvl.v, rtn, is_polygon);
       if (node.has_left_child()) {
-        _run_query(intvl, node.lc, rtn);
+        _run_query(intvl, node.lc, rtn, is_polygon);
       }
       if (node.has_right_child()) {
-        _run_query(intvl, node.rc, rtn);
+        _run_query(intvl, node.rc, rtn, is_polygon);
       }
     }
   }
-  bool reverse = false;
 
  private:
   std::vector<Node> nodes;
