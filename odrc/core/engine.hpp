@@ -53,13 +53,13 @@ class engine {
             space_check_seq(db, rule.layer, rule.without_layer,
                             rule.region.first, rule.ruletype, vlts);
             std::cout << vlts.size() << std::endl;
-            // for (const auto& vio : vlts) {
-            //   std::cout << "e11x: " << vio.e11x << " e11y: " << vio.e11y
-            //             << " e12x: " << vio.e12x << " e12y: " << vio.e12y
-            //             << " e21x: " << vio.e21x << " e21y: " << vio.e21y
-            //             << " e22x: " << vio.e22x << " e22y: " << vio.e22y
-            //             << std::endl;
-            // }
+            for (const auto& vio : vlts) {
+              std::cout << " edge1_x1: " << vio.edge1.x_startpoint << " edge1_y1: " << vio.edge1.y_startpoint
+                        << " edge1_x2: " << vio.edge1.x_endpoint << " edge1_y2: " << vio.edge1.y_endpoint
+                        << " edge2_x1: " << vio.edge2.x_startpoint << " edge2_y1: " << vio.edge2.y_startpoint
+                        << " edge2_x2: " << vio.edge2.x_endpoint << " edge2_y2: " << vio.edge2.y_endpoint
+                        << std::endl;
+            }
             break;
           }
           case rule_type::width: {

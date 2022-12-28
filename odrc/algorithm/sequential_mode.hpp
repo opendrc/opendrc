@@ -77,8 +77,10 @@ inline bool is_spacing_violation(edge      edge1,
       (end_point1 - start_point1) * (end_point2 - start_point2), 0, ruletype);
   bool is_projection_overlap =
       compare(distance2, distance1, ruletype)
-          ? (start_point2 > start_point1 and end_point1 > end_point2)
-          : (start_point1 > start_point2 and end_point2 > end_point1);
+          ? (start_point2 > start_point1 and end_point1 > end_point2 and
+             end_point1 < start_point1)
+          : (start_point1 > start_point2 and end_point2 > end_point1 and
+             end_point1 > start_point1);
   return is_too_close and is_projection_overlap and is_right_side;
 }
 

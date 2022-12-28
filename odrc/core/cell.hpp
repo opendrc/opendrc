@@ -118,7 +118,7 @@ class cell {
     for (auto layer : layers) {
       mask |= 1 << layer;
     }
-    return (mask & this->layers) != 0;
+    return ( this->layers&mask ) != 0;
   }
 
   bool is_touching(const cell& other) const {

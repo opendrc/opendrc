@@ -11,8 +11,8 @@ namespace odrc {
 
 using Intvl = core::interval<int, int>;
 
-void distance_check(odrc::core::database& db,
-                    std::vector<int>      layers,
+void distance_check(odrc::core::database&               db,
+                    std::vector<int>                    layers,
                     rule_type                           ruletype,
                     std::vector<std::pair<int, int>>&   ovlpairs,
                     int                                 threshold,
@@ -26,7 +26,8 @@ void distance_check(odrc::core::database& db,
       for (const auto& edge2 : edges2) {
         auto [start_point1, end_point1, distance1] = edge1;
         auto [start_point2, end_point2, distance2] = edge2;
-        bool is_violation = is_spacing_violation(edge1, edge2, threshold,ruletype);
+        bool is_violation =
+            is_spacing_violation(edge1, edge2, threshold, ruletype);
         if (is_violation) {
           vios.emplace_back(violation_information{
               core::edge{start_point1, distance1, end_point1, distance1},
@@ -44,7 +45,8 @@ void distance_check(odrc::core::database& db,
       for (const auto& edge2 : edges2) {
         auto [start_point1, end_point1, distance1] = edge1;
         auto [start_point2, end_point2, distance2] = edge2;
-        bool is_violation = is_spacing_violation(edge1, edge2, threshold,ruletype);
+        bool is_violation =
+            is_spacing_violation(edge1, edge2, threshold, ruletype);
         if (is_violation) {
           vios.emplace_back(violation_information{
               core::edge{distance1, start_point1, distance1, end_point1},
@@ -58,6 +60,7 @@ void distance_check(odrc::core::database& db,
 std::vector<std::pair<int, int>> get_enclosing_ovlpairs(
     odrc::core::database& db,
     std::vector<int>&     layers,
+    int                   threshold,
     std::vector<int>&     ids) {
   std::vector<std::pair<int, int>> ovlpairs;
   std::vector<event>               events;
@@ -69,16 +72,18 @@ std::vector<std::pair<int, int>> get_enclosing_ovlpairs(
     if (db.cells.at(idx).is_touching(layers.back())) {  // layer 2 is via
       auto& mbr = cell_ref.cell_ref_mbr;
       events.emplace_back(
-          event{Intvl{mbr.y_min, mbr.y_max, i}, mbr.x_min, false, true});
+          event{Intvl{mbr.y_min - threshold, mbr.y_max + threshold, ids[i]},
+                mbr.x_min, false, true});
       events.emplace_back(
-          event{Intvl{mbr.y_min, mbr.y_max, i}, mbr.x_max, false, false});
+          event{Intvl{mbr.y_min - threshold, mbr.y_max + threshold, ids[i]},
+                mbr.x_max, false, false});
     } else if (db.cells.at(idx).is_touching(
                    layers.front())) {  // layer 1 is metal
       auto& mbr = cell_ref.cell_ref_mbr;
       events.emplace_back(
-          event{Intvl{mbr.y_min, mbr.y_max, i}, mbr.x_min, false, true});
+          event{Intvl{mbr.y_min, mbr.y_max, ids[i]}, mbr.x_min, false, true});
       events.emplace_back(
-          event{Intvl{mbr.y_min, mbr.y_max, i}, mbr.x_max, false, false});
+          event{Intvl{mbr.y_min, mbr.y_max, ids[i]}, mbr.x_max, false, false});
     } else {
       continue;
     }
@@ -121,8 +126,8 @@ void enclosing_check_seq(odrc::core::database&               db,
   auto rows = layout_partition(db, layers);
   // get edges from cell
   for (auto row = 0UL; row < rows.size(); row++) {
-    auto ovlpairs = get_enclosing_ovlpairs(db, layers, rows[row]);
-    distance_check(db, layers,ruletype, ovlpairs, threshold, vios);
+    auto ovlpairs = get_enclosing_ovlpairs(db, layers, threshold, rows[row]);
+    distance_check(db, layers, ruletype, ovlpairs, threshold, vios);
   }
 }
 

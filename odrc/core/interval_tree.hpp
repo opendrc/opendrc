@@ -83,7 +83,7 @@ struct node {
           break;
         }
         if (reverse) {
-          ovlp.emplace_back(std::make_pair(it->v, v));
+          ovlp.emplace_back(it->v, v);
         } else {
           ovlp.emplace_back(std::make_pair(v, it->v));
         }

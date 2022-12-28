@@ -299,8 +299,6 @@ odrc::core::database read(const std::filesystem::path& file_path) {
       case record_type::ENDSTR:
         check_dtype(dt_none);
         cell = nullptr;  // invalidate pointer for safety
-        db.convert_polygon_to_cell();
-        db.update_edges();
         break;
 
         // elements
@@ -317,7 +315,6 @@ odrc::core::database read(const std::filesystem::path& file_path) {
       case record_type::SREF:
         check_dtype(dt_none);
         current_element = rtype;
-        // cell            = &db.create_cell();
         cell_ref = &cell->create_cell_ref();
         break;
       case record_type::AREF:
@@ -365,7 +362,6 @@ odrc::core::database read(const std::filesystem::path& file_path) {
           auto coord          = parse_coord(begin);
           cell_ref->ref_point = coord;
           auto& the_cell      = db.get_cell(cell_ref->cell_name);
-          the_cell.ref_ids.emplace(db.cells.back().cell_refs.size());
           cell_ref->update_mbr(the_cell.mbr);
           cell->update_mbr(the_cell.mbr, coord);
         }
@@ -442,6 +438,8 @@ odrc::core::database read(const std::filesystem::path& file_path) {
         break;
     }
     if (rtype == record_type::ENDLIB) {
+        db.convert_polygon_to_cell();
+        db.update_edges();
       break;
     }
   }

@@ -30,13 +30,6 @@ class database {
   cell& get_cell(const std::string& name) {
     return cells.at(_name_to_idx.at(name));
   }
-  // void erase() {
-  //   cells.back().cell_refs.erase(
-  //       cells.back().cell_refs.end() - cells.back().polygons.size(),
-  //       cells.back().cell_refs.end());
-  //   cells.erase(cells.end() - cells.back().polygons.size() - 1,
-  //               cells.end() - 1);
-  // };
 
   void update_map() {
     // update map if it's not up-to-date
@@ -54,8 +47,8 @@ class database {
 
   void convert_polygon_to_cell() {
     // convert polygons to cells
-    cells.emplace(cells.end() - 1, cell());
-    auto _cell  = cells.end() - 2;
+    cells.insert(cells.end()-1 , cell());
+    auto _cell  = cells.end()-2;
     _cell->name = "polygon";
     for (auto& polygon : cells.back().polygons) {
       _cell->polygons.emplace_back(polygon);

@@ -25,11 +25,12 @@ void distance_check(odrc::core::database&               db,
         for (const auto& edge2 : edges2) {
           auto [start_point1, end_point1, distance1] = edge1;
           auto [start_point2, end_point2, distance2] = edge2;
-          bool is_violation = is_spacing_violation(edge1, edge2, threshold,ruletype);
+          bool is_violation =
+              is_spacing_violation(edge1, edge2, threshold, ruletype);
           if (is_violation) {
             vios.emplace_back(violation_information{
-                core::edge{start_point1, distance1, end_point1, distance1},
-                core::edge{start_point2, distance2, end_point2, distance1}});
+                core::edge{distance1, start_point1, distance1, end_point1},
+                core::edge{distance2, start_point2, distance2, end_point2}});
           }
         }
       }
@@ -46,11 +47,12 @@ void distance_check(odrc::core::database&               db,
         for (const auto& edge2 : edges2) {
           auto [start_point1, end_point1, distance1] = edge1;
           auto [start_point2, end_point2, distance2] = edge2;
-          bool is_violation = is_spacing_violation(edge1, edge2, threshold,ruletype);
+          bool is_violation =
+              is_spacing_violation(edge1, edge2, threshold, ruletype);
           if (is_violation) {
             vios.emplace_back(violation_information{
-                core::edge{distance1, start_point1, distance1, end_point1},
-                core::edge{distance2, start_point2, distance2, end_point2}});
+                core::edge{start_point1, distance1, end_point1, distance1},
+                core::edge{start_point2, distance2, end_point2, distance2}});
           }
         }
       }
@@ -60,6 +62,7 @@ void distance_check(odrc::core::database&               db,
 
 std::vector<std::pair<int, int>> get_ovlpairs(odrc::core::database& db,
                                               std::vector<int>&     layers,
+                                              int                   threshold,
                                               std::vector<int>&     ids) {
   std::vector<std::pair<int, int>> ovlpairs;
   std::vector<event>               events;
@@ -71,9 +74,11 @@ std::vector<std::pair<int, int>> get_ovlpairs(odrc::core::database& db,
     if (db.cells.at(idx).is_touching(layers)) {
       auto& mbr = cell_ref.cell_ref_mbr;
       events.emplace_back(
-          event{Intvl{mbr.y_min, mbr.y_max, int(i)}, mbr.x_min, false, true});
+          event{Intvl{mbr.y_min, mbr.y_max + threshold, int(ids[i])}, mbr.x_min,
+                false, true});
       events.emplace_back(
-          event{Intvl{mbr.y_min, mbr.y_max, int(i)}, mbr.x_max, false, false});
+          event{Intvl{mbr.y_min, mbr.y_max + threshold, int(ids[i])}, mbr.x_max,
+                false, false});
     }
   }
 
@@ -85,7 +90,7 @@ std::vector<std::pair<int, int>> get_ovlpairs(odrc::core::database& db,
   ovlpairs.reserve(events.size() * 2);
   for (const auto& e : events) {
     if (e.is_inevent) {
-      // tree.get_intervals_overlapping_with(e.intvl, ovlpairs);
+      tree.get_intervals_overlapping_with(e.intvl, ovlpairs);
       tree.insert(e.intvl);
     } else {
       tree.remove(e.intvl);
@@ -102,7 +107,7 @@ void space_check_seq(odrc::core::database&               db,
                      std::vector<violation_information>& vios) {
   auto rows = layout_partition(db, layers);
   for (auto row = 0UL; row < rows.size(); row++) {
-    auto ovlpairs = get_ovlpairs(db, layers, rows[row]);
+    auto ovlpairs = get_ovlpairs(db, layers, threshold, rows[row]);
     distance_check(db, layers, ovlpairs, ruletype, threshold, vios);
   }
 }
