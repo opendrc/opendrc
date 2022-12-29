@@ -58,7 +58,7 @@ enum class rule_type {
 
 template <typename N>
 bool compare(N num1, N num2, rule_type ruletype) {
-  if (ruletype == rule_type::enclosure) {
+  if (ruletype == rule_type::enclosure or ruletype == rule_type::width) {
     return num1 > num2;
   } else {
     return num1 < num2;
@@ -66,37 +66,28 @@ bool compare(N num1, N num2, rule_type ruletype) {
 }
 
 template <typename edge>
-inline bool is_spacing_violation(edge      edge1,
-                                 edge      edge2,
-                                 int       threshold,
-                                 rule_type ruletype = rule_type::spacing_both) {
+inline bool is_violation(edge      edge1,
+                         edge      edge2,
+                         int       threshold,
+                         rule_type ruletype) {
   auto [start_point1, end_point1, distance1] = edge1;
   auto [start_point2, end_point2, distance2] = edge2;
-  bool is_too_close = std::abs(distance1 - distance2) < threshold;
-  bool is_right_side =
-      distance2 < distance1
-          ? start_point1 > end_point1 and start_point2 < end_point2
-          : start_point1 < end_point1 and start_point2 > end_point2;
-  bool is_projection_overlap =
-      compare(distance2, distance1, ruletype)
-          ? (start_point2 > start_point1 and end_point1 > end_point2 )
-          : (start_point1 > start_point2 and end_point2 > end_point1 );
-  return is_too_close and is_projection_overlap and is_right_side;
-}
-
-template <typename edge>
-inline bool is_enclosing_violation(edge f_edge, edge s_edge, int threshold) {
-  auto [start_point1, end_point1, distance1] = f_edge;
-  auto [start_point2, end_point2, distance2] = s_edge;
-  bool is_too_close =
-      std::abs(distance1 - distance2) < threshold and distance1 != distance2;
-  bool is_inside_to_outside =
-      (end_point1 - start_point1) * (end_point2 - start_point2) > 0;
-  bool is_projection_overlap =
-      distance1 > distance2
+  bool is_too_close = std::abs(distance1 - distance2) < threshold and distance1 !=distance2 ;
+  bool is_right_side, is_projection_overlap;
+  if (ruletype == rule_type::enclosure) {
+    is_right_side =
+        (end_point1 - start_point1) * (end_point2 - start_point2) > 0;
+  } else {
+    is_right_side =
+        compare(distance1, distance2,ruletype)
+            ? start_point1 > end_point1 and start_point2 < end_point2
+            : start_point1 < end_point1 and start_point2 > end_point2;
+  }
+  is_projection_overlap =
+      compare(distance1, distance2,ruletype)
           ? start_point1 > start_point2 and end_point1 < end_point2
           : start_point1 < start_point2 and end_point1 > end_point2;
-  return is_too_close and is_projection_overlap and is_inside_to_outside;
+  return is_too_close and is_projection_overlap and is_right_side;
 }
 
 void space_check_seq(odrc::core::database&               db,
@@ -116,9 +107,10 @@ void area_check_seq(const odrc::core::database&         db,
                     int                                 layer,
                     int                                 threshold,
                     std::vector<violation_information>& vios);
-void width_check_par(const odrc::core::database&         db,
+void width_check_seq(const odrc::core::database&         db,
                      int                                 layer,
                      int                                 threshold,
+                     rule_type                           ruletype,
                      std::vector<violation_information>& vios);
 
 }  // namespace odrc

@@ -25,9 +25,9 @@ void distance_check(odrc::core::database&               db,
         for (const auto& edge2 : edges2) {
           auto [start_point1, end_point1, distance1] = edge1;
           auto [start_point2, end_point2, distance2] = edge2;
-          bool is_violation =
-              is_spacing_violation(edge1, edge2, threshold, ruletype);
-          if (is_violation) {
+          bool is_vlt =
+              is_violation(edge1, edge2, threshold, ruletype);
+          if (is_vlt) {
             vios.emplace_back(violation_information{
                 core::edge{distance1, start_point1, distance1, end_point1},
                 core::edge{distance2, start_point2, distance2, end_point2}});
@@ -36,28 +36,28 @@ void distance_check(odrc::core::database&               db,
       }
     }
   }
-  // if (ruletype == rule_type::spacing_both or
-  //     ruletype == rule_type::spacing_v_edge) {
-  //   for (const auto& [f_cell, s_cell] : ovlpairs) {
-  //     const auto& edges1 =
-  //         db.cells.back().cell_refs.at(f_cell).v_edges.at(layers.front());
-  //     const auto& edges2 =
-  //         db.cells.back().cell_refs.at(s_cell).v_edges.at(layers.front());
-  //     for (const auto& edge1 : edges1) {
-  //       for (const auto& edge2 : edges2) {
-  //         auto [start_point1, end_point1, distance1] = edge1;
-  //         auto [start_point2, end_point2, distance2] = edge2;
-  //         bool is_violation =
-  //             is_spacing_violation(edge1, edge2, threshold, ruletype);
-  //         if (is_violation) {
-  //           vios.emplace_back(violation_information{
-  //               core::edge{start_point1, distance1, end_point1, distance1},
-  //               core::edge{start_point2, distance2, end_point2, distance2}});
-  //         }
-  //       }
-  //     }
-  //   }
-  // }
+  if (ruletype == rule_type::spacing_both or
+      ruletype == rule_type::spacing_v_edge) {
+    for (const auto& [f_cell, s_cell] : ovlpairs) {
+      const auto& edges1 =
+          db.cells.back().cell_refs.at(f_cell).v_edges.at(layers.front());
+      const auto& edges2 =
+          db.cells.back().cell_refs.at(s_cell).v_edges.at(layers.front());
+      for (const auto& edge1 : edges1) {
+        for (const auto& edge2 : edges2) {
+          auto [start_point1, end_point1, distance1] = edge1;
+          auto [start_point2, end_point2, distance2] = edge2;
+          bool is_vlt =
+              is_violation(edge1, edge2, threshold, ruletype);
+          if (is_vlt) {
+            vios.emplace_back(violation_information{
+                core::edge{start_point1, distance1, end_point1, distance1},
+                core::edge{start_point2, distance2, end_point2, distance2}});
+          }
+        }
+      }
+    }
+  }
 }  // namespace odrc
 
 std::vector<std::pair<int, int>> get_ovlpairs(odrc::core::database& db,
@@ -108,7 +108,6 @@ void space_check_seq(odrc::core::database&               db,
   auto rows = layout_partition(db, layers);
   for (auto row = 0UL; row < rows.size(); row++) {
     auto ovlpairs = get_ovlpairs(db, layers, threshold, rows[row]);
-    std::cout << ovlpairs.size()<<std::endl;
     distance_check(db, layers, ovlpairs, ruletype, threshold, vios);
   }
 }

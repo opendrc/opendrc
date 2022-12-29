@@ -26,10 +26,8 @@ void distance_check(odrc::core::database&               db,
       for (const auto& edge2 : edges2) {
         auto [start_point1, end_point1, distance1] = edge1;
         auto [start_point2, end_point2, distance2] = edge2;
-        // bool is_violation =
-        //     is_spacing_violation(edge1, edge2, threshold, ruletype);
-        bool is_violation = is_enclosing_violation(edge1, edge2, threshold);
-        if (is_violation) {
+        bool is_vlt = is_violation(edge1, edge2, threshold, ruletype);
+        if (is_vlt) {
           vios.emplace_back(violation_information{
               core::edge{start_point1, distance1, end_point1, distance1},
               core::edge{start_point2, distance2, end_point2, distance1}});
@@ -46,10 +44,8 @@ void distance_check(odrc::core::database&               db,
       for (const auto& edge2 : edges2) {
         auto [start_point1, end_point1, distance1] = edge1;
         auto [start_point2, end_point2, distance2] = edge2;
-        // bool is_violation =
-        //     is_spacing_violation(edge1, edge2, threshold, ruletype);
-        bool is_violation = is_enclosing_violation(edge1, edge2, threshold);
-        if (is_violation) {
+        bool is_vlt = is_violation(edge1, edge2, threshold, ruletype);
+        if (is_vlt) {
           vios.emplace_back(violation_information{
               core::edge{distance1, start_point1, distance1, end_point1},
               core::edge{distance2, start_point2, distance2, end_point2}});

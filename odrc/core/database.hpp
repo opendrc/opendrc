@@ -11,7 +11,6 @@
 #include <odrc/core/cell.hpp>
 #include <odrc/utility/datetime.hpp>
 namespace odrc::core {
-
 class database {
  public:
   // meta info
@@ -47,8 +46,8 @@ class database {
 
   void convert_polygon_to_cell() {
     // convert polygons to cells
-    cells.insert(cells.end()-1 , cell());
-    auto _cell  = cells.end()-2;
+    cells.insert(cells.end() - 1, cell());
+    auto _cell  = cells.end() - 2;
     _cell->name = "polygon";
     for (auto& polygon : cells.back().polygons) {
       _cell->polygons.emplace_back(polygon);
@@ -71,15 +70,15 @@ class database {
         const auto& points = polygon.points;
         for (auto j = 0UL; j < points.size() - 1; ++j) {
           if (points.at(j).x == points.at(j + 1).x) {
-            cell_ref.v_edges[polygon.layer].emplace_back(orthogonal_edge{
-                points.at(j).y + cell_ref.ref_point.y,
-                points.at(j + 1).y + cell_ref.ref_point.y,
-                points.at(j).x + cell_ref.ref_point.x});
+            cell_ref.v_edges[polygon.layer].emplace_back(
+                orthogonal_edge{points.at(j).y + cell_ref.ref_point.y,
+                                points.at(j + 1).y + cell_ref.ref_point.y,
+                                points.at(j).x + cell_ref.ref_point.x});
           } else {
             cell_ref.h_edges[polygon.layer].emplace_back(
                 orthogonal_edge{points.at(j).x + cell_ref.ref_point.x,
-                       points.at(j + 1).x + cell_ref.ref_point.x,
-                       points.at(j).y + cell_ref.ref_point.y});
+                                points.at(j + 1).x + cell_ref.ref_point.x,
+                                points.at(j).y + cell_ref.ref_point.y});
           }
         }
       }
@@ -90,5 +89,4 @@ class database {
  private:
   std::unordered_map<std::string, int> _name_to_idx;
 };
-
 }  // namespace odrc::core

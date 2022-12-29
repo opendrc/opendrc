@@ -95,7 +95,6 @@ class cell {
   odrc::util::datetime  atime;
   std::vector<polygon>  polygons;
   std::vector<cell_ref> cell_refs;
-  std::set<int>         ref_ids;
   cell_mbr mbr{std::numeric_limits<int>::max(), std::numeric_limits<int>::min(),
                std::numeric_limits<int>::max(),
                std::numeric_limits<int>::min()};
