@@ -23,16 +23,16 @@ struct interval {
 template <typename T, typename V>
 struct node {
   using Intvl = interval<T, V>;
-  T    mid;  // value of the tree node
+  T    v;  // the value of the node is the mid point of the initial interval
   bool is_subtree_empty = false;
 
   node() = default;
   node(const Intvl& intvl) {
-    mid = intvl.mid();
+    v = intvl.mid();
     insert(intvl);
   }
   node(Intvl&& intvl) {
-    mid = intvl.mid();
+    v = intvl.mid();
     insert(std::move(intvl));
   }
 
@@ -76,7 +76,7 @@ struct node {
                                 const V&                      v,
                                 std::vector<std::pair<V, V>>& ovlp,
                                 bool                          reverse) const {
-    if (p <= mid) {
+    if (p <= v) {
       for (auto it = intvl_l.begin(); it != intvl_l.end(); ++it) {
         if (it->l > p) {
           break;
