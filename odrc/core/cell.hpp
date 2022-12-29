@@ -148,4 +148,36 @@ inline bool polygon::is_touching(const cell& other) const {
          mbr.y_min < other.mbr.y_max and mbr.y_max > other.mbr.y_min;
 }
 
+// the input can be polygons in a cell or polygons of cells
+inline void merge_polygons(std::vector<polygon>& polygons) {
+  // cluster polygons by layer
+  std::map<int, std::vector<polygon>> layer_to_polygons;
+  for (auto& polygon : polygons) {
+    layer_to_polygons[polygon.layer].emplace_back(polygon);
+  }
+
+  polygons.clear();
+
+  // merge polygons in each layer
+  // for (auto& [layer, polygons] : layer_to_polygons) {
+  //   std::vector<polygon> merged_polygons;
+  //   for (auto& polygon : polygons) {
+  //     bool merged = false;
+  //     for (auto& merged_polygon : merged_polygons) {
+  //       if (merged_polygon.is_touching(polygon)) {
+  //         merged_polygon.merge(polygon);
+  //         merged = true;
+  //         break;
+  //       }
+  //     }
+  //     if (!merged) {
+  //       merged_polygons.emplace_back(polygon);
+  //     }
+  //   }
+  //   polygons = merged_polygons;
+  // }
+
+  
+}
+
 }  // namespace odrc::core
