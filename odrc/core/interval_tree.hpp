@@ -39,15 +39,19 @@ struct node {
   int lc = -1;  // left child offset;
   int rc = -1;  // right child offset
 
-  std::function<bool(interval_t,interval_t)> l_compare = [](const interval_t& lhs, const interval_t& rhs) {
-    return lhs.l == rhs.l ? lhs.v < rhs.v : lhs.l < rhs.l;
+  struct l_compare{
+    bool operator()(const interval_t& lhs, const interval_t& rhs) const {
+      return lhs.l == rhs.l ? lhs.v < rhs.v : lhs.l < rhs.l;
+    }
   };
-  std::function<bool(interval_t,interval_t)> r_compare = [](const interval_t& lhs, const interval_t& rhs) {
-    return lhs.r == rhs.r ? lhs.v < rhs.v : lhs.r > rhs.r;
+  struct r_compare {
+    bool operator()(const interval_t& lhs, const interval_t& rhs) const {
+      return lhs.r == rhs.r ? lhs.v < rhs.v : lhs.r > rhs.r;
+    }
   };
 
-  std::set<interval_t, decltype(l_compare)> intvls_l;  // intervals in ascending left endpoint
-  std::set<interval_t, decltype(r_compare)> intvls_r;  // intervals in descending right endpoint
+  std::set<interval_t, l_compare> intvls_l;  // intervals in ascending left endpoint
+  std::set<interval_t, r_compare> intvls_r;  // intervals in descending right endpoint
 
   [[nodiscard]] bool has_left_child() const { return lc != -1; }
   [[nodiscard]] bool has_right_child() const { return rc != -1; }
