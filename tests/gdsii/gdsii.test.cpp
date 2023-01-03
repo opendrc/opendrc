@@ -160,7 +160,7 @@ TEST_SUITE("[OpenDRC] odrc::gdsii data parser tests") {
   TEST_CASE("parse_string of 'hello world'") {
     B           bytes[11];
     std::string golden_str = "hello world";
-    for (int i = 0; i < 11; ++i) {
+    for (auto i = 0UL; i < 11; ++i) {
       bytes[i] = std::byte{static_cast<unsigned char>(golden_str[i])};
     }
     std::string str = odrc::gdsii::parse_string(bytes, bytes + 11);
@@ -169,7 +169,7 @@ TEST_SUITE("[OpenDRC] odrc::gdsii data parser tests") {
   TEST_CASE("parse_string of 'hello world' with padded zero") {
     B           bytes[12];
     std::string golden_str = "hello world";
-    for (int i = 0; i < 11; ++i) {
+    for (auto i = 0UL; i < 11; ++i) {
       bytes[i] = std::byte{static_cast<unsigned char>(golden_str[i])};
     }
     bytes[11]       = {B{0x00}};
@@ -184,7 +184,7 @@ TEST_SUITE("[OpenDRC] odrc::gdsii library tests") {
     auto db = odrc::gdsii::read("./gcd.gds");
     CHECK_EQ(db.version, 600);
     CHECK_EQ(db.dbu_in_meter / db.dbu_in_user_unit, doctest::Approx(1e-6));
-    CHECK_EQ(db.cells.size(), 53);
+    CHECK_EQ(db.cells.size(), 4236);
   }
   TEST_CASE("read test gdsii file") {
     auto db = odrc::gdsii::read("./test.gds");
@@ -206,7 +206,7 @@ TEST_SUITE("[OpenDRC] odrc::gdsii library tests") {
     CHECK_EQ(db.atime.second, 28);
     CHECK_EQ(std::string(db.cells.at(0).name), "TRANS");
     CHECK_EQ(std::string(db.cells.at(1).name), "INV2");
-    CHECK_EQ(std::string(db.cells.at(2).name), "RINGO");
+    CHECK_EQ(std::string(db.cells.at(3).name), "RINGO");
   }
   TEST_CASE("open gdsii file error") {
     CHECK_THROWS_AS(odrc::gdsii::read("./not_exist.gds"),

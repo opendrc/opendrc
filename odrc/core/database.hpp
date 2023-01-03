@@ -3,15 +3,14 @@
 #include <algorithm>
 #include <cstring>
 #include <iostream>
+#include <map>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
 #include <odrc/core/cell.hpp>
 #include <odrc/utility/datetime.hpp>
-
 namespace odrc::core {
-
 class database {
  public:
   // meta info
@@ -24,141 +23,151 @@ class database {
 
   // layout
   cell& create_cell() { return cells.emplace_back(); }
+  int   get_cell_idx(const std::string& name) const {
+    return _name_to_idx.at(name);
+  }
   cell& get_cell(const std::string& name) {
     return cells.at(_name_to_idx.at(name));
   }
-  const cell& get_cell(const std::string& name) const {
-    if (name == cells.back().name)
-      return cells.back();
-    return cells.at(_name_to_idx.at(name));
-  }
-
+  cell& get_top_cell() {
+    unsigned long idx=0;
+    int size=0;
+    for (auto i = 0UL; i < cells.size(); i++) {
+      if(cells.at(i).cell_refs.size()>size)
+      {
+        size=cells.at(i).cell_refs.size();
+        idx=i;
+      }
+    }
+    return cells.at(idx);
+  };
+  int get_top_cell_idx(){
+    unsigned long idx=0;
+    int size=0;
+    for (auto i = 0UL; i < cells.size(); i++) {
+      if(cells.at(i).cell_refs.size()>size)
+      {
+        size=cells.at(i).cell_refs.size();
+        idx=i;
+      }
+    }
+    return idx;
+  };
   void update_map() {
     // update map if it's not up-to-date
     // do nothing if both containers have equal sizes
-    for (auto i = _name_to_idx.size(); i < cells.size(); ++i) {
-      _name_to_idx.emplace(cells.at(i).name, i);
-    }
-  }
-  void update_depth_and_mbr(int layer1, int layer2) {
-    // convert polygons to cells
-    std::vector<cell> pcells;
-    auto&             top_cell = cells.back();
-    int               pi       = 0;
-    for (auto& polygon : top_cell.polygons) {
-      pcells.emplace_back();
-      pcells.back().polygons.emplace_back(polygon);
-      pcells.back().add_layer(polygon.layer);
-      memcpy(pcells.back().mbr, polygon.mbr, sizeof(int) * 4);
-      pcells.back().name = "polygon" + std::to_string(++pi);
-      top_cell.cell_refs.emplace_back(pcells.back().name, coord{0, 0});
-    }
-    cells.insert(cells.end() - 1, pcells.begin(), pcells.end());
-    for (int i = _name_to_idx.size() - 1; i < cells.size(); ++i) {
-      _name_to_idx[cells.at(i).name] = i;
-    }
-
-    for (auto& cell : cells) {
-      if (cell.cell_refs.size() == 0) {
-        cell.depth = 1;
-      } else {
-        int depth = 1;
-        for (auto& cell_ref : cell.cell_refs) {
-          auto& the_cell = get_cell(cell_ref.cell_name);
-          depth = depth < the_cell.depth + 1 ? the_cell.depth + 1 : depth;
-          cell_ref.mbr[0]  = 99999999;
-          cell_ref.mbr[1]  = -999999;
-          cell_ref.mbr[2]  = 99999999;
-          cell_ref.mbr[3]  = -999999;
-          cell_ref.mbr1[0] = 99999999;
-          cell_ref.mbr1[1] = -999999;
-          cell_ref.mbr1[2] = 99999999;
-          cell_ref.mbr1[3] = -999999;
-          cell_ref.mbr2[0] = 99999999;
-          cell_ref.mbr2[1] = -999999;
-          cell_ref.mbr2[2] = 99999999;
-          cell_ref.mbr2[3] = -999999;
-          if (the_cell.depth == 1) {  // lowest cells that only contains polys
-            for (const auto& polygon : the_cell.polygons) {
-              if (polygon.layer != layer1 and polygon.layer != layer2)
-                continue;
-              cell_ref.mbr[0] = std::min(polygon.mbr[0], cell_ref.mbr[0]);
-              cell_ref.mbr[1] = std::max(polygon.mbr[1], cell_ref.mbr[1]);
-              cell_ref.mbr[2] = std::min(polygon.mbr[2], cell_ref.mbr[2]);
-              cell_ref.mbr[3] = std::max(polygon.mbr[3], cell_ref.mbr[3]);
-              if (polygon.layer == layer1) {
-                cell_ref.mbr1[0] = std::min(polygon.mbr[0], cell_ref.mbr1[0]);
-                cell_ref.mbr1[1] = std::max(polygon.mbr[1], cell_ref.mbr1[1]);
-                cell_ref.mbr1[2] = std::min(polygon.mbr[2], cell_ref.mbr1[2]);
-                cell_ref.mbr1[3] = std::max(polygon.mbr[3], cell_ref.mbr1[3]);
-              } else {
-                cell_ref.mbr2[0] = std::min(polygon.mbr[0], cell_ref.mbr2[0]);
-                cell_ref.mbr2[1] = std::max(polygon.mbr[1], cell_ref.mbr2[1]);
-                cell_ref.mbr2[2] = std::min(polygon.mbr[2], cell_ref.mbr2[2]);
-                cell_ref.mbr2[3] = std::max(polygon.mbr[3], cell_ref.mbr2[3]);
-              }
-              const auto&          points = polygon.points;
-              std::vector<v_edge>& vedges = polygon.layer == layer1
-                                                ? cell_ref.v_edges1
-                                                : cell_ref.v_edges2;
-              std::vector<h_edge>& hedges = polygon.layer == layer1
-                                                ? cell_ref.h_edges1
-                                                : cell_ref.h_edges2;
-              for (auto i = 0; i < points.size() - 1; ++i) {
-                if (points.at(i).x == points.at(i + 1).x) {  // v_edge
-                  vedges.emplace_back(
-                      v_edge{points.at(i).x + cell_ref.ref_point.x,
-                             points.at(i).y + cell_ref.ref_point.y,
-                             points.at(i + 1).y + cell_ref.ref_point.y});
-                } else {
-                  hedges.emplace_back(
-                      h_edge{points.at(i).x + cell_ref.ref_point.x,
-                             points.at(i + 1).x + cell_ref.ref_point.x,
-                             points.at(i).y + cell_ref.ref_point.y});
-                }
-              }
-            }
-            std::sort(
-                cell_ref.v_edges.begin(), cell_ref.v_edges.end(),
-                [](const auto& e1, const auto& e2) { return e1.x < e2.x; });
-            std::sort(
-                cell_ref.v_edges1.begin(), cell_ref.v_edges1.end(),
-                [](const auto& e1, const auto& e2) { return e1.x < e2.x; });
-            std::sort(
-                cell_ref.v_edges2.begin(), cell_ref.v_edges2.end(),
-                [](const auto& e1, const auto& e2) { return e1.x < e2.x; });
-            std::sort(
-                cell_ref.h_edges.begin(), cell_ref.h_edges.end(),
-                [](const auto& e1, const auto& e2) { return e1.y < e2.y; });
-            std::sort(
-                cell_ref.h_edges1.begin(), cell_ref.h_edges1.end(),
-                [](const auto& e1, const auto& e2) { return e1.y < e2.y; });
-            std::sort(
-                cell_ref.h_edges2.begin(), cell_ref.h_edges2.end(),
-                [](const auto& e1, const auto& e2) { return e1.y < e2.y; });
-          }
-          cell_ref.mbr[0] += cell_ref.ref_point.x;
-          cell_ref.mbr[1] += cell_ref.ref_point.x + 17;
-          cell_ref.mbr[2] += cell_ref.ref_point.y;
-          cell_ref.mbr[3] += cell_ref.ref_point.y + 17;
-          cell_ref.mbr1[0] += cell_ref.ref_point.x;
-          cell_ref.mbr1[1] += cell_ref.ref_point.x + 17;
-          cell_ref.mbr1[2] += cell_ref.ref_point.y;
-          cell_ref.mbr1[3] += cell_ref.ref_point.y + 17;
-          cell_ref.mbr2[0] += cell_ref.ref_point.x;
-          cell_ref.mbr2[1] += cell_ref.ref_point.x + 17;
-          cell_ref.mbr2[2] += cell_ref.ref_point.y;
-          cell_ref.mbr2[3] += cell_ref.ref_point.y + 17;
-        }
-        cell.depth = depth;
+    if (_name_to_idx.size() == 0) {
+      for (auto i = 0UL; i < cells.size(); ++i) {
+        _name_to_idx.emplace(cells.at(i).name, i);
+      }
+    } else {
+      for (auto i = _name_to_idx.size() - 1; i < cells.size(); ++i) {
+        _name_to_idx[cells.at(i).name] = i;
       }
     }
   }
 
+  void convert_polygon_to_cell() {
+    // convert polygons to cells
+    cells.insert(cells.end() - 1, cell());
+    auto _cell  = cells.end() - 2;
+    _cell->name = "polygon";
+    for (auto& polygon : get_top_cell().polygons) {
+      _cell->polygons.emplace_back(polygon);
+      _cell->add_layer(polygon.layer);
+    }
+    get_top_cell().cell_refs.emplace_back("polygon", coord{0, 0});
+    update_map();
+  }
+
+  void update_edges() {
+    for (auto num = 0UL; num < cells.size() ; num++) {
+      if(num==get_top_cell_idx())
+        continue;
+      for (int layer = 0; layer < 64; layer++) {
+        if (cells.at(num).is_touching(layer)) {
+          cells.at(num).left_edges.emplace(layer,
+                                           std::vector<orthogonal_edge>());
+          cells.at(num).right_edges.emplace(layer,
+                                            std::vector<orthogonal_edge>());
+          cells.at(num).upper_edges.emplace(layer,
+                                            std::vector<orthogonal_edge>());
+          cells.at(num).lower_edges.emplace(layer,
+                                            std::vector<orthogonal_edge>());
+        }
+      }
+      for (const auto& polygon : cells.at(num).polygons) {
+        const auto& points = polygon.points;
+        for (auto j = 0UL; j < points.size() - 1; ++j) {
+          if (points.at(j).x == points.at(j).x and
+              points.at(j).y > points.at(j + 1).y) {
+            cells.at(num).right_edges[polygon.layer].emplace_back(
+                orthogonal_edge{points.at(j+1).y, points.at(j ).y,
+                                points.at(j).x});
+          } else if (points.at(j).x == points.at(j).x and
+                     points.at(j).y < points.at(j + 1).y) {
+            cells.at(num).left_edges[polygon.layer].emplace_back(
+                orthogonal_edge{points.at(j).y, points.at(j+1 ).y,
+                                points.at(j).x});
+          } else if (points.at(j).y == points.at(j).y and
+                     points.at(j).x < points.at(j + 1).x) {
+            cells.at(num).upper_edges[polygon.layer].emplace_back(
+                orthogonal_edge{points.at(j).x, points.at(j+1 ).x,
+                                points.at(j).y});
+          } else if (points.at(j).y == points.at(j).y and
+                     points.at(j).x > points.at(j + 1).x) {
+            cells.at(num).lower_edges[polygon.layer].emplace_back(
+                orthogonal_edge{points.at(j+1).x, points.at(j ).x,
+                                points.at(j).y});
+          }
+        }
+      }
+    }
+    for (auto& cell_ref : get_top_cell().cell_refs) {
+      const auto& cell = get_cell(cell_ref.cell_name);
+      for (int layer = 0; layer < 64; layer++) {
+        if (cell.is_touching(layer)) {
+          cell_ref.left_edges.emplace(layer, std::vector<orthogonal_edge>());
+          cell_ref.right_edges.emplace(layer, std::vector<orthogonal_edge>());
+          cell_ref.upper_edges.emplace(layer, std::vector<orthogonal_edge>());
+          cell_ref.lower_edges.emplace(layer, std::vector<orthogonal_edge>());
+        }
+      }
+      for (const auto& polygon : cell.polygons) {
+        const auto& points = polygon.points;
+        for (auto j = 0UL; j < points.size() - 1; ++j) {
+          if (points.at(j).x == points.at(j).x and
+              points.at(j).y > points.at(j + 1).y) {
+            cell_ref.right_edges[polygon.layer].emplace_back(
+                orthogonal_edge{points.at(j+1).y + cell_ref.ref_point.y,
+                                points.at(j ).y + cell_ref.ref_point.y,
+                                points.at(j).x + cell_ref.ref_point.x});
+          } else if (points.at(j).x == points.at(j).x and
+                     points.at(j).y < points.at(j + 1).y) {
+            cell_ref.left_edges[polygon.layer].emplace_back(
+                orthogonal_edge{points.at(j).y + cell_ref.ref_point.y,
+                                points.at(j+1 ).y + cell_ref.ref_point.y,
+                                points.at(j).x + cell_ref.ref_point.x});
+          } else if (points.at(j).y == points.at(j).y and
+                     points.at(j).x < points.at(j + 1).x) {
+            cell_ref.upper_edges[polygon.layer].emplace_back(
+                orthogonal_edge{points.at(j).x + cell_ref.ref_point.x,
+                                points.at(j +1).x + cell_ref.ref_point.x,
+                                points.at(j).y + cell_ref.ref_point.y});
+          } else if (points.at(j).y == points.at(j).y and
+                     points.at(j).x > points.at(j + 1).x) {
+            cell_ref.lower_edges[polygon.layer].emplace_back(
+                orthogonal_edge{points.at(j+1).x + cell_ref.ref_point.x,
+                                points.at(j ).x + cell_ref.ref_point.x,
+                                points.at(j).y + cell_ref.ref_point.y});
+          }
+        }
+      }
+    }
+  }
   std::vector<cell> cells;
 
  private:
   std::unordered_map<std::string, int> _name_to_idx;
 };
-
 }  // namespace odrc::core

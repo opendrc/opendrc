@@ -488,8 +488,8 @@ DOCTEST_GCC_SUPPRESS_WARNING_POP
 #endif // DOCTEST_CONFIG_INCLUDE_TYPE_TRAITS
 DOCTEST_MAKE_STD_HEADERS_CLEAN_FROM_WARNINGS_ON_WALL_BEGIN
 #include <cstddef>
-#include <ostream>
 #include <istream>
+#include <ostream>
 DOCTEST_MAKE_STD_HEADERS_CLEAN_FROM_WARNINGS_ON_WALL_END
 #else // DOCTEST_CONFIG_USE_STD_HEADERS
 
@@ -5372,7 +5372,7 @@ namespace {
             if(num_contexts) {
                 auto              contexts = get_active_contexts();
                 std::stringstream ss;
-                for(int i = 0; i < num_contexts; ++i) {
+                for(auto i = 0UL; i < num_contexts; ++i) {
                     contexts[i]->stringify(&ss);
                     xml.scopedElement("Info").writeText(ss.str());
                     ss.str("");
@@ -5858,7 +5858,7 @@ namespace {
                 auto contexts = get_active_contexts();
 
                 s << "  logged: ";
-                for(int i = 0; i < num_contexts; ++i) {
+                for(auto i = 0UL; i < num_contexts; ++i) {
                     s << (i == 0 ? "" : "          ");
                     contexts[i]->stringify(&s);
                     s << std::endl;
@@ -5936,7 +5936,7 @@ namespace {
                 auto contexts = get_active_contexts();
 
                 s << Color::None << "  logged: ";
-                for(int i = 0; i < num_contexts; ++i) {
+                for(auto i = 0UL; i < num_contexts; ++i) {
                     s << (i == 0 ? "" : "          ");
                     contexts[i]->stringify(&s);
                     s << "\n";

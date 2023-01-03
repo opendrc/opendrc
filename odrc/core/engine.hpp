@@ -1,50 +1,30 @@
 #pragma once
 
-#include <odrc/algorithm/space-check.hpp>
-#include <odrc/core/cell.hpp>
-#include <odrc/core/database.hpp>
+#include <set>
 #include <vector>
 
-namespace odrc::core {
-enum class rule_type {
-  area,
-  enclosure,
-  extension,
-  geometry,
-  length,
-  lup,
-  overlap,
-  recommend,       // may be unused
-  spacing_both,    // default,both horizontal and vertical edges
-  spacing_h_edge,  // only horizontal edges
-  spacing_v_edge,  // only vertical edges
-  spacing_corner,  // corner-corner
-  spacing_center,  // center-center
-  spacing_tip,     // tip-tip
-  spacing_lup,     // latch-upobject
-  sram,
-  width,
-  aux_not_bend,
-  aux_is_rectilinear
-};
+#include <odrc/algorithm/sequential_mode.hpp>
+#include <odrc/algorithm/parallel_mode.hpp>
 
+#include <odrc/core/cell.hpp>
+#include <odrc/core/database.hpp>
+
+namespace odrc::core {
 enum class object {
   polygon,
   cell,
   both,
 };
-
 enum class sramdrc_set {
   dft              = 0,  // default
   interac_SRAMDRAC = 1,  // interact with the layer SRAMDRC
   outside_SRAMDRAC = 2,  // outside the layer SRAMDRC
 };
-enum class mode { sequence, parallel };
-
+enum class mode { sequential, parallel };
 struct rule {
   int                 rule_num;
-  int                 layer;
-  std::vector<int>    with_layer{0};
+  std::vector<int>    layer;
+  std::vector<int>    with_layer;
   std::vector<int>    without_layer;
   std::pair<int, int> region;
   rule_type           ruletype;
@@ -54,31 +34,88 @@ struct rule {
 
 class engine {
  public:
-  mode                            mod = mode::sequence;
-  std::vector<odrc::check_result> vlts;
+  mode                            check_mode = mode::sequential;
+  std::vector<odrc::violation_information> vlts;
   //<rule number, polgon/cell number>
   std::vector<std::pair<int, std::pair<int, int>>> vlt_paires;
   //<rule number,<polygons/cells number pair>>
-  void add_rules(std::vector<int> value){};
-  void set_mode(mode md) { mod = md; };
+
+  void add_rules(std::vector<int> value) {
+    std::cout << "ALL rules have been added." << std::endl;
+  };
+
+  void set_mode(mode md) { check_mode = md; };
   void check(odrc::core::database& db) {
     for (const auto& rule : rules) {
-      switch (rule.ruletype) {
-        case rule_type::spacing_both: {
-          int layer2 =
-              rule.with_layer.front() ? rule.with_layer.front() : rule.layer;
-          db.update_depth_and_mbr(rule.layer, layer2);
-          if (mod == mode::sequence) {
-            space_check_seq(db, rule.layer, layer2, rule.region.first, vlts);
-            // std::cout << vlts.size() << std::endl;
-          } else if (mod == mode::parallel) {
-            space_check_pal(db, rule.layer, layer2, rule.region.first, vlts);
-            // std::cout << vlts.size() << std::endl;
+      if (check_mode == mode::sequential) {
+        switch (rule.ruletype) {
+          case rule_type::spacing_both: {
+            space_check_seq(db, rule.layer, rule.without_layer,
+                            rule.region.first, rule.ruletype, vlts);
+            std::cout << vlts.size() << std::endl;
+            for (const auto& vio : vlts) {
+              std::cout  << vio.edge1.x_startpoint << " " << vio.edge1.y_startpoint
+                          << " "<< vio.edge1.x_endpoint << " " << vio.edge1.y_endpoint
+                          << " "<< vio.edge2.x_startpoint << " " << vio.edge2.y_startpoint
+                         << " "<< vio.edge2.x_endpoint << " " << vio.edge2.y_endpoint
+                         << " "<< std::endl;
+            }
+            break;
           }
-          break;
+          case rule_type::width: {
+            width_check_seq(db, rule.layer.front(), rule.region.first, vlts);
+            std::cout << vlts.size() << std::endl;
+            for (const auto& vio : vlts) {
+              std::cout << " edge1_x1: " << vio.edge1.x_startpoint << " edge1_y1: " << vio.edge1.y_startpoint
+                        << " edge1_x2: " << vio.edge1.x_endpoint << " edge1_y2: " << vio.edge1.y_endpoint
+                        << " edge2_x1: " << vio.edge2.x_startpoint << " edge2_y1: " << vio.edge2.y_startpoint
+                        << " edge2_x2: " << vio.edge2.x_endpoint << " edge2_y2: " << vio.edge2.y_endpoint
+                        << std::endl;
+            }
+            break;
+          }
+          case rule_type::enclosure: {
+            enclosing_check_seq(db, rule.layer, rule.without_layer,
+                                rule.region.first, rule.ruletype, vlts);
+            std::cout << vlts.size() << std::endl;
+            // for (const auto& vio : vlts) {
+            //   std::cout << " edge1_x1: " << vio.edge1.x_startpoint << " edge1_y1: " << vio.edge1.y_startpoint
+            //             << " edge1_x2: " << vio.edge1.x_endpoint << " edge1_y2: " << vio.edge1.y_endpoint
+            //             << " edge2_x1: " << vio.edge2.x_startpoint << " edge2_y1: " << vio.edge2.y_startpoint
+            //             << " edge2_x2: " << vio.edge2.x_endpoint << " edge2_y2: " << vio.edge2.y_endpoint
+            //             << std::endl;
+            // }
+            break;
+          }
+          case rule_type::area: {
+            area_check_seq(db, rule.layer.front(), rule.region.first,vlts);
+            std::cout << vlts.size() << std::endl;
+            break;
+          }
+          default:
+            break;
         }
-        default:
-          break;
+      } else if (check_mode == mode::parallel) {
+        switch (rule.ruletype) {
+          case rule_type::spacing_both: {
+            // space_check_par(db, rule.layer.front(), rule.layer.back(),
+            //                 rule.region.first, vlts);
+            break;
+          }
+          case rule_type::width: {
+            //width_check_par(db, rule.layer.front(), rule.region.first, vlts);
+            std::cout << vlts.size() << std::endl;
+            break;
+          }
+          case rule_type::enclosure: {
+            break;
+          }
+          case rule_type::area: {
+            break;
+          }
+          default:
+            break;
+        }
       }
     }
   };
@@ -93,10 +130,21 @@ class engine {
   engine& layer(int layer) {
     rules.emplace_back();
     rules.back().rule_num = rule_num;
-    rules.back().layer    = layer;
+    rules.back().layer.emplace_back(layer);
     return *this;
   }
-
+  engine& with_layer(int layer) {
+    rules.back().layer.emplace_back(layer);
+    return *this;
+  }
+  engine& inter_layer(int layer) {
+    rules.back().with_layer.emplace_back(layer);
+    return *this;
+  }
+engine& not_inter_layer(int layer) {
+    rules.back().without_layer.emplace_back(layer);
+    return *this;
+  }
   engine& width() {
     rules.back().ruletype = rule_type::width;
     return *this;
@@ -106,12 +154,19 @@ class engine {
     rules.back().ruletype = rule_type::spacing_both;
     return *this;
   }
+  engine& enclosure() {
+    rules.back().ruletype = rule_type::enclosure;
+    return *this;
+  }
+  engine& area() {
+    rules.back().ruletype = rule_type::area;
+    return *this;
+  }
 
   int is_rectilinear() {
     rules.back().ruletype = rule_type::aux_is_rectilinear;
     return -1;
   }
-
   int greater_than(int min) {
     rules.back().region = std::make_pair(min, 2147483647);
     return -1;
@@ -120,6 +175,7 @@ class engine {
  private:
   unsigned int      rule_num = 0;
   std::vector<rule> rules;
+  std::set<int>     layer_set;
 };
 
 }  // namespace odrc::core
