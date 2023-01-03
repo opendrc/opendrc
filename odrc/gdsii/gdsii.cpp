@@ -311,7 +311,6 @@ odrc::core::database read(const std::filesystem::path& file_path) {
       case record_type::PATH:
         check_dtype(dt_none);
         current_element = rtype;
-        std::cout<<"path"<<std::endl;
         break;
       case record_type::SREF:
         check_dtype(dt_none);
@@ -364,7 +363,6 @@ odrc::core::database read(const std::filesystem::path& file_path) {
           cell_ref->ref_point = coord;
           auto& the_cell      = db.get_cell(cell_ref->cell_name);
           cell_ref->update_mbr(the_cell.mbr);
-          cell->update_mbr(the_cell.mbr, coord);
         }
         break;
       case record_type::ENDEL:
@@ -425,7 +423,6 @@ odrc::core::database read(const std::filesystem::path& file_path) {
       case record_type::BOX:
         check_dtype(dt_none);
         current_element = rtype;
-        std::cout<<"box"<<std::endl;
         break;
       case record_type::BOXTYPE:
         check_dtype(dt_int16);
