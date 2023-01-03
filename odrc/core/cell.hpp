@@ -67,9 +67,10 @@ class cell_ref {
   std::string         cell_name;
   coord               ref_point;
   transform           trans;
-  std::map<int,std::vector<orthogonal_edge>> h_edges;
-  std::map<int,std::vector<orthogonal_edge>> v_edges;
-
+  std::map<int,std::vector<orthogonal_edge>> left_edges;
+  std::map<int,std::vector<orthogonal_edge>> right_edges;
+  std::map<int,std::vector<orthogonal_edge>> upper_edges;
+  std::map<int,std::vector<orthogonal_edge>> lower_edges;
   cell_mbr            cell_ref_mbr{
       std::numeric_limits<int>::max(), std::numeric_limits<int>::min(),
       std::numeric_limits<int>::max(), std::numeric_limits<int>::min()};
@@ -95,6 +96,10 @@ class cell {
   odrc::util::datetime  atime;
   std::vector<polygon>  polygons;
   std::vector<cell_ref> cell_refs;
+  std::map<int,std::vector<orthogonal_edge>> left_edges;
+  std::map<int,std::vector<orthogonal_edge>> right_edges;
+  std::map<int,std::vector<orthogonal_edge>> upper_edges;
+  std::map<int,std::vector<orthogonal_edge>> lower_edges;
   cell_mbr mbr{std::numeric_limits<int>::max(), std::numeric_limits<int>::min(),
                std::numeric_limits<int>::max(),
                std::numeric_limits<int>::min()};

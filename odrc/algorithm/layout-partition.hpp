@@ -14,7 +14,7 @@
 namespace odrc {
 inline std::vector<std::vector<int>> layout_partition(odrc::core::database& db,
                                                       std::vector<int> layers) {
-  const auto& cell_refs = db.cells.back().cell_refs;
+  const auto& cell_refs = db.get_top_cell().cell_refs;
 
   // get unique cell y-axis coordinates and store intervals need to merge
   std::unordered_set<int>          coordinates;

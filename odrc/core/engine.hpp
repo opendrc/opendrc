@@ -53,17 +53,17 @@ class engine {
             space_check_seq(db, rule.layer, rule.without_layer,
                             rule.region.first, rule.ruletype, vlts);
             std::cout << vlts.size() << std::endl;
-            // for (const auto& vio : vlts) {
-            //   std::cout << " edge1_x1: " << vio.edge1.x_startpoint << " edge1_y1: " << vio.edge1.y_startpoint
-            //             << " edge1_x2: " << vio.edge1.x_endpoint << " edge1_y2: " << vio.edge1.y_endpoint
-            //             << " edge2_x1: " << vio.edge2.x_startpoint << " edge2_y1: " << vio.edge2.y_startpoint
-            //             << " edge2_x2: " << vio.edge2.x_endpoint << " edge2_y2: " << vio.edge2.y_endpoint
-            //             << std::endl;
-            // }
+            for (const auto& vio : vlts) {
+              std::cout  << vio.edge1.x_startpoint << " " << vio.edge1.y_startpoint
+                          << " "<< vio.edge1.x_endpoint << " " << vio.edge1.y_endpoint
+                          << " "<< vio.edge2.x_startpoint << " " << vio.edge2.y_startpoint
+                         << " "<< vio.edge2.x_endpoint << " " << vio.edge2.y_endpoint
+                         << " "<< std::endl;
+            }
             break;
           }
           case rule_type::width: {
-            width_check_seq(db, rule.layer.front(), rule.region.first,rule.ruletype, vlts);
+            width_check_seq(db, rule.layer.front(), rule.region.first, vlts);
             std::cout << vlts.size() << std::endl;
             for (const auto& vio : vlts) {
               std::cout << " edge1_x1: " << vio.edge1.x_startpoint << " edge1_y1: " << vio.edge1.y_startpoint

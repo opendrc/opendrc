@@ -311,6 +311,7 @@ odrc::core::database read(const std::filesystem::path& file_path) {
       case record_type::PATH:
         check_dtype(dt_none);
         current_element = rtype;
+        std::cout<<"path"<<std::endl;
         break;
       case record_type::SREF:
         check_dtype(dt_none);
@@ -394,8 +395,11 @@ odrc::core::database read(const std::filesystem::path& file_path) {
         if (current_element == record_type::SREF) {
           auto strans                  = parse_bitarray(begin);
           cell_ref->trans.is_reflected = strans.test(15);  // 0-th bit from left
+          if(strans.test(15)){std::cout<<"11Oh No!"<<std::endl;}
           cell_ref->trans.is_magnified = strans.test(2);  // 13-th bit from left
+          if(strans.test(2)){std::cout<<"22Oh No!!"<<std::endl;}
           cell_ref->trans.is_rotated   = strans.test(1);  // 14-th bit from left
+          if(strans.test(1)){std::cout<<"33Oh No!!!"<<std::endl;}
         }
         break;
       case record_type::MAG:
@@ -421,6 +425,7 @@ odrc::core::database read(const std::filesystem::path& file_path) {
       case record_type::BOX:
         check_dtype(dt_none);
         current_element = rtype;
+        std::cout<<"box"<<std::endl;
         break;
       case record_type::BOXTYPE:
         check_dtype(dt_int16);
