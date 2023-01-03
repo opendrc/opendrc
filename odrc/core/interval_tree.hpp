@@ -22,62 +22,62 @@ struct interval {
 
 template <typename T, typename V>
 struct node {
-  using Intvl = interval<T, V>;
-  T    mid;  // value of the tree node
+  using interval_t = interval<T, V>;
+  T    v;  // the value of the node is the mid point of the initial interval
   bool is_subtree_empty = false;
 
   node() = default;
-  node(const Intvl& intvl) {
-    mid = intvl.mid();
+  node(const interval_t& intvl) {
+    v = intvl.mid();
     insert(intvl);
   }
-  node(Intvl&& intvl) {
-    mid = intvl.mid();
+  node(interval_t&& intvl) {
+    v = intvl.mid();
     insert(std::move(intvl));
   }
 
   int lc = -1;  // left child offset;
   int rc = -1;  // right child offset
 
-  using l_comp = struct {
-    bool operator()(const Intvl& lhs, const Intvl& rhs) const {
+  struct l_compare{
+    bool operator()(const interval_t& lhs, const interval_t& rhs) const {
       return lhs.l == rhs.l ? lhs.v < rhs.v : lhs.l < rhs.l;
     }
   };
-  using r_comp = struct {
-    bool operator()(const Intvl& lhs, const Intvl& rhs) const {
+  struct r_compare {
+    bool operator()(const interval_t& lhs, const interval_t& rhs) const {
       return lhs.r == rhs.r ? lhs.v < rhs.v : lhs.r > rhs.r;
     }
   };
 
-  std::set<Intvl, l_comp> intvl_l;  // intervals in ascending left endpoint
-  std::set<Intvl, r_comp> intvl_r;  // intervals in descending right endpoint
+  std::set<interval_t, l_compare> intvls_l;  // intervals in ascending left endpoint
+  std::set<interval_t, r_compare> intvls_r;  // intervals in descending right endpoint
 
   [[nodiscard]] bool has_left_child() const { return lc != -1; }
   [[nodiscard]] bool has_right_child() const { return rc != -1; }
 
-  bool empty() const { return intvl_l.empty(); }
+  bool empty() const { return intvls_l.empty(); }
 
-  void insert(const Intvl& intvl) {
-    intvl_l.emplace(intvl);
-    intvl_r.emplace(intvl);
+  void insert(const interval_t& intvl) {
+    intvls_l.emplace(intvl);
+    intvls_r.emplace(intvl);
     is_subtree_empty = false;
   }
-  void insert(Intvl&& intvl) {
-    intvl_l.emplace(std::move(intvl));
-    intvl_r.emplace(std::move(intvl));
+  void insert(interval_t&& intvl) {
+    intvls_l.emplace(std::move(intvl));
+    intvls_r.emplace(std::move(intvl));
     is_subtree_empty = false;
   }
-  void remove(const Intvl& intvl) {
-    intvl_l.erase(intvl);
-    intvl_r.erase(intvl);
+  void remove(const interval_t& intvl) {
+    intvls_l.erase(intvl);
+    intvls_r.erase(intvl);
   }
   void get_intervals_containing(const T&                      p,
                                 const V&                      v,
                                 std::vector<std::pair<V, V>>& ovlp,
                                 bool                          reverse) const {
-    if (p <= mid) {
-      for (auto it = intvl_l.begin(); it != intvl_l.end(); ++it) {
+    if (p <= v) {
+      for (auto it = intvls_l.begin(); it != intvls_l.end(); ++it) {
         if (it->l > p) {
           break;
         }
@@ -88,7 +88,7 @@ struct node {
         }
       }
     } else {
-      for (auto it = intvl_r.begin(); it != intvl_r.end(); ++it) {
+      for (auto it = intvls_r.begin(); it != intvls_r.end(); ++it) {
         if (it->r < p) {
           break;
         }
@@ -116,9 +116,9 @@ class interval_tree {
     assert(n < nodes.size());
     Node& node            = nodes.at(n);
     node.is_subtree_empty = false;
-    if (intvl.contains(node.mid)) {
+    if (intvl.contains(node.v)) {
       node.insert(intvl);
-    } else if (intvl.r < node.mid) {  // insert to left subtree
+    } else if (intvl.r < node.v) {  // insert to left subtree
       if (node.has_left_child()) {
         insert(intvl, node.lc);
       } else {
@@ -144,9 +144,9 @@ class interval_tree {
     }
     assert(n < nodes.size());
     Node& node = nodes.at(n);
-    if (intvl.contains(node.mid)) {
+    if (intvl.contains(node.v)) {
       node.remove(intvl);
-    } else if (intvl.r < node.mid) {
+    } else if (intvl.r < node.v) {
       remove(intvl, node.lc);
     } else {
       remove(intvl, node.rc);
@@ -176,18 +176,18 @@ class interval_tree {
     }
     assert(n < nodes.size());
     const Node& node = nodes.at(n);
-    if (intvl.r <= node.mid) {
+    if (intvl.r <= node.v) {
       node.get_intervals_containing(intvl.r, intvl.v, rtn, is_polygon);
       if (node.has_left_child()) {
         _run_query(intvl, node.lc, rtn, is_polygon);
       }
-    } else if (intvl.l >= node.mid) {
+    } else if (intvl.l >= node.v) {
       node.get_intervals_containing(intvl.l, intvl.v, rtn, is_polygon);
       if (node.has_right_child()) {
         _run_query(intvl, node.rc, rtn, is_polygon);
       }
     } else {
-      node.get_intervals_containing(node.mid, intvl.v, rtn, is_polygon);
+      node.get_intervals_containing(node.v, intvl.v, rtn, is_polygon);
       if (node.has_left_child()) {
         _run_query(intvl, node.lc, rtn, is_polygon);
       }
