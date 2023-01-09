@@ -347,15 +347,9 @@ odrc::core::database read(const std::filesystem::path& file_path) {
           for (auto i = 0; i < num_coords; ++i) {
             auto coord = parse_coord(begin + bytes_per_coord * i);
             polygon->points.emplace_back(coord);
-            polygon->mbr[0] = std::min(polygon->mbr[0], coord.x);
-            polygon->mbr[1] = std::max(polygon->mbr[1], coord.x);
-            polygon->mbr[2] = std::min(polygon->mbr[2], coord.y);
-            polygon->mbr[3] = std::max(polygon->mbr[3], coord.y);
-            cell->mbr.x_min = std::min(cell->mbr.x_min, coord.x);
-            cell->mbr.x_max = std::max(cell->mbr.x_max, coord.x);
-            cell->mbr.y_min = std::min(cell->mbr.y_min, coord.y);
-            cell->mbr.y_max = std::max(cell->mbr.y_max, coord.y);
+            polygon->update_mbr();
           }
+          cell->update_mbr(polygon->mbr);
         } else if (current_element == record_type::SREF) {
           // sref contains exactly 1 coordinate
           if (record_length != bytes_per_coord + bytes_per_record_head) {
@@ -365,17 +359,11 @@ odrc::core::database read(const std::filesystem::path& file_path) {
                 " for record XY inside an SREF element, got " +
                 std::to_string(record_length) + "\n");
           }
-          auto coord           = parse_coord(begin);
-          cell_ref->ref_point  = coord;
-          const auto& the_cell = db.get_cell(cell_ref->cell_name);
-          cell->mbr.x_min =
-              std::min(cell->mbr.x_min, coord.x + the_cell.mbr.x_min);
-          cell->mbr.x_max =
-              std::max(cell->mbr.x_max, coord.x + the_cell.mbr.x_max);
-          cell->mbr.y_min =
-              std::min(cell->mbr.y_min, coord.y + the_cell.mbr.y_min);
-          cell->mbr.y_max =
-              std::max(cell->mbr.y_max, coord.y + the_cell.mbr.y_max);
+          auto coord          = parse_coord(begin);
+          cell_ref->ref_point = coord;
+          auto& the_cell      = db.get_cell(cell_ref->cell_name);
+          cell_ref->update_mbr(the_cell.mbr);
+          cell->update_mbr(the_cell.mbr, coord);
         }
         break;
       case record_type::ENDEL:
@@ -450,6 +438,8 @@ odrc::core::database read(const std::filesystem::path& file_path) {
         break;
     }
     if (rtype == record_type::ENDLIB) {
+      db.convert_polygon_to_cell();
+      db.update_edges();
       break;
     }
   }

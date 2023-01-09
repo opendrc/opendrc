@@ -14,34 +14,30 @@
 namespace odrc {
 inline std::vector<std::vector<int>> layout_partition(odrc::core::database& db,
                                                       std::vector<int> layers) {
-  const auto& cell_refs = db.cells.back().cell_refs;
+  using interval_t      = std::pair<int, int>;
+  const auto& cell_refs = db.get_top_cell().cell_refs;
 
   // get unique cell y-axis coordinates and store intervals need to merge
-  std::unordered_set<int>          coordinates;
-  std::vector<std::pair<int, int>> intervals;
-  std::vector<int>                 cell_ids;
+  std::unordered_set<int> coordinates;
+  std::vector<interval_t> intervals;
+  std::vector<int>        cell_ref_ids;
 
   for (auto id = 0UL; id < cell_refs.size(); ++id) {
     const auto& cell_ref = cell_refs[id];
     const auto& the_cell = db.get_cell(cell_ref.cell_name);
-    if (the_cell.is_touching(layers.front())) {
-      cell_ids.emplace_back(id);
+
+    if (the_cell.is_touching(layers)) {
+      cell_ref_ids.emplace_back(id);
       auto& mbr = cell_ref.cell_ref_mbr;
       coordinates.insert(mbr.y_min);
       coordinates.insert(mbr.y_max);
       intervals.emplace_back(mbr.y_min, mbr.y_max);
-    } else if (the_cell.is_touching(layers.back())) {
-      cell_ids.emplace_back(id);
-      auto& mbr = cell_ref.cell_ref_mbr;
-      coordinates.insert(mbr.y_min);
-      coordinates.insert(mbr.y_max);
-      intervals.emplace_back(mbr.y_min, mbr.y_max);
-    } else {
-      continue;
     }
   }
-  if (cell_ids.empty())
+
+  if (cell_ref_ids.empty())
     return {};
+
   /*since we discrete the y-axis coordinates, we preserve the coordinate->index
    * and index->coordinate mapping*/
   std::vector<int> index_to_coordinate(coordinates.begin(), coordinates.end());
@@ -52,43 +48,43 @@ inline std::vector<std::vector<int>> layout_partition(odrc::core::database& db,
   for (auto i = 0UL; i < index_to_coordinate.size(); ++i)
     coordinate_to_index[index_to_coordinate[i]] = i;
 
-  // use index to represent the intervals of cells
+  // use disretized coordinate index to represent the intervals of cells
   for (auto& interval : intervals) {
     interval.first  = coordinate_to_index[interval.first];
     interval.second = coordinate_to_index[interval.second];
   }
 
-  // merge intervals.
-  std::vector<int> rpoints(coordinates.size());
-  std::iota(rpoints.begin(), rpoints.end(), 0);
+  // merge intervals. end_points[i] is the max end point of the interval start
+  // at i
+  std::vector<int> end_points(coordinates.size());
+  std::iota(end_points.begin(), end_points.end(), 0);
 
   for (const auto& interval : intervals) {
-    auto x     = interval.first;
-    auto y     = interval.second;
-    rpoints[x] = std::max(rpoints[x], rpoints[y]);
+    auto l        = interval.first;
+    auto r        = interval.second;
+    end_points[l] = std::max(end_points[l], end_points[r]);
   }
 
   // get the partition result
-  auto             row_id         = -1;
-  auto             current_rpoint = -1;
-  std::vector<int> coordinate_to_rows(coordinates.size());
-  for (auto i = 0UL; i < rpoints.size(); ++i) {
-    if (int(i) > current_rpoint) {
+  auto             row_id            = -1;
+  auto             current_end_point = -1;
+  std::vector<int> index_to_row(coordinates.size());
+  for (auto i = 0UL; i < end_points.size(); ++i) {
+    if (int(i) > current_end_point) {
       ++row_id;
     }
-    coordinate_to_rows[i] = row_id;
-    current_rpoint        = std::max(current_rpoint, rpoints[i]);
+    index_to_row[i]   = row_id;
+    current_end_point = std::max(current_end_point, end_points[i]);
   }
 
   // get the sub-rows
   std::vector<std::vector<int>> sub_rows(row_id + 1);
-  for (auto id = 0UL; id < cell_ids.size(); ++id) {
-    auto        cell_id  = cell_ids[id];
-    const auto& interval = intervals[id];
-    auto        rpoint   = interval.second;
-    sub_rows[coordinate_to_rows[rpoint]].push_back(cell_id);
+  for (auto idx = 0UL; idx < cell_ref_ids.size(); ++idx) {
+    auto        cell_ref_id = cell_ref_ids[idx];
+    const auto& interval    = intervals[idx];
+    auto        point       = interval.second;
+    sub_rows[index_to_row[point]].emplace_back(cell_ref_id);
   }
-
   return sub_rows;
 }
 }  // namespace odrc
