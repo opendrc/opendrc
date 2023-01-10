@@ -67,13 +67,15 @@ class database {
   void convert_polygon_to_cell() {
     update_top_cell_id();
     // convert polygons to cells
-    cells.emplace_back();
-    cells.back().name = "polygon";
-    for (auto& polygon : get_top_cell().polygons) {
-      cells.back().polygons.emplace_back(polygon);
-      cells.back().add_layer(polygon.layer);
+    for (int i = 0; i < get_top_cell().polygons.size(); i++) {
+      cells.emplace_back();
+      cells.back().name = "polygon" + std::to_string(i);
+      cells.back().polygons.emplace_back(get_top_cell().polygons.at(i));
+      cells.back().update_mbr(get_top_cell().polygons.at(i).mbr);
+      cells.back().add_layer(get_top_cell().polygons.at(i).layer);
+      get_top_cell().cell_refs.emplace_back("polygon" + std::to_string(i),
+                                            coord{0, 0});
     }
-    get_top_cell().cell_refs.emplace_back("polygon", coord{0, 0});
     update_map();
   }
 

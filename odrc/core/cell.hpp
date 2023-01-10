@@ -153,13 +153,13 @@ class cell {
     mbr.x_min = std::min(mbr.x_min, polygon_mbr.x_min);
     mbr.x_max = std::max(mbr.x_max, polygon_mbr.x_max);
     mbr.y_min = std::min(mbr.y_min, polygon_mbr.y_min);
-    mbr.y_max = std::max(mbr.y_max, polygon_mbr.x_max);
+    mbr.y_max = std::max(mbr.y_max, polygon_mbr.y_max);
   }
   void update_mbr(const envelope& envelope, const coord& offset) {
     mbr.x_min = std::min(mbr.x_min, envelope.x_min + offset.x);
     mbr.x_max = std::max(mbr.x_max, envelope.x_max + offset.x);
     mbr.y_min = std::min(mbr.y_min, envelope.y_min + offset.y);
-    mbr.y_max = std::max(mbr.y_max, envelope.x_max + offset.y);
+    mbr.y_max = std::max(mbr.y_max, envelope.y_max + offset.y);
   }
 };
 

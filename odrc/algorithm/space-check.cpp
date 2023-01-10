@@ -8,10 +8,12 @@
 #include <odrc/algorithm/layout-partition.hpp>
 #include <odrc/core/engine.hpp>
 #include <odrc/core/interval_tree.hpp>
+
+#include <odrc/utility/logger.hpp>
+#include <odrc/utility/timer.hpp>
 namespace odrc {
 
 // inter-cell violation check
-// ovlpairs is <via layer,metal layer>
 void _check(odrc::core::database&   db,
             int                     layer,
             interval_pairs&         ovlpairs,
@@ -93,7 +95,7 @@ interval_pairs get_ovlpairs(odrc::core::database& db,
   ovlpairs.reserve(events.size() * 2);
   for (const auto& e : events) {
     if (e.is_inevent) {
-      tree.get_intervals_overlapping_with(e.intvl, ovlpairs);
+      tree.get_intervals_pairs(e.intvl, ovlpairs);
       tree.insert(e.intvl);
     } else {
       tree.remove(e.intvl);
@@ -108,12 +110,16 @@ void space_check_seq(odrc::core::database&   db,
                      int                     threshold,
                      rule_type               ruletype,
                      std::vector<violation>& vios) {
+  odrc::util::logger logger("/dev/null", odrc::util::log_level::info, true);
+  odrc::util::timer  space_check("space_check", logger);
   // get inter-cell violations
   auto rows = layout_partition(db, layers);
+  space_check.start();
   for (auto row = 0UL; row < rows.size(); row++) {
     auto ovlpairs = get_ovlpairs(db, layers, threshold, rows[row]);
     _check(db, layers.front(), ovlpairs, ruletype, threshold, vios);
   }
+  space_check.pause();
   // get intra-cell violations
   std::map<int, std::vector<violation>> intra_vios;
   for (auto idx = 0UL; idx < db.cells.size(); idx++) {

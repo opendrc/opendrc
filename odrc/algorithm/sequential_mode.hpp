@@ -63,9 +63,11 @@ inline bool is_violation(const core::orthogonal_edge& edge1,
                          int                          threshold) {
   auto [p1_start, p1_end, intercept1] = edge1;
   auto [p2_start, p2_end, intercept2] = edge2;
-  bool is_too_close          = std::abs(intercept1 - intercept2) < threshold;
-  bool is_projection_overlap = !(p1_start >= p2_end or p2_start >= p1_end);
-  return is_too_close and is_projection_overlap;
+  if (std::abs(intercept1 - intercept2) < threshold) {
+    return !(p1_start >= p2_end or p2_start >= p1_end);
+  } else {
+    return false;
+  }
 }
 
 // transform intra-cell violations to inter-cell violations
@@ -107,16 +109,18 @@ inline void check_distance(const edges&            edges1,
     for (const auto& edge2 : edges2) {
       auto [p1_start, p1_end, intercept1] = edge1;
       auto [p2_start, p2_end, intercept2] = edge2;
-      if (intercept1 > intercept2 and is_violation(edge1, edge2, threshold)) {
-        core::edge vio_edge1{core::coord{intercept1, p1_start, trans},
-                             core::coord{intercept1, p1_end, trans}};
-        core::edge vio_edge2{core::coord{intercept2, p2_start, trans},
-                             core::coord{intercept2, p2_end, trans}};
-        vios.emplace_back(violation{vio_edge1, vio_edge2});
-      }
+      if (intercept1 > intercept2)
+        if (is_violation(edge1, edge2, threshold)) {
+          core::edge vio_edge1{core::coord{intercept1, p1_start, trans},
+                               core::coord{intercept1, p1_end, trans}};
+          core::edge vio_edge2{core::coord{intercept2, p2_start, trans},
+                               core::coord{intercept2, p2_end, trans}};
+          vios.emplace_back(violation{vio_edge1, vio_edge2});
+        }
     }
   }
 }
+
 void space_check_seq(odrc::core::database&   db,
                      std::vector<int>        layers,
                      std::vector<int>        without_layer,
@@ -124,7 +128,7 @@ void space_check_seq(odrc::core::database&   db,
                      rule_type               ruletype,
                      std::vector<violation>& vios);
 
-void enclosing_check_seq(odrc::core::database&   db,
+void enclosure_check_seq(odrc::core::database&   db,
                          const std::vector<int>& layers,
                          const std::vector<int>& without_layer,
                          const int               threshold,

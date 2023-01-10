@@ -3,6 +3,8 @@
 #include <cassert>
 #include <iostream>
 
+#include <odrc/utility/logger.hpp>
+#include <odrc/utility/timer.hpp>
 namespace odrc {
 
 using odrc::core::polygon;
@@ -26,6 +28,9 @@ void area_check_seq(const odrc::core::database& db,
                     int                         layer,
                     int                         threshold,
                     std::vector<violation>&     vios) {
+  odrc::util::logger logger("/dev/null", odrc::util::log_level::info, true);
+  odrc::util::timer  area_check("area_check", logger);
+  area_check.start();
   // result memorization
   std::unordered_map<std::string, int> checked_results;
 
@@ -59,6 +64,7 @@ void area_check_seq(const odrc::core::database& db,
     checked_results.emplace(cell.name, local_poly);
     checked_poly += local_poly;
   }
+  area_check.pause();
 }
 
 }  // namespace odrc

@@ -53,27 +53,47 @@ class engine {
             space_check_seq(db, rule.layer, rule.without_layer,
                             rule.region.first, rule.ruletype, vlts);
             std::cout << vlts.size() << std::endl;
+            // for (const auto& vio : vlts) {
+            //   std::cout << " " << vio.distance.edge1.point1.x << " "
+            //             << vio.distance.edge1.point1.y << " "
+            //             << vio.distance.edge1.point2.x << " "
+            //             << vio.distance.edge1.point2.y << " "
+            //             << vio.distance.edge2.point1.x << " "
+            //             << vio.distance.edge2.point1.y << " "
+            //             << vio.distance.edge2.point2.x << " "
+            //             << vio.distance.edge2.point2.y << std::endl;
+            // }
             break;
           }
           case rule_type::width: {
             width_check_seq(db, rule.layer.front(), rule.region.first, vlts);
             std::cout << vlts.size() << std::endl;
+            // for (const auto& vio : vlts) {
+            //   std::cout << " " << vio.distance.edge1.point1.x << " "
+            //             << vio.distance.edge1.point1.y << " "
+            //             << vio.distance.edge1.point2.x << " "
+            //             << vio.distance.edge1.point2.y << " "
+            //             << vio.distance.edge2.point1.x << " "
+            //             << vio.distance.edge2.point1.y << " "
+            //             << vio.distance.edge2.point2.x << " "
+            //             << vio.distance.edge2.point2.y << std::endl;
+            // }
             break;
           }
           case rule_type::enclosure: {
-            enclosing_check_seq(db, rule.layer, rule.without_layer,
+            enclosure_check_seq(db, rule.layer, rule.without_layer,
                                 rule.region.first, rule.ruletype, vlts);
             std::cout << vlts.size() << std::endl;
-            for (const auto& vio : vlts) {
-              std::cout << " " << vio.distance.edge1.point1.x << " "
-                        << vio.distance.edge1.point1.y << " "
-                        << vio.distance.edge1.point2.x << " "
-                        << vio.distance.edge1.point2.y << " "
-                        << vio.distance.edge2.point1.x << " "
-                        << vio.distance.edge2.point1.y << " "
-                        << vio.distance.edge2.point2.x << " "
-                        << vio.distance.edge2.point2.y << std::endl;
-            }
+            // for (const auto& vio : vlts) {
+            //   std::cout << " " << vio.distance.edge1.point1.x << " "
+            //             << vio.distance.edge1.point1.y << " "
+            //             << vio.distance.edge1.point2.x << " "
+            //             << vio.distance.edge1.point2.y << " "
+            //             << vio.distance.edge2.point1.x << " "
+            //             << vio.distance.edge2.point1.y << " "
+            //             << vio.distance.edge2.point2.x << " "
+            //             << vio.distance.edge2.point2.y << std::endl;
+            // }
             break;
           }
           case rule_type::area: {

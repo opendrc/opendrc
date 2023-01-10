@@ -4,6 +4,8 @@
 #include <iostream>
 #include "odrc/core/cell.hpp"
 
+#include <odrc/utility/logger.hpp>
+#include <odrc/utility/timer.hpp>
 namespace odrc {
 
 void _check(odrc::core::database&   db,
@@ -21,6 +23,9 @@ void width_check_seq(odrc::core::database&   db,
                      int                     layer,
                      int                     threshold,
                      std::vector<violation>& vios) {
+  odrc::util::logger logger("/dev/null", odrc::util::log_level::info, true);
+  odrc::util::timer  width_check("width_check", logger);
+  width_check.start();
   // get cell violations
   std::map<int, std::vector<violation>> intra_vios;
   for (auto i = 0UL; i < db.cells.size(); i++) {
@@ -29,6 +34,7 @@ void width_check_seq(odrc::core::database&   db,
       _check(db, layer, i, threshold, intra_vios.at(i));
     }
   }
+  width_check.pause();
   // convert cell violations to cell-ref violations
   get_ref_vios(db, intra_vios, vios);
 }

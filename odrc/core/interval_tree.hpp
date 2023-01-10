@@ -160,9 +160,9 @@ class interval_tree {
         !node.has_right_child() or nodes.at(node.rc).is_subtree_empty;
     node.is_subtree_empty = node.empty() and is_left_empty and is_right_empty;
   }
-  void get_intervals_overlapping_with(const Intvl&                  intvl,
-                                      std::vector<std::pair<T, V>>& ovlp,
-                                      bool is_metal = true) {
+  void get_intervals_pairs(const Intvl&                  intvl,
+                           std::vector<std::pair<T, V>>& ovlp,
+                           bool                          is_metal = true) {
     _run_query(intvl, 0, ovlp, is_metal);
   }
 

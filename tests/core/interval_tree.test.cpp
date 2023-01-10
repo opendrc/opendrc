@@ -58,7 +58,7 @@ TEST_SUITE("[OpenDRC] odrc::core interval tree tests") {
     for (const auto& edge : edges) {
       if (!edge.is_remove) {
         // auto overlap_intervals =
-            // tree.get_intervals_overlapping_with(edge.intvl);
+            // tree.get_intervals_pairs(edge.intvl);
         // for (int e : overlap_intervals) {
         //   overlap_cells.emplace_back(edge.intvl.v+1, e+1);
         // }
