@@ -11,7 +11,7 @@ void check_elapsed_time(std::vector<int64_t>& elapsed_times,
                         const int             reset_count,
                         const int64_t         sleep_time) {
   bool in_range;
-  for (auto i = 0UL; i < reset_count; ++i) {
+  for (int i = 0; i < reset_count; ++i) {
     in_range =
         elapsed_times[i] >= sleep_time && elapsed_times[i] <= sleep_time * 1.1;
     CHECK(in_range);
@@ -55,7 +55,7 @@ TEST_SUITE("[OpenDRC] odrc::timer tests") {
                               false);
     {
       odrc::util::timer test_timer("test", logger);
-      for (auto i = 0UL; i < sleep_count; ++i) {
+      for (int i = 0; i < sleep_count; ++i) {
         test_timer.start();
         std::this_thread::sleep_for(std::chrono::milliseconds(sleep_time));
         test_timer.pause();

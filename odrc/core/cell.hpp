@@ -4,48 +4,12 @@
 #include <cstdint>
 #include <iostream>
 #include <map>
+#include <odrc/core/edge.hpp>
 #include <odrc/utility/datetime.hpp>
 #include <set>
 #include <string>
 #include <vector>
 namespace odrc::core {
-struct envelope {
-  int x_min = std::numeric_limits<int>::max();
-  int x_max = std::numeric_limits<int>::min();
-  int y_min = std::numeric_limits<int>::max();
-  int y_max = std::numeric_limits<int>::min();
-};
-
-struct coord {
-  int x;
-  int y;
-  coord(){};
-  coord(int x, int y) {
-    this->x = x;
-    this->y = y;
-  };
-  coord(int x, int y, bool trans) {
-    if (trans) {
-      this->x = y;
-      this->y = x;
-    } else {
-      this->x = x;
-      this->y = y;
-    }
-  };
-};
-
-struct edge {
-  coord point1;
-  coord point2;
-};
-
-struct orthogonal_edge {
-  int p_start;
-  int p_end;
-  int intercept;
-};
-
 class cell;
 class polygon {
  public:
@@ -166,36 +130,6 @@ class cell {
 inline bool polygon::is_touching(const cell& other) const {
   return mbr.x_min < other.mbr.x_max and mbr.x_max > other.mbr.x_min and
          mbr.y_min < other.mbr.y_max and mbr.y_max > other.mbr.y_min;
-}
-
-// the input can be polygons in a cell or polygons of cells
-inline void merge_polygons(std::vector<polygon>& polygons) {
-  // cluster polygons by layer
-  std::map<int, std::vector<polygon>> layer_to_polygons;
-  for (auto& polygon : polygons) {
-    layer_to_polygons[polygon.layer].emplace_back(polygon);
-  }
-
-  polygons.clear();
-
-  // merge polygons in each layer
-  // for (auto& [layer, polygons] : layer_to_polygons) {
-  //   std::vector<polygon> merged_polygons;
-  //   for (auto& polygon : polygons) {
-  //     bool merged = false;
-  //     for (auto& merged_polygon : merged_polygons) {
-  //       if (merged_polygon.is_touching(polygon)) {
-  //         merged_polygon.merge(polygon);
-  //         merged = true;
-  //         break;
-  //       }
-  //     }
-  //     if (!merged) {
-  //       merged_polygons.emplace_back(polygon);
-  //     }
-  //   }
-  //   polygons = merged_polygons;
-  // }
 }
 
 }  // namespace odrc::core

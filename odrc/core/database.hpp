@@ -75,6 +75,8 @@ class database {
       cells.back().add_layer(get_top_cell().polygons.at(i).layer);
       get_top_cell().cell_refs.emplace_back("polygon" + std::to_string(i),
                                             coord{0, 0});
+      get_top_cell().cell_refs.back().update_mbr(
+          get_top_cell().polygons.at(i).mbr);
     }
     update_map();
   }

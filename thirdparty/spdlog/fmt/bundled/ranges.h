@@ -613,7 +613,7 @@ struct formatter<
 #endif
     auto out = ctx.out();
     *out++ = prefix;
-    auto i = 0UL;
+    int i = 0;
     auto it = std::begin(range);
     auto end = std::end(range);
     for (; it != end; ++it) {
@@ -650,7 +650,7 @@ struct formatter<
   auto format(U& map, FormatContext& ctx) -> decltype(ctx.out()) {
     auto out = ctx.out();
     *out++ = '{';
-    auto i = 0UL;
+    int i = 0;
     for (const auto& item : map) {
       if (i > 0) out = detail::write_delimiter(out);
       out = detail::write_range_entry<Char>(out, item.first);

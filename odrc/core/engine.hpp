@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cassert>
+#include <fstream>
 #include <set>
 #include <vector>
 
@@ -35,7 +37,11 @@ struct rule {
 class engine {
  public:
   mode                         check_mode = mode::sequential;
-  std::vector<odrc::violation> vlts;
+  std::string                  design;
+  std::vector<odrc::violation> vlts_a;
+  std::vector<odrc::violation> vlts_s;
+  std::vector<odrc::violation> vlts_e;
+  std::vector<odrc::violation> vlts_w;
   //<rule number, polgon/cell number>
   std::vector<std::pair<int, std::pair<int, int>>> vlt_paires;
   //<rule number,<polygons/cells number pair>>
@@ -51,54 +57,86 @@ class engine {
         switch (rule.ruletype) {
           case rule_type::spacing_both: {
             space_check_seq(db, rule.layer, rule.without_layer,
-                            rule.region.first, rule.ruletype, vlts);
-            std::cout << vlts.size() << std::endl;
-            // for (const auto& vio : vlts) {
-            //   std::cout << " " << vio.distance.edge1.point1.x << " "
-            //             << vio.distance.edge1.point1.y << " "
-            //             << vio.distance.edge1.point2.x << " "
-            //             << vio.distance.edge1.point2.y << " "
-            //             << vio.distance.edge2.point1.x << " "
-            //             << vio.distance.edge2.point1.y << " "
-            //             << vio.distance.edge2.point2.x << " "
-            //             << vio.distance.edge2.point2.y << std::endl;
-            // }
+                            rule.region.first, rule.ruletype, vlts_s);
+            std::cout << vlts_s.size() << std::endl;
+            std::ofstream outfile;
+            outfile.open("/home/oem/Desktop/opendrc/build/data/our_text/" +
+                             design + "_space.txt",
+                         std::ios::trunc);
+            for (const auto& vio : vlts_s) {
+              // outfile << std::endl;
+              outfile << " " << vio.distance.edge1.point1.x << " "
+                      << vio.distance.edge1.point1.y << " "
+                      << vio.distance.edge1.point2.x << " "
+                      << vio.distance.edge1.point2.y << " "
+                      << vio.distance.edge2.point1.x << " "
+                      << vio.distance.edge2.point1.y << " "
+                      << vio.distance.edge2.point2.x << " "
+                      << vio.distance.edge2.point2.y << std::endl;
+            }
+            outfile.close();
             break;
           }
           case rule_type::width: {
-            width_check_seq(db, rule.layer.front(), rule.region.first, vlts);
-            std::cout << vlts.size() << std::endl;
-            // for (const auto& vio : vlts) {
-            //   std::cout << " " << vio.distance.edge1.point1.x << " "
-            //             << vio.distance.edge1.point1.y << " "
-            //             << vio.distance.edge1.point2.x << " "
-            //             << vio.distance.edge1.point2.y << " "
-            //             << vio.distance.edge2.point1.x << " "
-            //             << vio.distance.edge2.point1.y << " "
-            //             << vio.distance.edge2.point2.x << " "
-            //             << vio.distance.edge2.point2.y << std::endl;
-            // }
+            width_check_seq(db, rule.layer.front(), rule.region.first, vlts_w);
+            std::cout << vlts_w.size() << std::endl;
+            std::ofstream outfile;
+            outfile.open("/home/oem/Desktop/opendrc/build/data/our_text/" +
+                             design + "_width.txt",
+                         std::ios::trunc);
+            for (const auto& vio : vlts_w) {
+              outfile << " " << vio.distance.edge1.point1.x << " "
+                      << vio.distance.edge1.point1.y << " "
+                      << vio.distance.edge1.point2.x << " "
+                      << vio.distance.edge1.point2.y << " "
+                      << vio.distance.edge2.point1.x << " "
+                      << vio.distance.edge2.point1.y << " "
+                      << vio.distance.edge2.point2.x << " "
+                      << vio.distance.edge2.point2.y << std::endl;
+            }
+            outfile.close();
             break;
           }
           case rule_type::enclosure: {
             enclosure_check_seq(db, rule.layer, rule.without_layer,
-                                rule.region.first, rule.ruletype, vlts);
-            std::cout << vlts.size() << std::endl;
-            // for (const auto& vio : vlts) {
-            //   std::cout << " " << vio.distance.edge1.point1.x << " "
-            //             << vio.distance.edge1.point1.y << " "
-            //             << vio.distance.edge1.point2.x << " "
-            //             << vio.distance.edge1.point2.y << " "
-            //             << vio.distance.edge2.point1.x << " "
-            //             << vio.distance.edge2.point1.y << " "
-            //             << vio.distance.edge2.point2.x << " "
-            //             << vio.distance.edge2.point2.y << std::endl;
-            // }
+                                rule.region.first, rule.ruletype, vlts_e);
+            std::cout << vlts_e.size() << std::endl;
+            std::ofstream outfile;
+            outfile.open("/home/oem/Desktop/opendrc/build/data/our_text/" +
+                             design + "_enc.txt",
+                         std::ios::trunc);
+            for (const auto& vio : vlts_e) {
+              outfile << " " << vio.distance.edge1.point1.x << " "
+                      << vio.distance.edge1.point1.y << " "
+                      << vio.distance.edge1.point2.x << " "
+                      << vio.distance.edge1.point2.y << " "
+                      << vio.distance.edge2.point1.x << " "
+                      << vio.distance.edge2.point1.y << " "
+                      << vio.distance.edge2.point2.x << " "
+                      << vio.distance.edge2.point2.y << std::endl;
+            }
+            outfile.close();
             break;
           }
           case rule_type::area: {
-            area_check_seq(db, rule.layer.front(), rule.region.first, vlts);
-            std::cout << vlts.size() << std::endl;
+            area_check_seq(db, rule.layer.front(), rule.region.first, vlts_a);
+            std::cout << vlts_a.size() << std::endl;
+            std::ofstream outfile;
+            outfile.open("/home/oem/Desktop/opendrc/build/data/our_text/" +
+                             design + "_area.txt",
+                         std::ios::trunc);
+            for (const auto& vio : vlts_a) {
+              // outfile << std::endl;
+              outfile << " " << vio.distance.edge1.point1.x << " "
+                      << vio.distance.edge1.point1.y << " "
+                      << vio.distance.edge1.point2.x << " "
+                      << vio.distance.edge1.point2.y << " "
+                      << vio.distance.edge2.point1.x << " "
+                      << vio.distance.edge2.point1.y << " "
+                      << vio.distance.edge2.point2.x << " "
+                      << vio.distance.edge2.point2.y << std::endl;
+            }
+            outfile.close();
             break;
           }
           default:
@@ -113,7 +151,7 @@ class engine {
           }
           case rule_type::width: {
             // width_check_par(db, rule.layer.front(), rule.region.first, vlts);
-            std::cout << vlts.size() << std::endl;
+            // std::cout << vlts.size() << std::endl;
             break;
           }
           case rule_type::enclosure: {
@@ -128,6 +166,8 @@ class engine {
       }
     }
   };
+
+  void add_design(std::string design) { this->design = design; }
 
   engine& polygons() {
     rules.emplace_back();

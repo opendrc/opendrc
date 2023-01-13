@@ -1,9 +1,11 @@
 #pragma once
 
+#include <cassert>
 #include <limits>
+#include <odrc/core/cell.hpp>
 #include <odrc/core/database.hpp>
+#include <odrc/core/edge.hpp>
 #include <odrc/core/interval_tree.hpp>
-#include "odrc/core/cell.hpp"
 namespace odrc {
 using Intvl          = core::interval<int, int>;
 using interval_pairs = std::vector<std::pair<int, int>>;
@@ -81,7 +83,7 @@ inline void transform_vio(const violation&        vio,
   core::edge edge2{{vio.distance.edge2.point1.x + offset.x,
                     vio.distance.edge2.point1.y + offset.y},
                    {vio.distance.edge2.point2.x + offset.x,
-                    vio.distance.edge2.point1.y + offset.y}};
+                    vio.distance.edge2.point2.y + offset.y}};
   vios.emplace_back(edge1, edge2);
 }
 
