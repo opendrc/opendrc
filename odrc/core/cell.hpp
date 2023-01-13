@@ -1,14 +1,16 @@
 #pragma once
 
-#include <limits>
 #include <cstdint>
 #include <iostream>
+#include <limits>
 #include <map>
-#include <odrc/core/edge.hpp>
-#include <odrc/utility/datetime.hpp>
 #include <set>
 #include <string>
 #include <vector>
+
+#include <odrc/core/edge.hpp>
+#include <odrc/utility/datetime.hpp>
+
 namespace odrc::core {
 class cell;
 class polygon {
