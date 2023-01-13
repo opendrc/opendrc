@@ -157,7 +157,7 @@ int32_t parse_int32(const std::byte* bytes) {
 double parse_real64(const std::byte* bytes) {
   // intepret bytes as big-endian
   uint64_t data = 0;
-  for (auto i = 0UL; i < 8; ++i) {
+  for (int i = 0; i < 8; ++i) {
     data = (data << 8) + std::to_integer<uint64_t>(bytes[i]);
   }
 
@@ -344,7 +344,7 @@ odrc::core::database read(const std::filesystem::path& file_path) {
         if (current_element == record_type::BOUNDARY) {
           int num_coords =
               (record_length - bytes_per_record_head) / bytes_per_coord;
-          for (auto i = 0; i < num_coords; ++i) {
+          for (int i = 0; i < num_coords; ++i) {
             auto coord = parse_coord(begin + bytes_per_coord * i);
             polygon->points.emplace_back(coord);
             polygon->update_mbr();

@@ -1,16 +1,16 @@
-#include <iostream>
 #include <odrc/algorithm/sequential_mode.hpp>
 
 #include <algorithm>
+#include <iostream>
 #include <vector>
 
 #include <odrc/algorithm/layout-partition.hpp>
 #include <odrc/core/database.hpp>
-#include <odrc/core/interval_tree.hpp>
-
 #include <odrc/core/edge.hpp>
+#include <odrc/core/interval_tree.hpp>
 #include <odrc/utility/logger.hpp>
 #include <odrc/utility/timer.hpp>
+
 namespace odrc {
 
 // vios is <via layer,metal layer>

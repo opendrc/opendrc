@@ -2,11 +2,11 @@
 
 #include <cassert>
 #include <iostream>
-#include <odrc/core/cell.hpp>
 
+#include <odrc/core/cell.hpp>
 #include <odrc/utility/logger.hpp>
 #include <odrc/utility/timer.hpp>
-#include <ostream>
+
 namespace odrc {
 
 void _check(odrc::core::database&   db,

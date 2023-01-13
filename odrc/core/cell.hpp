@@ -1,6 +1,6 @@
 #pragma once
 
-#include <climits>
+#include <limits>
 #include <cstdint>
 #include <iostream>
 #include <map>

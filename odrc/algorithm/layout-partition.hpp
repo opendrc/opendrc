@@ -1,11 +1,11 @@
 #pragma once
 
-#include <odrc/core/database.hpp>
-
 #include <algorithm>
 #include <numeric>
 #include <unordered_set>
 #include <vector>
+
+#include <odrc/core/database.hpp>
 
 // give sub-rows, to indicate the cell_id and the corresponding cell_x,y
 
