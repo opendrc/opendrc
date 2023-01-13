@@ -14,15 +14,15 @@
 namespace odrc {
 
 // inter-cell violation check
-void _check(odrc::core::database&   db,
-            int                     layer,
-            interval_pairs&         ovlpairs,
-            rule_type               ruletype,
-            int                     threshold,
-            std::vector<violation>& vios) {
+void _check(odrc::core::database&         db,
+            int                           layer,
+            interval_pairs&               ovlpairs,
+            core::rule_type               ruletype,
+            int                           threshold,
+            std::vector<core::violation>& vios) {
   auto& cell_refs = db.get_top_cell().cell_refs;
-  if (ruletype == rule_type::spacing_both or
-      ruletype == rule_type::spacing_h_edge) {
+  if (ruletype == core::rule_type::spacing_both or
+      ruletype == core::rule_type::spacing_h_edge) {
     for (const auto& [f_cell, s_cell] : ovlpairs) {
       check_distance(cell_refs.at(f_cell).lower_edges.at(layer),
                      cell_refs.at(s_cell).upper_edges.at(layer), threshold,
@@ -32,8 +32,8 @@ void _check(odrc::core::database&   db,
                      vios);
     }
   }
-  if (ruletype == rule_type::spacing_both or
-      ruletype == rule_type::spacing_v_edge) {
+  if (ruletype == core::rule_type::spacing_both or
+      ruletype == core::rule_type::spacing_v_edge) {
     for (const auto& [f_cell, s_cell] : ovlpairs) {
       check_distance(cell_refs.at(f_cell).left_edges.at(layer),
                      cell_refs.at(s_cell).right_edges.at(layer), threshold,
@@ -46,19 +46,19 @@ void _check(odrc::core::database&   db,
 }
 
 // intra-cell violation check
-void _check(odrc::core::database&   db,
-            int                     layer,
-            int                     i,
-            rule_type               ruletype,
-            int                     threshold,
-            std::vector<violation>& vios) {
-  if (ruletype == rule_type::spacing_both or
-      ruletype == rule_type::spacing_h_edge) {
+void _check(odrc::core::database&         db,
+            int                           layer,
+            int                           i,
+            core::rule_type               ruletype,
+            int                           threshold,
+            std::vector<core::violation>& vios) {
+  if (ruletype == core::rule_type::spacing_both or
+      ruletype == core::rule_type::spacing_h_edge) {
     check_distance(db.cells.at(i).lower_edges.at(layer),
                    db.cells.at(i).upper_edges.at(layer), threshold, vios);
   }
-  if (ruletype == rule_type::spacing_both or
-      ruletype == rule_type::spacing_v_edge) {
+  if (ruletype == core::rule_type::spacing_both or
+      ruletype == core::rule_type::spacing_v_edge) {
     check_distance(db.cells.at(i).left_edges.at(layer),
                    db.cells.at(i).right_edges.at(layer), threshold, vios);
   }
@@ -104,12 +104,12 @@ interval_pairs get_ovlpairs(odrc::core::database& db,
   return ovlpairs;
 }
 
-void space_check_seq(odrc::core::database&   db,
-                     std::vector<int>        layers,
-                     std::vector<int>        without_layer,
-                     int                     threshold,
-                     rule_type               ruletype,
-                     std::vector<violation>& vios) {
+void space_check_seq(odrc::core::database&         db,
+                     std::vector<int>              layers,
+                     std::vector<int>              without_layer,
+                     int                           threshold,
+                     core::rule_type               ruletype,
+                     std::vector<core::violation>& vios) {
   odrc::util::logger logger("/dev/null", odrc::util::log_level::info, true);
   odrc::util::timer  space_check("space_check", logger);
   // get inter-cell violations
@@ -121,10 +121,10 @@ void space_check_seq(odrc::core::database&   db,
   }
   space_check.pause();
   // get intra-cell violations
-  std::map<int, std::vector<violation>> intra_vios;
+  std::map<int, std::vector<core::violation>> intra_vios;
   for (auto idx = 0UL; idx < db.cells.size(); idx++) {
     if (db.cells.at(idx).is_touching(layers) and idx != db.top_cell_id) {
-      intra_vios.emplace(idx, std::vector<violation>());
+      intra_vios.emplace(idx, std::vector<core::violation>());
       _check(db, layers.front(), idx, ruletype, threshold, intra_vios.at(idx));
     }
   }

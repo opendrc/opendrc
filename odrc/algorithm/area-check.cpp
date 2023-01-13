@@ -9,9 +9,9 @@ namespace odrc {
 
 using odrc::core::polygon;
 
-void _check_polygon_area(const polygon&          poly,
-                         int                     threshold,
-                         std::vector<violation>& vios) {
+void _check_polygon_area(const polygon&                poly,
+                         int                           threshold,
+                         std::vector<core::violation>& vios) {
   int         area   = 0;
   const auto& points = poly.points;
   for (auto i = 0UL; i < points.size(); ++i) {
@@ -24,10 +24,10 @@ void _check_polygon_area(const polygon&          poly,
   }
 }
 
-void area_check_seq(const odrc::core::database& db,
-                    int                         layer,
-                    int                         threshold,
-                    std::vector<violation>&     vios) {
+void area_check_seq(const odrc::core::database&   db,
+                    int                           layer,
+                    int                           threshold,
+                    std::vector<core::violation>& vios) {
   odrc::util::logger logger("/dev/null", odrc::util::log_level::info, true);
   odrc::util::timer  area_check("area_check", logger);
   area_check.start();

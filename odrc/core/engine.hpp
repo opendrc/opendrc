@@ -10,38 +10,18 @@
 
 #include <odrc/core/cell.hpp>
 #include <odrc/core/database.hpp>
+#include <odrc/core/option.hpp>
 
 namespace odrc::core {
-enum class object {
-  polygon,
-  cell,
-  both,
-};
-enum class sramdrc_set {
-  dft              = 0,  // default
-  interac_SRAMDRAC = 1,  // interact with the layer SRAMDRC
-  outside_SRAMDRAC = 2,  // outside the layer SRAMDRC
-};
-enum class mode { sequential, parallel };
-struct rule {
-  int                 rule_num;
-  std::vector<int>    layer;
-  std::vector<int>    with_layer;
-  std::vector<int>    without_layer;
-  std::pair<int, int> region;
-  rule_type           ruletype;
-  object              obj   = object::both;
-  sramdrc_set         s_set = sramdrc_set::dft;
-};
 
 class engine {
  public:
-  mode                         check_mode = mode::sequential;
-  std::string                  design;
-  std::vector<odrc::violation> vlts_a;
-  std::vector<odrc::violation> vlts_s;
-  std::vector<odrc::violation> vlts_e;
-  std::vector<odrc::violation> vlts_w;
+  mode                   check_mode = mode::sequential;
+  std::string            design;
+  std::vector<violation> vlts_a;
+  std::vector<violation> vlts_s;
+  std::vector<violation> vlts_e;
+  std::vector<violation> vlts_w;
   //<rule number, polgon/cell number>
   std::vector<std::pair<int, std::pair<int, int>>> vlt_paires;
   //<rule number,<polygons/cells number pair>>

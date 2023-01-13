@@ -9,29 +9,29 @@
 
 namespace odrc {
 
-void _check(odrc::core::database&   db,
-            int                     layer,
-            int                     i,
-            int                     threshold,
-            std::vector<violation>& vios) {
+void _check(odrc::core::database&         db,
+            int                           layer,
+            int                           i,
+            int                           threshold,
+            std::vector<core::violation>& vios) {
   check_distance(db.cells.at(i).upper_edges.at(layer),
                  db.cells.at(i).lower_edges.at(layer), threshold, vios);
   check_distance(db.cells.at(i).right_edges.at(layer),
                  db.cells.at(i).left_edges.at(layer), threshold, vios);
 }
 
-void width_check_seq(odrc::core::database&   db,
-                     int                     layer,
-                     int                     threshold,
-                     std::vector<violation>& vios) {
+void width_check_seq(odrc::core::database&         db,
+                     int                           layer,
+                     int                           threshold,
+                     std::vector<core::violation>& vios) {
   odrc::util::logger logger("/dev/null", odrc::util::log_level::info, true);
   odrc::util::timer  width_check("width_check", logger);
   width_check.start();
   // get cell violations
-  std::map<int, std::vector<violation>> intra_vios;
+  std::map<int, std::vector<core::violation>> intra_vios;
   for (auto i = 0UL; i < db.cells.size(); i++) {
     if (db.cells.at(i).is_touching(layer) and i != db.top_cell_id) {
-      intra_vios.emplace(i, std::vector<violation>());
+      intra_vios.emplace(i, std::vector<core::violation>());
       _check(db, layer, i, threshold, intra_vios.at(i));
     }
   }

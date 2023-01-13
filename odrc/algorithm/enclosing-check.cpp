@@ -14,11 +14,11 @@
 namespace odrc {
 
 // vios is <via layer,metal layer>
-void _check(odrc::core::database&   db,
-            const std::vector<int>& layers,
-            const interval_pairs&   ovlpairs,
-            const int               threshold,
-            std::vector<violation>& vios) {
+void _check(odrc::core::database&         db,
+            const std::vector<int>&       layers,
+            const interval_pairs&         ovlpairs,
+            const int                     threshold,
+            std::vector<core::violation>& vios) {
   auto& cell_refs = db.get_top_cell().cell_refs;
   for (const auto& [via, metal] : ovlpairs) {
     check_distance(cell_refs.at(metal).upper_edges.at(layers.front()),
@@ -94,12 +94,12 @@ interval_pairs get_enclosing_ovlpairs(odrc::core::database&   db,
   return ovlpairs;
 }
 
-void enclosure_check_seq(odrc::core::database&   db,
-                         const std::vector<int>& layers,
-                         const std::vector<int>& without_layer,
-                         const int               threshold,
-                         const rule_type         ruletype,
-                         std::vector<violation>& vios) {
+void enclosure_check_seq(odrc::core::database&         db,
+                         const std::vector<int>&       layers,
+                         const std::vector<int>&       without_layer,
+                         const int                     threshold,
+                         const core::rule_type         ruletype,
+                         std::vector<core::violation>& vios) {
   odrc::util::logger logger("/dev/null", odrc::util::log_level::info, true);
   odrc::util::timer  enc_check("enc_check", logger);
   odrc::util::timer  enc_check1("enc_check1", logger);
