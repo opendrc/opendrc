@@ -32,27 +32,19 @@ bool _check(odrc::core::database&                db,
   for (auto& sub_row : sub_rows) {
     for (auto& cell_ref_idx : sub_row) {
       const auto& cell_ref = db.get_top_cell().cell_refs.at(cell_ref_idx);
-      int         id       = db.get_cell_idx(cell_ref.cell_name);
-      if (db.cells.at(id).is_touching(layers.front()) or
-          db.cells.at(id).is_touching(layers.back())) {
-        break;
-      } else {
+      const auto& the_cell = db.get_cell(cell_ref.cell_name);
+      if (not the_cell.is_touching(layers))
         return false;
-      }
     }
   }
   // check right partition
   std::vector<std::pair<int, int>> intervals;
   const auto&                      cell_refs = db.get_top_cell().cell_refs;
   for (auto& cell_ref : cell_refs) {
-    int  idx = db.get_cell_idx(cell_ref.cell_name);
-    auto mbr = cell_ref.cell_ref_mbr;
-    if (db.cells.at(idx).is_touching(layers.front())) {
-      intervals.push_back(std::make_pair(mbr.y_min, mbr.y_max));
-    } else if (db.cells.at(idx).is_touching(layers.back())) {
-      intervals.push_back(std::make_pair(mbr.y_min, mbr.y_max));
-    } else {
-      continue;
+    const auto& the_cell = db.get_cell(cell_ref.cell_name);
+    if (the_cell.is_touching(layers)) {
+      auto mbr = cell_ref.cell_ref_mbr;
+      intervals.emplace_back(mbr.y_min, mbr.y_max);
     }
   }
   std::sort(intervals.begin(), intervals.end());
@@ -75,16 +67,9 @@ bool _check(odrc::core::database&                db,
   for (auto row_id = 0UL; row_id < sub_rows.size(); row_id++) {
     const auto& sub_row = sub_rows.at(row_id);
     for (auto cell_ref_idx : sub_row) {
-      int  id = db.get_cell_idx(cell_refs.at(cell_ref_idx).cell_name);
-      int  l, r;
-      auto mbr = db.get_top_cell().cell_refs.at(cell_ref_idx).cell_ref_mbr;
-      if (db.cells.at(id).is_touching(layers.front())) {
-        l = mbr.y_min;
-        r = mbr.y_max;
-      } else {
-        l = mbr.y_min;
-        r = mbr.y_max;
-      }
+      auto mbr = cell_refs.at(cell_ref_idx).cell_ref_mbr;
+      int  l   = mbr.y_min;
+      int  r   = mbr.y_max;
       if (l < merged_intervals.at(row_id).first ||
           r > merged_intervals.at(row_id).second)
         return false;
