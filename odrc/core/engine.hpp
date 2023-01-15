@@ -10,9 +10,11 @@
 
 #include <odrc/core/cell.hpp>
 #include <odrc/core/database.hpp>
-#include <odrc/core/option.hpp>
+#include <odrc/core/rule.hpp>
 
 namespace odrc::core {
+
+enum class mode { sequential, parallel };
 
 class engine {
  public:

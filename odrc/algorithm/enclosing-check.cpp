@@ -46,16 +46,16 @@ interval_pairs get_enclosing_ovlpairs(odrc::core::database&   db,
   events.reserve(ids.size() * 2);
   for (int i = 0; i < int(ids.size()); i++) {
     const auto& cell_ref = cell_refs.at(ids[i]);
-    int         idx      = db.get_cell_idx(cell_ref.cell_name);
+    const auto& the_cell = db.get_cell(cell_ref.cell_name);
     auto&       mbr      = cell_ref.cell_ref_mbr;
     // device cell maybe include metal layer and via layer
     //  they should be treated as metal but via
-    if (db.cells.at(idx).is_touching(layers.front())) {  // layer 1 is metal
+    if (the_cell.is_touching(layers.front())) {  // layer 1 is metal
       events.emplace_back(
           event{Intvl{mbr.y_min, mbr.y_max, ids[i]}, mbr.x_min, true, true});
       events.emplace_back(
           event{Intvl{mbr.y_min, mbr.y_max, ids[i]}, mbr.x_max, true, false});
-    } else if (db.cells.at(idx).is_touching(layers.back())) {  // layer 2 is via
+    } else if (the_cell.is_touching(layers.back())) {  // layer 2 is via
       // expand mbr of via to get violations in vertical direction of sweepline
       events.emplace_back(
           event{Intvl{mbr.y_min - threshold, mbr.y_max + threshold, ids[i]},

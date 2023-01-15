@@ -64,8 +64,6 @@ enum class sramdrc_set {
   outside_SRAMDRAC = 2,  // outside the layer SRAMDRC
 };
 
-enum class mode { sequential, parallel };
-
 struct rule {
   int                 rule_num;
   std::vector<int>    layer;

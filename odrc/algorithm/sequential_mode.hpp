@@ -7,7 +7,7 @@
 #include <odrc/core/database.hpp>
 #include <odrc/core/edge.hpp>
 #include <odrc/core/interval_tree.hpp>
-#include <odrc/core/option.hpp>
+#include <odrc/core/rule.hpp>
 
 namespace odrc {
 using Intvl          = core::interval<int, int>;
