@@ -68,17 +68,17 @@ inline void check_distance(const edges&                  edges1,
                            const edges&                  edges2,
                            int                           threshold,
                            std::vector<core::violation>& vios,
-                           bool                          trans = true) {
+                           bool                          is_horizontal = true) {
   for (const auto& edge1 : edges1) {
     for (const auto& edge2 : edges2) {
       auto [p1_start, p1_end, intercept1] = edge1;
       auto [p2_start, p2_end, intercept2] = edge2;
       if (intercept1 > intercept2)
         if (is_violation(edge1, edge2, threshold)) {
-          core::edge vio_edge1{core::coord{intercept1, p1_start, trans},
-                               core::coord{intercept1, p1_end, trans}};
-          core::edge vio_edge2{core::coord{intercept2, p2_start, trans},
-                               core::coord{intercept2, p2_end, trans}};
+          core::edge vio_edge1{core::coord{intercept1, p1_start, is_horizontal},
+                               core::coord{intercept1, p1_end, is_horizontal}};
+          core::edge vio_edge2{core::coord{intercept2, p2_start, is_horizontal},
+                               core::coord{intercept2, p2_end, is_horizontal}};
           vios.emplace_back(core::violation{vio_edge1, vio_edge2});
         }
     }
