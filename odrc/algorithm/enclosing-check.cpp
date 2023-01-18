@@ -58,11 +58,11 @@ interval_pairs get_enclosing_ovlpairs(odrc::core::database&   db,
     } else if (the_cell.is_touching(layers.back())) {  // layer 2 is via
       // expand mbr of via to get violations in vertical direction of sweepline
       events.emplace_back(
-          event{Intvl{mbr.y_min - threshold, mbr.y_max + threshold, ids[i]},
-                mbr.x_min, false, true});
+          event{Intvl{mbr.y_min, mbr.y_max + threshold - 1, ids[i]}, mbr.x_min,
+                false, true});
       events.emplace_back(
-          event{Intvl{mbr.y_min - threshold, mbr.y_max + threshold, ids[i]},
-                mbr.x_max, false, false});
+          event{Intvl{mbr.y_min, mbr.y_max + threshold - 1, ids[i]},
+                mbr.x_max + threshold - 1, false, false});
     }
   }
   {
@@ -103,7 +103,7 @@ void enclosure_check_seq(odrc::core::database&         db,
   odrc::util::logger logger("/dev/null", odrc::util::log_level::info, true);
   odrc::util::timer  enc_check("enc_check", logger);
   odrc::util::timer  enc_check1("enc_check1", logger);
-  auto               rows = layout_partition(db, layers);
+  auto               rows = layout_partition(db, layers, threshold);
   for (auto row = 0UL; row < rows.size(); row++) {
     enc_check.start();
     auto ovlpairs = get_enclosing_ovlpairs(db, layers, threshold, rows[row]);

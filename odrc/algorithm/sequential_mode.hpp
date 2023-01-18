@@ -28,7 +28,7 @@ inline bool is_violation(const core::orthogonal_edge& edge1,
   auto [p1_start, p1_end, intercept1] = edge1;
   auto [p2_start, p2_end, intercept2] = edge2;
   if (std::abs(intercept1 - intercept2) < threshold) {
-    return !(p1_start >= p2_end or p2_start >= p1_end);
+    return not(p1_start >= p2_end or p2_start >= p1_end);
   } else {
     return false;
   }

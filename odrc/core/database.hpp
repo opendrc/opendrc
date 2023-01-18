@@ -53,36 +53,30 @@ class database {
   void update_map() {
     // update map if it's not up-to-date
     // do nothing if both containers have equal sizes
-    if (_name_to_idx.size() == 0) {
-      for (auto i = 0UL; i < cells.size(); ++i) {
-        _name_to_idx.emplace(cells.at(i).name, i);
-      }
-    } else {
-      for (auto i = _name_to_idx.size() - 1; i < cells.size(); ++i) {
-        _name_to_idx[cells.at(i).name] = i;
-      }
+    for (auto i = _name_to_idx.size(); i < cells.size(); ++i) {
+      _name_to_idx.emplace(cells.at(i).name, i);
     }
   }
 
   void convert_polygon_to_cell() {
-    update_top_cell_id();
+    const auto num_top_cell_polygons = get_top_cell().polygons.size();
     // convert polygons to cells
-    for (int i = 0; i < get_top_cell().polygons.size(); i++) {
-      cells.emplace_back();
-      cells.back().name = "polygon" + std::to_string(i);
-      cells.back().polygons.emplace_back(get_top_cell().polygons.at(i));
-      cells.back().update_mbr(get_top_cell().polygons.at(i).mbr);
-      cells.back().add_layer(get_top_cell().polygons.at(i).layer);
-      get_top_cell().cell_refs.emplace_back("polygon" + std::to_string(i),
-                                            coord{0, 0});
-      get_top_cell().cell_refs.back().update_mbr(
-          get_top_cell().polygons.at(i).mbr);
+    for (int i = 0; i < num_top_cell_polygons; i++) {
+      auto&       the_new_cell = create_cell();
+      const auto& the_polygon  = get_top_cell().polygons.at(i);
+      the_new_cell.name        = "polygon" + std::to_string(i);
+      the_new_cell.polygons.emplace_back(the_polygon);
+      the_new_cell.update_mbr(the_polygon.mbr);
+      the_new_cell.add_layer(the_polygon.layer);
+      auto& the_new_cell_ref = get_top_cell().cell_refs.emplace_back(
+          "polygon" + std::to_string(i), coord{0, 0});
+      the_new_cell_ref.update_mbr(the_polygon.mbr);
     }
     update_map();
   }
 
   template <typename C>
-  void creat_edges(C& c, cell& the_cell) {
+  void create_edges(C& c, cell& the_cell) {
     for (int layer = 0; layer < 64; layer++) {
       if (the_cell.is_touching(layer)) {
         c.left_edges.emplace(layer, std::vector<orthogonal_edge>());
@@ -122,7 +116,7 @@ class database {
     for (auto i = 0UL; i < cells.size(); i++) {
       if (i == top_cell_id)
         continue;
-      creat_edges(cells.at(i), cells.at(i));
+      create_edges(cells.at(i), cells.at(i));
       for (const auto& polygon : cells.at(i).polygons) {
         const auto& points = polygon.points;
         for (auto j = 0UL; j < points.size() - 1; ++j) {
@@ -133,7 +127,7 @@ class database {
     }
     for (auto& cell_ref : get_top_cell().cell_refs) {
       auto& cell = get_cell(cell_ref.cell_name);
-      creat_edges(cell_ref, cell);
+      create_edges(cell_ref, cell);
       for (const auto& polygon : cell.polygons) {
         const auto& points = polygon.points;
         for (auto j = 0UL; j < points.size() - 1; ++j) {

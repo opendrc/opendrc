@@ -27,8 +27,8 @@ void _check(odrc::core::database&         db,
       check_distance(cell_refs.at(f_cell).lower_edges.at(layer),
                      cell_refs.at(s_cell).upper_edges.at(layer), threshold,
                      vios);
-      check_distance(cell_refs.at(f_cell).upper_edges.at(layer),
-                     cell_refs.at(s_cell).lower_edges.at(layer), threshold,
+      check_distance(cell_refs.at(s_cell).lower_edges.at(layer),
+                     cell_refs.at(f_cell).upper_edges.at(layer), threshold,
                      vios);
     }
   }
@@ -38,9 +38,9 @@ void _check(odrc::core::database&         db,
       check_distance(cell_refs.at(f_cell).left_edges.at(layer),
                      cell_refs.at(s_cell).right_edges.at(layer), threshold,
                      vios, false);
-      check_distance(cell_refs.at(f_cell).right_edges.at(layer),
-                     cell_refs.at(s_cell).left_edges.at(layer), threshold, vios,
-                     false);
+      check_distance(cell_refs.at(s_cell).left_edges.at(layer),
+                     cell_refs.at(f_cell).right_edges.at(layer), threshold,
+                     vios, false);
     }
   }
 }
@@ -79,11 +79,11 @@ interval_pairs get_ovlpairs(odrc::core::database& db,
       auto& mbr = cell_ref.cell_ref_mbr;
       /// utilize threshold to expand mbr
       events.emplace_back(
-          event{Intvl{mbr.y_min, mbr.y_max + threshold, int(ids[i])}, mbr.x_min,
-                false, true});
+          event{Intvl{mbr.y_min, mbr.y_max + threshold - 1, int(ids[i])},
+                mbr.x_min, false, true});
       events.emplace_back(
-          event{Intvl{mbr.y_min, mbr.y_max + threshold, int(ids[i])}, mbr.x_max,
-                false, false});
+          event{Intvl{mbr.y_min, mbr.y_max + threshold - 1, int(ids[i])},
+                mbr.x_max + threshold - 1, false, false});
     }
   }
 
@@ -113,7 +113,7 @@ void space_check_seq(odrc::core::database&         db,
   odrc::util::logger logger("/dev/null", odrc::util::log_level::info, true);
   odrc::util::timer  space_check("space_check", logger);
   // get inter-cell violations
-  auto rows = layout_partition(db, layers);
+  auto rows = layout_partition(db, layers, threshold);
   space_check.start();
   for (auto row = 0UL; row < rows.size(); row++) {
     auto ovlpairs = get_ovlpairs(db, layers, threshold, rows[row]);

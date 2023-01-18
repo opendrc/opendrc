@@ -44,7 +44,7 @@ bool _check(odrc::core::database&                db,
     const auto& the_cell = db.get_cell(cell_ref.cell_name);
     if (the_cell.is_touching(layers)) {
       auto mbr = cell_ref.cell_ref_mbr;
-      intervals.emplace_back(mbr.y_min, mbr.y_max);
+      intervals.emplace_back(mbr.y_min, mbr.y_max + 17);
     }
   }
   std::sort(intervals.begin(), intervals.end());
@@ -69,7 +69,7 @@ bool _check(odrc::core::database&                db,
     for (auto cell_ref_idx : sub_row) {
       auto mbr = cell_refs.at(cell_ref_idx).cell_ref_mbr;
       int  l   = mbr.y_min;
-      int  r   = mbr.y_max;
+      int  r   = mbr.y_max + 17;
       if (l < merged_intervals.at(row_id).first ||
           r > merged_intervals.at(row_id).second)
         return false;

@@ -13,7 +13,8 @@
 // layer into a set of sub-rows(sub-regions).
 namespace odrc {
 inline std::vector<std::vector<int>> layout_partition(odrc::core::database& db,
-                                                      std::vector<int> layers) {
+                                                      std::vector<int> layers,
+                                                      int threshold = 18) {
   using interval_t      = std::pair<int, int>;
   const auto& cell_refs = db.get_top_cell().cell_refs;
 
@@ -30,8 +31,8 @@ inline std::vector<std::vector<int>> layout_partition(odrc::core::database& db,
       cell_ref_ids.emplace_back(id);
       auto& mbr = cell_ref.cell_ref_mbr;
       coordinates.insert(mbr.y_min);
-      coordinates.insert(mbr.y_max);
-      intervals.emplace_back(mbr.y_min, mbr.y_max);
+      coordinates.insert(mbr.y_max + threshold - 1);
+      intervals.emplace_back(mbr.y_min, mbr.y_max + threshold - 1);
     }
   }
 

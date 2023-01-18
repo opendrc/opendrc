@@ -41,84 +41,24 @@ class engine {
             space_check_seq(db, rule.layer, rule.without_layer,
                             rule.region.first, rule.ruletype, vlts_s);
             std::cout << vlts_s.size() << std::endl;
-            std::ofstream outfile;
-            outfile.open("/home/oem/Desktop/opendrc/build/data/our_text/" +
-                             design + "_space.txt",
-                         std::ios::trunc);
-            for (const auto& vio : vlts_s) {
-              // outfile << std::endl;
-              outfile << " " << vio.distance.edge1.point1.x << " "
-                      << vio.distance.edge1.point1.y << " "
-                      << vio.distance.edge1.point2.x << " "
-                      << vio.distance.edge1.point2.y << " "
-                      << vio.distance.edge2.point1.x << " "
-                      << vio.distance.edge2.point1.y << " "
-                      << vio.distance.edge2.point2.x << " "
-                      << vio.distance.edge2.point2.y << std::endl;
-            }
-            outfile.close();
             break;
           }
           case rule_type::width: {
             width_check_seq(db, rule.layer.front(), rule.region.first, vlts_w);
             std::cout << vlts_w.size() << std::endl;
-            std::ofstream outfile;
-            outfile.open("/home/oem/Desktop/opendrc/build/data/our_text/" +
-                             design + "_width.txt",
-                         std::ios::trunc);
-            for (const auto& vio : vlts_w) {
-              outfile << " " << vio.distance.edge1.point1.x << " "
-                      << vio.distance.edge1.point1.y << " "
-                      << vio.distance.edge1.point2.x << " "
-                      << vio.distance.edge1.point2.y << " "
-                      << vio.distance.edge2.point1.x << " "
-                      << vio.distance.edge2.point1.y << " "
-                      << vio.distance.edge2.point2.x << " "
-                      << vio.distance.edge2.point2.y << std::endl;
-            }
-            outfile.close();
             break;
           }
           case rule_type::enclosure: {
             enclosure_check_seq(db, rule.layer, rule.without_layer,
                                 rule.region.first, rule.ruletype, vlts_e);
             std::cout << vlts_e.size() << std::endl;
-            std::ofstream outfile;
-            outfile.open("/home/oem/Desktop/opendrc/build/data/our_text/" +
-                             design + "_enc.txt",
-                         std::ios::trunc);
-            for (const auto& vio : vlts_e) {
-              outfile << " " << vio.distance.edge1.point1.x << " "
-                      << vio.distance.edge1.point1.y << " "
-                      << vio.distance.edge1.point2.x << " "
-                      << vio.distance.edge1.point2.y << " "
-                      << vio.distance.edge2.point1.x << " "
-                      << vio.distance.edge2.point1.y << " "
-                      << vio.distance.edge2.point2.x << " "
-                      << vio.distance.edge2.point2.y << std::endl;
-            }
-            outfile.close();
+
             break;
           }
           case rule_type::area: {
             area_check_seq(db, rule.layer.front(), rule.region.first, vlts_a);
             std::cout << vlts_a.size() << std::endl;
-            std::ofstream outfile;
-            outfile.open("/home/oem/Desktop/opendrc/build/data/our_text/" +
-                             design + "_area.txt",
-                         std::ios::trunc);
-            for (const auto& vio : vlts_a) {
-              // outfile << std::endl;
-              outfile << " " << vio.distance.edge1.point1.x << " "
-                      << vio.distance.edge1.point1.y << " "
-                      << vio.distance.edge1.point2.x << " "
-                      << vio.distance.edge1.point2.y << " "
-                      << vio.distance.edge2.point1.x << " "
-                      << vio.distance.edge2.point1.y << " "
-                      << vio.distance.edge2.point2.x << " "
-                      << vio.distance.edge2.point2.y << std::endl;
-            }
-            outfile.close();
+
             break;
           }
           default:

@@ -17,7 +17,7 @@ void _check(odrc::core::database&         db,
   check_distance(db.cells.at(i).upper_edges.at(layer),
                  db.cells.at(i).lower_edges.at(layer), threshold, vios);
   check_distance(db.cells.at(i).right_edges.at(layer),
-                 db.cells.at(i).left_edges.at(layer), threshold, vios);
+                 db.cells.at(i).left_edges.at(layer), threshold, vios, false);
 }
 
 void width_check_seq(odrc::core::database&         db,
