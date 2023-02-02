@@ -23,7 +23,7 @@ struct interval {
 template <typename T, typename V>
 struct node {
   using Intvl = interval<T, V>;
-  using Ovlp       = std::vector<std::pair<T, V>>;
+  using Ovlp  = std::vector<std::pair<T, V>>;
   T    v;  // the value of the node is the mid point of the initial interval
   bool is_subtree_empty = false;
 

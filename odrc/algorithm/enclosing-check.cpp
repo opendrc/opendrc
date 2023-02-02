@@ -40,8 +40,8 @@ interval_pairs get_enclosing_ovlpairs(odrc::core::database&   db,
                                       const std::vector<int>& layers,
                                       const int               threshold,
                                       const std::vector<int>& ids) {
-  interval_pairs ovlpairs1;
-  interval_pairs ovlpairs2;
+  interval_pairs     ovlpairs1;
+  interval_pairs     ovlpairs2;
   std::vector<event> events;
   const auto&        cell_refs = db.get_top_cell().cell_refs;
   events.reserve(ids.size() * 2);
@@ -73,7 +73,7 @@ interval_pairs get_enclosing_ovlpairs(odrc::core::database&   db,
   }
   core::interval_tree<int, int> tree_V;  // interval tree of via
   core::interval_tree<int, int> tree_M;  // interval tree of metal
-  //ovlpairs.reserve(events.size() * 2);
+  // ovlpairs.reserve(events.size() * 2);
   for (auto i = 0UL; i < events.size(); ++i) {
     const auto& e = events[i];
     if (e.is_metal) {  // metal
@@ -93,7 +93,7 @@ interval_pairs get_enclosing_ovlpairs(odrc::core::database&   db,
     }
   }
   for (const auto& ovlp : ovlpairs2) {
-    ovlpairs1.emplace_back(ovlp.second,ovlp.first);
+    ovlpairs1.emplace_back(ovlp.second, ovlp.first);
   }
   return ovlpairs1;
 }
@@ -108,16 +108,13 @@ void enclosure_check_seq(odrc::core::database&         db,
   odrc::util::timer  enc_check("enc_check", logger);
   odrc::util::timer  enc_check1("enc_check1", logger);
   auto               rows = layout_partition(db, layers, threshold);
-  int count=0;
   for (auto row = 0UL; row < rows.size(); row++) {
     enc_check.start();
     auto ovlpairs = get_enclosing_ovlpairs(db, layers, threshold, rows[row]);
     enc_check.pause();
-    count=count+ovlpairs.size();
     enc_check1.start();
     _check(db, layers, ovlpairs, threshold, vios);
     enc_check1.pause();
   }
-  std::cout<<count<<std::endl;
 }
 }  // namespace odrc
