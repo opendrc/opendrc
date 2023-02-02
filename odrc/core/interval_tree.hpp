@@ -22,17 +22,17 @@ struct interval {
 
 template <typename T, typename V>
 struct node {
-  using interval_t = interval<T, V>;
+  using Intvl = interval<T, V>;
   using Ovlp       = std::vector<std::pair<T, V>>;
   T    v;  // the value of the node is the mid point of the initial interval
   bool is_subtree_empty = false;
 
   node() = default;
-  node(const interval_t& intvl) {
+  node(const Intvl& intvl) {
     v = intvl.mid();
     insert(intvl);
   }
-  node(interval_t&& intvl) {
+  node(Intvl&& intvl) {
     v = intvl.mid();
     insert(std::move(intvl));
   }
@@ -41,19 +41,19 @@ struct node {
   int rc = -1;  // right child offset
 
   struct l_compare {
-    bool operator()(const interval_t& lhs, const interval_t& rhs) const {
+    bool operator()(const Intvl& lhs, const Intvl& rhs) const {
       return lhs.l == rhs.l ? lhs.v < rhs.v : lhs.l < rhs.l;
     }
   };
   struct r_compare {
-    bool operator()(const interval_t& lhs, const interval_t& rhs) const {
+    bool operator()(const Intvl& lhs, const Intvl& rhs) const {
       return lhs.r == rhs.r ? lhs.v < rhs.v : lhs.r > rhs.r;
     }
   };
 
-  std::set<interval_t, l_compare> intvls_l;
+  std::set<Intvl, l_compare> intvls_l;
   // intervals in ascending left endpoint
-  std::set<interval_t, r_compare> intvls_r;
+  std::set<Intvl, r_compare> intvls_r;
   // intervals in descending right endpoint
 
   [[nodiscard]] bool has_left_child() const { return lc != -1; }
@@ -61,19 +61,23 @@ struct node {
 
   bool empty() const { return intvls_l.empty(); }
 
-  void insert(const interval_t& intvl) {
+  void update_state(bool is_left_empty, bool is_right_empty) {
+    is_subtree_empty = empty() and is_left_empty and is_right_empty;
+  }
+
+  void insert(const Intvl& intvl) {
     intvls_l.emplace(intvl);
     intvls_r.emplace(intvl);
     is_subtree_empty = false;
   }
 
-  void insert(interval_t&& intvl) {
+  void insert(Intvl&& intvl) {
     intvls_l.emplace(std::move(intvl));
     intvls_r.emplace(std::move(intvl));
     is_subtree_empty = false;
   }
 
-  void remove(const interval_t& intvl) {
+  void remove(const Intvl& intvl) {
     intvls_l.erase(intvl);
     intvls_r.erase(intvl);
   }
@@ -125,7 +129,7 @@ class interval_tree {
         !node.has_left_child() or nodes.at(node.lc).is_subtree_empty;
     bool is_right_empty =
         !node.has_right_child() or nodes.at(node.rc).is_subtree_empty;
-    node.is_subtree_empty = node.empty() and is_left_empty and is_right_empty;
+    node.update_state(is_left_empty, is_right_empty);
   }
 
   void get_intervals_pairs(const Intvl& intvl, Ovlp& ovlps) {
@@ -168,13 +172,13 @@ class interval_tree {
     assert(n < nodes.size());
     const Node& node = nodes.at(n);
     if (intvl.r <= node.v) {
-      node.right_query(intvl.r, intvl.v, ovlps);
+      node.left_query(intvl.r, intvl.v, ovlps);
       if (node.has_left_child()) {
         _run_query(intvl, node.lc, ovlps);
       }
     }
     if (intvl.l >= node.v) {
-      node.left_query(intvl.l, intvl.v, ovlps);
+      node.right_query(intvl.l, intvl.v, ovlps);
       if (node.has_right_child()) {
         _run_query(intvl, node.rc, ovlps);
       }
