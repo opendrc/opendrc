@@ -23,6 +23,7 @@ struct interval {
 template <typename T, typename V>
 struct node {
   using interval_t = interval<T, V>;
+  using Ovlp       = std::vector<std::pair<T, V>>;
   T    v;  // the value of the node is the mid point of the initial interval
   bool is_subtree_empty = false;
 
@@ -50,10 +51,10 @@ struct node {
     }
   };
 
-  std::set<interval_t, l_compare>
-      intvls_l;  // intervals in ascending left endpoint
-  std::set<interval_t, r_compare>
-      intvls_r;  // intervals in descending right endpoint
+  std::set<interval_t, l_compare> intvls_l;
+  // intervals in ascending left endpoint
+  std::set<interval_t, r_compare> intvls_r;
+  // intervals in descending right endpoint
 
   [[nodiscard]] bool has_left_child() const { return lc != -1; }
   [[nodiscard]] bool has_right_child() const { return rc != -1; }
@@ -65,42 +66,33 @@ struct node {
     intvls_r.emplace(intvl);
     is_subtree_empty = false;
   }
+
   void insert(interval_t&& intvl) {
     intvls_l.emplace(std::move(intvl));
     intvls_r.emplace(std::move(intvl));
     is_subtree_empty = false;
   }
+
   void remove(const interval_t& intvl) {
     intvls_l.erase(intvl);
     intvls_r.erase(intvl);
   }
-  void get_intervals_containing(const T&                      p,
-                                const T&                      m,
-                                const V&                      v,
-                                std::vector<std::pair<V, V>>& ovlp,
-                                bool                          is_metal) const {
-    if (p <= m) {
-      for (auto it = intvls_l.begin(); it != intvls_l.end(); ++it) {
-        if (it->l > p) {
-          break;
-        }
-        if (is_metal) {
-          ovlp.emplace_back(it->v, v);
-        } else {
-          ovlp.emplace_back(std::make_pair(v, it->v));
-        }
+
+  void left_query(const T& p, const V& v, Ovlp& ovlp) const {
+    for (auto it = intvls_l.begin(); it != intvls_l.end(); ++it) {
+      if (it->l > p) {
+        break;
       }
-    } else {
-      for (auto it = intvls_r.begin(); it != intvls_r.end(); ++it) {
-        if (it->r < p) {
-          break;
-        }
-        if (is_metal) {
-          ovlp.emplace_back(std::make_pair(it->v, v));
-        } else {
-          ovlp.emplace_back(std::make_pair(v, it->v));
-        }
+      ovlp.emplace_back(it->v, v);
+    }
+  }
+
+  void right_query(const T& p, const V& v, Ovlp& ovlp) const {
+    for (auto it = intvls_r.begin(); it != intvls_r.end(); ++it) {
+      if (it->r < p) {
+        break;
       }
+      ovlp.emplace_back(std::make_pair(it->v, v));
     }
   }
 };
@@ -110,41 +102,16 @@ class interval_tree {
  public:
   using Intvl = interval<T, V>;
   using Node  = node<T, V>;
-
-  void insert(const Intvl& intvl, const std::size_t n = 0) {
+  using Ovlp  = std::vector<std::pair<T, V>>;
+  void insert(const Intvl& intvl) {
     if (nodes.empty()) {
       nodes.emplace_back(intvl);
       return;
     }
-    assert(n < nodes.size());
-    Node& node            = nodes.at(n);
-    node.is_subtree_empty = false;
-    if (intvl.contains(node.v)) {
-      node.insert(intvl);
-    } else if (intvl.r < node.v) {  // insert to left subtree
-      if (node.has_left_child()) {
-        insert(intvl, node.lc);
-      } else {
-        nodes.emplace_back(intvl);  // deactiavtes reference of node!
-        nodes.at(n).lc = nodes.size() - 1;
-      }
-    } else {  // insert to right subtree
-      if (node.has_right_child()) {
-        insert(intvl, node.rc);
-      } else {
-        nodes.emplace_back(intvl);  // deactiavtes reference of node!
-        nodes.at(n).rc = nodes.size() - 1;
-      }
-    }
+    _insert(intvl, 0);
   };
 
   void remove(const Intvl& intvl, const std::size_t n = 0) {
-    if (n < nodes.size()) {
-    } else {
-      std::cout << n << std::endl;
-      std::cout << intvl.l << " " << intvl.r << " " << intvl.mid() << " "
-                << intvl.v << std::endl;
-    }
     assert(n < nodes.size());
     Node& node = nodes.at(n);
     if (intvl.contains(node.v)) {
@@ -160,51 +127,59 @@ class interval_tree {
         !node.has_right_child() or nodes.at(node.rc).is_subtree_empty;
     node.is_subtree_empty = node.empty() and is_left_empty and is_right_empty;
   }
-  void get_intervals_pairs(const Intvl&                  intvl,
-                           std::vector<std::pair<T, V>>& ovlp,
-                           bool                          is_metal = true) {
-    _run_query(intvl, 0, ovlp, is_metal);
-  }
 
-  // returns a vector of Intvl::v
-  void _run_query(const Intvl&                  intvl,
-                  const std::size_t             n,
-                  std::vector<std::pair<T, V>>& rtn,
-                  bool                          is_metal) {
+  void get_intervals_pairs(const Intvl& intvl, Ovlp& ovlps) {
     if (nodes.empty()) {
       return;
     }
+    assert(intvl.l < intvl.r);
+    _run_query(intvl, 0, ovlps);
+  }
+
+ private:
+  std::vector<Node> nodes;
+  void              _insert(const Intvl& intvl, const std::size_t n) {
+    assert(n < nodes.size());
+    Node& node            = nodes.at(n);
+    node.is_subtree_empty = false;
+    if (intvl.contains(node.v)) {
+      node.insert(intvl);
+    } else if (intvl.r < node.v) {  // insert to left subtree
+      if (node.has_left_child()) {
+        _insert(intvl, node.lc);
+      } else {
+        nodes.emplace_back(intvl);  // deactiavtes reference of node!
+        nodes.at(n).lc = nodes.size() - 1;
+      }
+    } else {  // insert to right subtree
+      if (node.has_right_child()) {
+        _insert(intvl, node.rc);
+      } else {
+        nodes.emplace_back(intvl);  // deactiavtes reference of node!
+        nodes.at(n).rc = nodes.size() - 1;
+      }
+    }
+  };
+
+  void _run_query(const Intvl& intvl, const std::size_t n, Ovlp& ovlps) {
     if (nodes.at(n).is_subtree_empty) {
       return;
     }
     assert(n < nodes.size());
     const Node& node = nodes.at(n);
     if (intvl.r <= node.v) {
-      node.get_intervals_containing(intvl.r, intvl.mid(), intvl.v, rtn,
-                                    is_metal);
+      node.right_query(intvl.r, intvl.v, ovlps);
       if (node.has_left_child()) {
-        _run_query(intvl, node.lc, rtn, is_metal);
+        _run_query(intvl, node.lc, ovlps);
       }
-    } else if (intvl.l >= node.v) {
-      node.get_intervals_containing(intvl.l, intvl.mid(), intvl.v, rtn,
-                                    is_metal);
+    }
+    if (intvl.l >= node.v) {
+      node.left_query(intvl.l, intvl.v, ovlps);
       if (node.has_right_child()) {
-        _run_query(intvl, node.rc, rtn, is_metal);
-      }
-    } else {
-      node.get_intervals_containing(node.v, intvl.mid(), intvl.v, rtn,
-                                    is_metal);
-      if (node.has_left_child()) {
-        _run_query(intvl, node.lc, rtn, is_metal);
-      }
-      if (node.has_right_child()) {
-        _run_query(intvl, node.rc, rtn, is_metal);
+        _run_query(intvl, node.rc, ovlps);
       }
     }
   }
-
- private:
-  std::vector<Node> nodes;
 };
 
 }  // namespace odrc::core
