@@ -115,22 +115,7 @@ class interval_tree {
     _insert(intvl, 0);
   };
 
-  void remove(const Intvl& intvl, const std::size_t n = 0) {
-    assert(n < nodes.size());
-    Node& node = nodes.at(n);
-    if (intvl.contains(node.v)) {
-      node.remove(intvl);
-    } else if (intvl.r < node.v) {
-      remove(intvl, node.lc);
-    } else {
-      remove(intvl, node.rc);
-    }
-    bool is_left_empty =
-        !node.has_left_child() or nodes.at(node.lc).is_subtree_empty;
-    bool is_right_empty =
-        !node.has_right_child() or nodes.at(node.rc).is_subtree_empty;
-    node.update_state(is_left_empty, is_right_empty);
-  }
+  void remove(const Intvl& intvl) { _remove(intvl, 0); }
 
   void get_intervals_pairs(const Intvl& intvl, Ovlp& ovlps) {
     if (nodes.empty()) {
@@ -142,7 +127,8 @@ class interval_tree {
 
  private:
   std::vector<Node> nodes;
-  void              _insert(const Intvl& intvl, const std::size_t n) {
+
+  void _insert(const Intvl& intvl, const std::size_t n) {
     assert(n < nodes.size());
     Node& node            = nodes.at(n);
     node.is_subtree_empty = false;
@@ -163,7 +149,24 @@ class interval_tree {
         nodes.at(n).rc = nodes.size() - 1;
       }
     }
-  };
+  }
+
+  void _remove(const Intvl& intvl, const std::size_t n) {
+    assert(n < nodes.size());
+    Node& node = nodes.at(n);
+    if (intvl.contains(node.v)) {
+      node.remove(intvl);
+    } else if (intvl.r < node.v) {
+      _remove(intvl, node.lc);
+    } else {
+      _remove(intvl, node.rc);
+    }
+    bool is_left_empty =
+        !node.has_left_child() or nodes.at(node.lc).is_subtree_empty;
+    bool is_right_empty =
+        !node.has_right_child() or nodes.at(node.rc).is_subtree_empty;
+    node.update_state(is_left_empty, is_right_empty);
+  }
 
   void _run_query(const Intvl& intvl, const std::size_t n, Ovlp& ovlps) {
     if (nodes.at(n).is_subtree_empty) {
