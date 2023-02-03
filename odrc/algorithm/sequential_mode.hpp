@@ -10,9 +10,10 @@
 #include <odrc/core/rule.hpp>
 
 namespace odrc {
-using Intvl          = core::interval<int, int>;
-using interval_pairs = std::vector<std::pair<int, int>>;
-using edges          = std::vector<core::orthogonal_edge>;
+using Intvl = core::interval<int, int>;
+template <typename V>
+using OvlpPairs = std::vector<std::pair<V, V>>;
+using edges     = std::vector<core::orthogonal_edge>;
 struct event {
   Intvl intvl;
   int   y;
