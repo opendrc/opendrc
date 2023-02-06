@@ -72,8 +72,8 @@ class engine {
             break;
           }
           case rule_type::width: {
-            // width_check_par(db, rule.layer.front(), rule.region.first, vlts);
-            // std::cout << vlts.size() << std::endl;
+            width_check_par(db, rule.layer.back(), rule.region.first, vlts_w);
+            std::cout << vlts_w.size() << std::endl;
             break;
           }
           case rule_type::enclosure: {
