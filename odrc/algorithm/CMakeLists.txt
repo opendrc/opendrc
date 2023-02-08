@@ -1,4 +1,4 @@
-add_library(libchecks space-check.cpp width-check.cpp enclosing-check.cpp area-check.cpp width-check.cu)
+add_library(libchecks space-check.cpp width-check.cpp enclosing-check.cpp area-check.cpp  space-check.cu enc-check.cu width-check.cu area-check.cu)
 target_include_directories(libchecks PRIVATE ${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/thirdparty)
 target_link_libraries(libchecks PRIVATE ${CUDA_LIBRARIES} libcore)
 target_compile_options(libchecks PRIVATE

@@ -7,10 +7,7 @@
 #include <odrc/core/rule.hpp>
 
 namespace odrc {
-struct coord {
-  int x;
-  int y;
-};
+using coord = odrc::core::coord;
 struct check_result {
   int  e11x;
   int  e11y;
@@ -22,10 +19,27 @@ struct check_result {
   int  e22y;
   bool is_violation = false;
 };
+struct evnt {
+  int x;
+  int y1;
+  int y2;
+  int id;
+};
 
+inline bool is_violation(core::orthogonal_edge& edge1,
+                         core::orthogonal_edge& edge2,
+                         int                    threshold) {
+  auto [p1_start, p1_end, intercept1] = edge1;
+  auto [p2_start, p2_end, intercept2] = edge2;
+  if (std::abs(intercept1 - intercept2) < threshold) {
+    return not(p1_start >= p2_end or p2_start >= p1_end);
+  } else {
+    return false;
+  }
+}
 // transform intra-cell violations to inter-cell violations
 inline void transform_vio(const check_result&           vio,
-                          const core::coord&            offset,
+                          const coord&                  offset,
                           std::vector<core::violation>& vios) {
   if (vio.is_violation) {
     core::edge edge1{{vio.e11x + offset.x, vio.e11y + offset.y},
@@ -54,18 +68,18 @@ inline void get_ref_vios(
   }
 }
 
-void space_check_par(const odrc::core::database&   db,
-                     core::rule                    rule,
-                     std::vector<core::violation>& vios);
-void area_check_par(const odrc::core::database&   db,
-                    core::rule                    rule,
-                    std::vector<core::violation>& vios);
+void space_check_par(odrc::core::database& db, int layer1, int threshold);
 void width_check_par(odrc::core::database&         db,
                      int                           layer,
                      int                           threshold,
                      std::vector<core::violation>& vios);
-void enc_check_par(const odrc::core::database&   db,
-                   core::rule                    rule,
+void enc_check_par(odrc::core::database&         db,
+                   int                           layer1,
+                   int                           layer2,
+                   int                           threshold,
                    std::vector<core::violation>& vios);
-
+void area_check_par(odrc::core::database&         db,
+                    int                           layer,
+                    int                           threshold,
+                    std::vector<core::violation>& vios);
 }  // namespace odrc

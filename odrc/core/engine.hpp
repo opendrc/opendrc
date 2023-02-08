@@ -67,8 +67,8 @@ class engine {
       } else if (check_mode == mode::parallel) {
         switch (rule.ruletype) {
           case rule_type::spacing_both: {
-            // space_check_par(db, rule.layer.front(), rule.layer.back(),
-            //                 rule.region.first, vlts);
+            space_check_par(db, rule.layer.front(), rule.region.first);
+            std::cout << vlts_s.size() << std::endl;
             break;
           }
           case rule_type::width: {
@@ -77,9 +77,14 @@ class engine {
             break;
           }
           case rule_type::enclosure: {
+            enc_check_par(db, rule.layer.front(), rule.layer.back(),
+                          rule.region.first, vlts_e);
+            std::cout << vlts_e.size() << std::endl;
             break;
           }
           case rule_type::area: {
+            area_check_par(db, rule.layer.front(), rule.region.first, vlts_a);
+            std::cout << vlts_a.size() << std::endl;
             break;
           }
           default:
