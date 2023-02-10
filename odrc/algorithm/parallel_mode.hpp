@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include <odrc/core/cell.hpp>
 #include <odrc/core/database.hpp>
 #include <odrc/core/edge.hpp>
@@ -68,7 +70,24 @@ inline void get_ref_vios(
   }
 }
 
-void space_check_par(odrc::core::database& db, int layer1, int threshold);
+inline void result_transform(std::vector<core::violation>& vios,
+                             check_result*                 results,
+                             int                           num) {
+  for (int i = 0; i < num; i++) {
+    if (results[i].is_violation) {
+      core::edge edge1{{results[i].e11x, results[i].e11y},
+                       {results[i].e12x, results[i].e12y}};
+      core::edge edge2{{results[i].e21x, results[i].e21y},
+                       {results[i].e22x, results[i].e22y}};
+      vios.emplace_back(edge1, edge2);
+    }
+  }
+}
+
+void space_check_par(odrc::core::database&         db,
+                     int                           layer1,
+                     int                           threshold,
+                     std::vector<core::violation>& vios);
 void width_check_par(odrc::core::database&         db,
                      int                           layer,
                      int                           threshold,

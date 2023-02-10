@@ -16,8 +16,6 @@
 #include <odrc/algorithm/layout-partition.hpp>
 #include <odrc/core/interval_tree.hpp>
 
-#include <odrc/core/cell.hpp>
-#include <odrc/core/edge.hpp>
 namespace odrc {
 
 using edge     = odrc::core::edge;
@@ -429,6 +427,7 @@ void enc_check_par(odrc::core::database&         db,
           vstart, vend, dv_edges1, dv_edges2, ves2.size(), threshold, dresults);
     }
   }
+  result_transform(vios, dresults, sizeof(dresults) / sizeof(check_result));
 }
 
 }  // namespace odrc

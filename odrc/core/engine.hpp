@@ -67,7 +67,7 @@ class engine {
       } else if (check_mode == mode::parallel) {
         switch (rule.ruletype) {
           case rule_type::spacing_both: {
-            space_check_par(db, rule.layer.front(), rule.region.first);
+            space_check_par(db, rule.layer.front(), rule.region.first, vlts_s);
             std::cout << vlts_s.size() << std::endl;
             break;
           }

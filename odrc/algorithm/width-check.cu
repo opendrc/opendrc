@@ -62,12 +62,6 @@ __global__ void check_kernel(coord*        coords,
       bool is_projection_overlap = res.e11y < res.e21y and res.e22y < res.e12y;
       res.is_violation =
           is_inside_to_inside and is_too_close and is_projection_overlap;
-      // if (res.is_violation) {
-      //   printf("T[%d]: (%d, %d), (%d, %d), (%d, %d), (%d, %d)\n", tid,
-      //   res.e11x,
-      //          res.e11y, res.e12x, res.e12y, res.e21x, res.e21y, res.e22x,
-      //          res.e22y);
-      // }
 
     } else {
       // e22 e11
@@ -207,18 +201,6 @@ void width_check_par(odrc::core::database&         db,
         throw std::runtime_error("CUDA error: " + std::to_string(error));
       }
     }
-    // for (auto i = 0; i < 9900; i++) {
-    //   if (check_results_host[i].is_violation) {
-    //     core::edge edge1{
-    //         {check_results_host[i].e11x, check_results_host[i].e11y},
-    //         {check_results_host[i].e12x, check_results_host[i].e12y}};
-    //     core::edge edge2{
-    //         {check_results_host[i].e21x, check_results_host[i].e21y},
-    //         {check_results_host[i].e22x, check_results_host[i].e22y}};
-    //     vios.emplace_back(edge1, edge2);
-    //     std::cout << cell.name << " " << std::endl;
-    //   }
-    // }
     get_ref_vios(db, checked_results, check_results_host, cell, vios);
     checked_results.emplace(cell.name, std::make_pair(count, poly_num + count));
     count += poly_num;

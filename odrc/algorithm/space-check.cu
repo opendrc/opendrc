@@ -13,6 +13,7 @@
 #include <thrust/execution_policy.h>
 #include <thrust/scan.h>
 
+#include <odrc/algorithm/layout-partition.hpp>
 #include <odrc/core/interval_tree.hpp>
 
 namespace odrc {
@@ -112,10 +113,6 @@ __global__ void vcheck_kernel(o_edge*       v_edges,
     bool is_projection_overlap = e11y < e21y and e22y < e12y;
     is_violation =
         is_outside_to_outside and is_too_close and is_projection_overlap;
-    if (is_violation) {
-      printf("T[%d]: (%d, %d), (%d, %d), (%d, %d), (%d, %d)\n", tid, e11x, e11y,
-             e12x, e12y, e21x, e21y, e22x, e22y);
-    }
 
   } else {
     // e21 e12
@@ -266,11 +263,6 @@ __device__ inline void run_check(o_edge*       h_edges,
         bool is_projection_overlap = e11y < e21y and e22y < e12y;
         is_violation =
             is_outside_to_outside and is_too_close and is_projection_overlap;
-        if (is_violation) {
-          printf("T[%d]: (%d, %d), (%d, %d), (%d, %d), (%d, %d)\n", tid, e11x,
-                 e11y, e12x, e12y, e21x, e21y, e22x, e22y);
-        }
-
       } else {
         // e21 e12
         // e22 e11
@@ -359,19 +351,18 @@ __global__ void run_row(o_edge*       h_edges,
   }
 }
 
-void space_check_par(odrc::core::database& db, int layer1, int threshold) {
-  const auto&             cell_refs = db.get_top_cell().cell_refs;
-  std::unordered_set<int> y;
-  y.reserve(cell_refs.size() * 2);
+void space_check_par(odrc::core::database&         db,
+                     int                           layer1,
+                     int                           threshold,
+                     std::vector<core::violation>& vios) {
+  const auto&         cell_refs = db.get_top_cell().cell_refs;
   std::vector<int>    cells;
-  std::vector<int>    lrs;
   std::vector<o_edge> hes;
   std::vector<o_edge> ves;
   std::vector<int>    hidx;
   std::vector<int>    vidx;
   std::vector<int>    mbrs;
   cells.reserve(cell_refs.size());
-  lrs.reserve(cell_refs.size() * 2);
   for (int i = 0; i < cell_refs.size(); ++i) {
     const auto& cr       = cell_refs[i];
     const auto& the_cell = db.get_cell(cr.cell_name);
@@ -379,10 +370,6 @@ void space_check_par(odrc::core::database& db, int layer1, int threshold) {
       continue;
     }
     cells.emplace_back(i);
-    y.insert(cr.cell_ref_mbr.y_min);
-    y.insert(cr.cell_ref_mbr.y_max);
-    lrs.emplace_back(cr.cell_ref_mbr.y_min);
-    lrs.emplace_back(cr.cell_ref_mbr.y_max);
     hidx.emplace_back(hes.size());
     vidx.emplace_back(ves.size());
     hes.insert(hes.end(), cr.left_edges.at(layer1).begin(),
@@ -430,41 +417,7 @@ void space_check_par(odrc::core::database& db, int layer1, int threshold) {
                   cudaMemcpyHostToDevice, stream1);
   cudaMallocAsync((void**)&results, sizeof(check_result) * 150000, stream1);
 
-  std::vector<int> yv(y.begin(), y.end());
-  std::sort(yv.begin(), yv.end());
-  std::vector<int> y_comp(yv.back() + 5);
-  for (int i = 0; i < yv.size(); ++i) {
-    y_comp[yv[i]] = i;
-  }
-  for (int i = 0; i < lrs.size(); ++i) {
-    lrs[i] = y_comp[lrs[i]];
-  }
-  const int        csize = cells.size();
-  std::vector<int> ufv(yv.size(), 0);
-  std::iota(ufv.begin(), ufv.end(), 0);
-
-  int lrs_size = lrs.size();
-  for (int i = 0; i < lrs_size; i += 2) {
-    int ufb  = lrs[i];
-    int ufu  = lrs[i + 1];
-    ufv[ufb] = ufv[ufb] > ufu ? ufv[ufb] : ufu;
-  }
-  int lidx = -1;
-
-  int end = -1;
-  for (int i = 0; i < ufv.size(); ++i) {
-    if (i > end) {
-      end = ufv[i];
-      ++lidx;
-    }
-    end    = std::max(end, ufv[i]);
-    ufv[i] = lidx;
-  }
-  std::vector<std::vector<int>> rows(lidx + 1);
-
-  for (int i = 0; i < csize; ++i) {
-    rows[ufv[lrs[i * 2]]].emplace_back(i);
-  }
+  auto rows = layout_partition(db, std::vector{layer1}, threshold);
   cudaStreamSynchronize(stream1);
 
   std::vector<evnt> events;
@@ -512,7 +465,6 @@ void space_check_par(odrc::core::database& db, int layer1, int threshold) {
       h_edges, v_edges, h_idx, v_idx, mbrs_d, results, events_d, eidx_d,
       int(eidx.size()), threshold, 1);
   cudaDeviceSynchronize();
-
-  return;
+  result_transform(vios, results, sizeof(results) / sizeof(check_result));
 }
 }  // namespace odrc
