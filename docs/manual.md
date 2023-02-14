@@ -3,10 +3,10 @@
 **OpenDRC** is an efficient Open-Source design rule checking (DRC) engine with hierarchical GPU acceleration.
 
 Four steps to use **OpenDRC**.
-1. initialize the engine with rule information and mode.
-2. assign the gds database.
-3. for each rule, do design rule checking.
-4. output the violations.
+1. Initialize the engine with rule information and mode.
+2. Assign the gds database.
+3. For each rule, do design rule checking.
+4. Output the violations.
 
 There is an example:
 
@@ -102,10 +102,10 @@ The input of interval merging is a set $S$ of intervals to be merged and the out
 
 The overall procedure is as follows:
 
-1. extract `cell_refs` on the specific layers from the gds database
-2. enlarge the minimum bounding box of each `cell_ref` by the rule threshold and discretize the **y** coordinates of the enlarged boxes
-3. view all enlarged boxes as intervals to be merged along the **y** axis and merge them
-4. cluster the `cell_refs` in the same interval after merging and return them
+1. Extract `cell_refs` on the specific layers from the gds database
+2. Enlarge the minimum bounding box of each `cell_ref` by the rule threshold and discretize the **y** coordinates of the enlarged boxes
+3. View all enlarged boxes as intervals to be merged along the **y** axis and merge them
+4. Cluster the `cell_refs` in the same interval after merging and return them
 
 ### Check Algorithms
 
@@ -185,6 +185,6 @@ Then we compare the TXT files with the output of our program.
 
 The overall comparing idea is as follows:
 
-1. read the violation information from the klayout TXT file
-2. for each violation in our output, check whether it is in the **Klayout** TXT file. If it is, delete it from the klayout TXT file and it is a true violation. If it is not, it is a false positive.
+1. Read the violation information from the klayout TXT file
+2. For each violation in our output, check whether it is in the **Klayout** TXT file. If it is, delete it from the klayout TXT file and it is a true violation. If it is not, it is a false positive.
 
