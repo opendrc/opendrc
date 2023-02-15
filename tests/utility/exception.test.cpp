@@ -2,6 +2,8 @@
 
 #include <doctest/doctest.h>
 
+#include <cerrno>
+
 TEST_SUITE("[OpenDRC] odrc::exception tests") {
   TEST_CASE("test throw not_implemented_error") {
     CHECK_THROWS_WITH_AS(throw odrc::not_implemented_error(),
