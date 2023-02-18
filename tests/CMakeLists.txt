@@ -4,6 +4,8 @@ add_executable(tests
   core/sweepline.test.cpp
   core/sweepline.test.cu
   gdsii/gdsii.test.cpp
+  geometry/point.test.cpp
+  geometry/polygon.test.cpp
   utility/exception.test.cpp
   utility/logger.test.cpp
   utility/timer.test.cpp
