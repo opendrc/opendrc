@@ -24,7 +24,6 @@ __global__ void check_kernel(coord*        coords,
   if (tid >= (size - 1) * size / 2) {
     return;
   }
-
   int offset       = start;
   int num_checks   = size - 1;
   int total_checks = 0;
@@ -39,7 +38,7 @@ __global__ void check_kernel(coord*        coords,
 
     total_checks += num_checks;
     offset += 2;
-    num_checks -= 2;
+    num_checks -= 1;
   }
   int r = offset + (tid - total_checks + 1) * 2;
 
@@ -101,30 +100,28 @@ void width_check_par(odrc::core::database&         db,
   cudaStream_t stream2;
   cudaStreamCreate(&stream1);
   cudaStreamCreate(&stream2);
-  // 定义两个stream
   coord*        coord_buffer       = nullptr;
   check_result* check_results      = nullptr;
   check_result* check_results_host = nullptr;
+  const int     max_coords_num     = 300;
+  const int     max_results_num    = 9900;
 
-  // TODO: remove magic numbers
   cudaError_t error;
-  cudaMallocAsync((void**)&coord_buffer, sizeof(coord) * 201, stream1);
-  cudaMallocAsync((void**)&check_results, sizeof(check_result) * 9900, stream1);
-  // GPU上分配存储空间
-  cudaMallocHost((void**)&check_results_host, sizeof(check_result) * 9900);
-  // CPU上分配存储空间
+  cudaMallocAsync((void**)&coord_buffer, sizeof(coord) * max_coords_num,
+                  stream1);
+  cudaMallocAsync((void**)&check_results,
+                  sizeof(check_result) * max_results_num, stream1);
+
+  cudaMallocHost((void**)&check_results_host,
+                 sizeof(check_result) * max_results_num);
+
   error = cudaStreamSynchronize(stream1);
-  // 等待stream1完成任务
 
   // result memoization
   std::unordered_map<std::string, std::pair<int, int>> checked_results;
-  // 存储结果
-  static int count = 0;
-  // 记录每个cell对应的edge pair数量
-  // static int                                           saved_poly = 0;
-
-  cudaGraph_t     graph      = nullptr;  // 创建图
-  cudaGraphExec_t graph_exec = nullptr;  // 例化图
+  static int                                           count      = 0;
+  cudaGraph_t                                          graph      = nullptr;
+  cudaGraphExec_t                                      graph_exec = nullptr;
   for (const auto& cell : db.cells) {
     if (not cell.is_touching(layer)) {
       continue;
@@ -142,7 +139,7 @@ void width_check_par(odrc::core::database&         db,
       //  \ /
       //   e
       //
-      cudaStreamBeginCapture(stream1, cudaStreamCaptureModeGlobal);  // 图的开始
+      cudaStreamBeginCapture(stream1, cudaStreamCaptureModeGlobal);
       // construct cuda graph for width check here
       cudaMemcpyAsync(coord_buffer, polygon.points.data(),
                       sizeof(coord) * polygon.points.size(),
@@ -154,7 +151,6 @@ void width_check_par(odrc::core::database&         db,
 
       int num_parallel_edges = (polygon.points.size() - 1) / 2;
       int num_checks = (num_parallel_edges - 1) * num_parallel_edges / 2;
-
       check_kernel<<<(num_checks + 127) / 128, 128, 0, stream1>>>(
           coord_buffer, 0, num_parallel_edges, threshold, check_results);
       check_kernel<<<(num_checks + 127) / 128, 128, 0, stream2>>>(
@@ -166,7 +162,7 @@ void width_check_par(odrc::core::database&         db,
       cudaMemcpyAsync(check_results_host, check_results,
                       sizeof(check_result) * num_checks * 2,
                       cudaMemcpyDeviceToHost, stream1);
-      cudaStreamEndCapture(stream1, &graph);  // 图的结束
+      cudaStreamEndCapture(stream1, &graph);
 
       cudaGraphExecUpdateResult update_result;
       // If we've already instantiated the graph, try to update it directly
@@ -190,12 +186,11 @@ void width_check_par(odrc::core::database&         db,
         }
         // Instantiate graphExec from graph. The error node and
         // error message parameters are unused here.
-        cudaGraphInstantiate(&graph_exec, graph, NULL, NULL,
-                             0);  // 调动例化后的graph
+        cudaGraphInstantiate(&graph_exec, graph, NULL, NULL, 0);
       }
-      cudaGraphDestroy(graph);         // 销毁graph
-      cudaGraphLaunch(graph_exec, 0);  // 执行
-      cudaDeviceSynchronize();         // 等待计算完成 同步
+      cudaGraphDestroy(graph);
+      cudaGraphLaunch(graph_exec, 0);
+      cudaDeviceSynchronize();
       error = cudaGetLastError();
       if (error != 0) {  // TODO: change to OpenDRC exception
         throw std::runtime_error("CUDA error: " + std::to_string(error));

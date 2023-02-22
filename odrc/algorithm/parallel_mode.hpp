@@ -28,17 +28,6 @@ struct evnt {
   int id;
 };
 
-inline bool is_violation(core::orthogonal_edge& edge1,
-                         core::orthogonal_edge& edge2,
-                         int                    threshold) {
-  auto [p1_start, p1_end, intercept1] = edge1;
-  auto [p2_start, p2_end, intercept2] = edge2;
-  if (std::abs(intercept1 - intercept2) < threshold) {
-    return not(p1_start >= p2_end or p2_start >= p1_end);
-  } else {
-    return false;
-  }
-}
 // transform intra-cell violations to inter-cell violations
 inline void transform_vio(const check_result&           vio,
                           const coord&                  offset,
