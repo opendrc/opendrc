@@ -61,8 +61,10 @@ struct node {
 
   bool empty() const { return intvls_l.empty(); }
 
-  void update_state(bool is_left_empty, bool is_right_empty) {
-    is_subtree_empty = empty() and is_left_empty and is_right_empty;
+  void update_state(std::vector<node<T, V>>& nodes) {
+    bool is_left_empty  = !has_left_child() or nodes.at(lc).is_subtree_empty;
+    bool is_right_empty = !has_right_child() or nodes.at(rc).is_subtree_empty;
+    is_subtree_empty    = empty() and is_left_empty and is_right_empty;
   }
 
   void insert(const Intvl& intvl) {
@@ -82,21 +84,21 @@ struct node {
     intvls_r.erase(intvl);
   }
 
-  void left_query(const T& p, const V& v, Ovlp& ovlp) const {
-    for (auto it = intvls_l.begin(); it != intvls_l.end(); ++it) {
-      if (it->l > p) {
-        break;
+  void query(const T& p, const V& v, Ovlp& ovlp, bool is_left_point) const {
+    if (is_left_point) {
+      for (auto it = intvls_l.begin(); it != intvls_l.end(); ++it) {
+        if (it->l > p) {
+          break;
+        }
+        ovlp.emplace_back(it->v, v);
       }
-      ovlp.emplace_back(it->v, v);
-    }
-  }
-
-  void right_query(const T& p, const V& v, Ovlp& ovlp) const {
-    for (auto it = intvls_r.begin(); it != intvls_r.end(); ++it) {
-      if (it->r < p) {
-        break;
+    } else {
+      for (auto it = intvls_r.begin(); it != intvls_r.end(); ++it) {
+        if (it->r < p) {
+          break;
+        }
+        ovlp.emplace_back(it->v, v);
       }
-      ovlp.emplace_back(std::make_pair(it->v, v));
     }
   }
 };
@@ -161,11 +163,7 @@ class interval_tree {
     } else {
       _remove(intvl, node.rc);
     }
-    bool is_left_empty =
-        !node.has_left_child() or nodes.at(node.lc).is_subtree_empty;
-    bool is_right_empty =
-        !node.has_right_child() or nodes.at(node.rc).is_subtree_empty;
-    node.update_state(is_left_empty, is_right_empty);
+    node.update_state(nodes);
   }
 
   void _run_query(const Intvl& intvl, const std::size_t n, Ovlp& ovlps) {
@@ -175,13 +173,13 @@ class interval_tree {
     assert(n < nodes.size());
     const Node& node = nodes.at(n);
     if (intvl.r <= node.v) {
-      node.left_query(intvl.r, intvl.v, ovlps);
+      node.query(intvl.r, intvl.v, ovlps, true);
       if (node.has_left_child()) {
         _run_query(intvl, node.lc, ovlps);
       }
     }
     if (intvl.l >= node.v) {
-      node.right_query(intvl.l, intvl.v, ovlps);
+      node.query(intvl.l, intvl.v, ovlps, false);
       if (node.has_right_child()) {
         _run_query(intvl, node.rc, ovlps);
       }
