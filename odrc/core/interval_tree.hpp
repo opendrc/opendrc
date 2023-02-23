@@ -24,16 +24,16 @@ template <typename T, typename V>
 struct node {
   using Intvl = interval<T, V>;
   using Ovlp  = std::vector<std::pair<V, V>>;
-  T    v;  // the value of the node is the mid point of the initial interval
+  T    key;  // the value of the node is the mid point of the initial interval
   bool is_subtree_empty = false;
 
   node() = default;
   node(const Intvl& intvl) {
-    v = intvl.mid();
+    key = intvl.mid();
     insert(intvl);
   }
   node(Intvl&& intvl) {
-    v = intvl.mid();
+    key = intvl.mid();
     insert(std::move(intvl));
   }
 
@@ -84,8 +84,8 @@ struct node {
     intvls_r.erase(intvl);
   }
 
-  void query(const T& p, const V& v, Ovlp& ovlp, bool is_left_point) const {
-    if (is_left_point) {
+  void query(const T& p, const V& v, Ovlp& ovlp) const {
+    if (p < this->key) {
       for (auto it = intvls_l.begin(); it != intvls_l.end(); ++it) {
         if (it->l > p) {
           break;
@@ -134,9 +134,9 @@ class interval_tree {
     assert(n < nodes.size());
     Node& node            = nodes.at(n);
     node.is_subtree_empty = false;
-    if (intvl.contains(node.v)) {
+    if (intvl.contains(node.key)) {
       node.insert(intvl);
-    } else if (intvl.r < node.v) {  // insert to left subtree
+    } else if (intvl.r < node.key) {  // insert to left subtree
       if (node.has_left_child()) {
         _insert(intvl, node.lc);
       } else {
@@ -156,9 +156,9 @@ class interval_tree {
   void _remove(const Intvl& intvl, const std::size_t n) {
     assert(n < nodes.size());
     Node& node = nodes.at(n);
-    if (intvl.contains(node.v)) {
+    if (intvl.contains(node.key)) {
       node.remove(intvl);
-    } else if (intvl.r < node.v) {
+    } else if (intvl.r < node.key) {
       _remove(intvl, node.lc);
     } else {
       _remove(intvl, node.rc);
@@ -172,14 +172,18 @@ class interval_tree {
     }
     assert(n < nodes.size());
     const Node& node = nodes.at(n);
-    if (intvl.r <= node.v) {
-      node.query(intvl.r, intvl.v, ovlps, true);
+    if (intvl.r < node.key) {
+      node.query(intvl.r, intvl.v, ovlps);
       if (node.has_left_child()) {
         _run_query(intvl, node.lc, ovlps);
       }
-    }
-    if (intvl.l >= node.v) {
-      node.query(intvl.l, intvl.v, ovlps, false);
+    } else if (intvl.l >= node.key) {
+      node.query(intvl.l, intvl.v, ovlps);
+      if (node.has_right_child()) {
+        _run_query(intvl, node.rc, ovlps);
+      }
+    } else {
+      node.query(node.key, intvl.v, ovlps);
       if (node.has_right_child()) {
         _run_query(intvl, node.rc, ovlps);
       }
