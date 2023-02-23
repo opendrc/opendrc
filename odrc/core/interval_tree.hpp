@@ -184,6 +184,9 @@ class interval_tree {
       }
     } else {
       node.query(node.key, intvl.v, ovlps);
+      if (node.has_left_child()) {
+        _run_query(intvl, node.lc, ovlps);
+      }
       if (node.has_right_child()) {
         _run_query(intvl, node.rc, ovlps);
       }
