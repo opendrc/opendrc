@@ -25,6 +25,9 @@ using polygon  = odrc::core::polygon;
 using cell_ref = odrc::core::cell_ref;
 using o_edge   = odrc::core::orthogonal_edge;
 
+// TODO: the condition is not right
+// all edge pairs meet this condition
+// there would be some wrong violations
 bool is_violation(core::orthogonal_edge& edge1,
                   core::orthogonal_edge& edge2,
                   int                    threshold) {
@@ -32,10 +35,11 @@ bool is_violation(core::orthogonal_edge& edge1,
   auto [p2_start, p2_end, intercept2] = edge2;
   if (intercept1 == intercept2)
     return false;
-  if (std::abs(intercept1 - intercept2) < 2)
-    return true;
-  // TODO:overlap
-  return false;
+  if (std::abs(intercept1 - intercept2) < threshold) {
+    return not(p1_start >= p2_end or p2_start >= p1_end);
+  } else {
+    return false;
+  }
 }
 
 __global__ void hori_search(o_edge* hedges1,
@@ -228,17 +232,18 @@ __global__ void vert_check(int*          estarts,
 
     if (is_violation) {
       if (offset < tid * 2 + 2 and offset < 100000) {
-        check_result& res = results[offset];
-        res.e11x          = e11x;
-        res.e11y          = e11y;
-        res.e12x          = e12x;
-        res.e12y          = e12y;
-        res.e21x          = e21x;
-        res.e21y          = e21y;
-        res.e22x          = e22x;
-        res.e22y          = e22y;
-        res.is_violation  = true;
+        check_result res;
+        res.e11x         = e11x;
+        res.e11y         = e11y;
+        res.e12x         = e12x;
+        res.e12y         = e12y;
+        res.e21x         = e21x;
+        res.e21y         = e21y;
+        res.e22x         = e22x;
+        res.e22y         = e22y;
+        res.is_violation = true;
         ++offset;
+        memcpy(results + offset, &res, sizeof(check_result));
       }
     }
   }
@@ -280,7 +285,8 @@ void enc_check_par(odrc::core::database&         db,
   cudaMallocAsync((void**)&vstart, sizeof(int) * 5000 * 100, stream1);
   cudaMallocAsync((void**)&vend, sizeof(int) * 5000 * 100, stream1);
   std::vector<check_result> res_host;
-
+  check_result*             dresults_host;
+  cudaMallocHost((void**)&dresults_host, sizeof(check_result) * 100000);
   auto rows = layout_partition(db, std::vector{layer1, layer2}, threshold);
 
   const auto& top_cell = db.get_top_cell();
@@ -301,6 +307,18 @@ void enc_check_par(odrc::core::database&         db,
       auto& the_cell = db.get_cell(cell_ref.cell_name);
       hidx2.emplace_back(hes2.size());
       vidx2.emplace_back(ves2.size());
+      hidx1.emplace_back(hes1.size());
+      vidx1.emplace_back(ves1.size());
+      if (the_cell.is_touching(layer2)) {
+        ves1.insert(ves1.end(), cell_ref.left_edges.at(layer2).begin(),
+                    cell_ref.left_edges.at(layer2).end());
+        ves1.insert(ves1.end(), cell_ref.right_edges.at(layer2).begin(),
+                    cell_ref.right_edges.at(layer2).end());
+        hes1.insert(hes1.end(), cell_ref.lower_edges.at(layer2).begin(),
+                    cell_ref.lower_edges.at(layer2).end());
+        hes1.insert(hes1.end(), cell_ref.upper_edges.at(layer2).begin(),
+                    cell_ref.upper_edges.at(layer2).end());
+      }
       if (the_cell.is_touching(layer1)) {
         ves2.insert(ves2.end(), cell_ref.left_edges.at(layer1).begin(),
                     cell_ref.left_edges.at(layer1).end());
@@ -314,43 +332,22 @@ void enc_check_par(odrc::core::database&         db,
     }
     hidx2.emplace_back(hes2.size());
     vidx2.emplace_back(ves2.size());
-    std::sort(hes2.begin(), hes2.end(),
-              [] __device__(const o_edge& h1, const o_edge& h2) {
-                return h1.intercept < h2.intercept;
-              });
-    std::sort(ves2.begin(), ves2.end(),
-              [] __device__(const o_edge& v1, const o_edge& v2) {
-                return v1.intercept < v2.intercept;
-              });
+    std::sort(hes2.begin(), hes2.end(), [](const o_edge& h1, const o_edge& h2) {
+      return h1.intercept < h2.intercept;
+    });
+    std::sort(ves2.begin(), ves2.end(), [](const o_edge& v1, const o_edge& v2) {
+      return v1.intercept < v2.intercept;
+    });
 
-    for (int i = 0; i < rows[row].size(); i++) {
-      int   cr       = rows[row][i];
-      auto& cell_ref = top_cell.cell_refs.at(cr);
-      auto& the_cell = db.get_cell(cell_ref.cell_name);
-      hidx1.emplace_back(hes1.size());
-      vidx1.emplace_back(ves1.size());
-      if (the_cell.is_touching(layer2)) {
-        ves1.insert(ves1.end(), cell_ref.left_edges.at(layer2).begin(),
-                    cell_ref.left_edges.at(layer2).end());
-        ves1.insert(ves1.end(), cell_ref.right_edges.at(layer2).begin(),
-                    cell_ref.right_edges.at(layer2).end());
-        hes1.insert(hes1.end(), cell_ref.lower_edges.at(layer2).begin(),
-                    cell_ref.lower_edges.at(layer2).end());
-        hes1.insert(hes1.end(), cell_ref.upper_edges.at(layer2).begin(),
-                    cell_ref.upper_edges.at(layer2).end());
-      }
-    }
     hidx1.emplace_back(hes1.size());
     vidx1.emplace_back(ves1.size());
-    std::sort(hes1.begin(), hes1.end(),
-              [] __device__(const o_edge& h1, const o_edge& h2) {
-                return h1.intercept < h2.intercept;
-              });
-    std::sort(ves1.begin(), ves1.end(),
-              [] __device__(const o_edge& v1, const o_edge& v2) {
-                return v1.intercept < v2.intercept;
-              });
-    if (hes2.size() < 1000) {
+    std::sort(hes1.begin(), hes1.end(), [](const o_edge& h1, const o_edge& h2) {
+      return h1.intercept < h2.intercept;
+    });
+    std::sort(ves1.begin(), ves1.end(), [](const o_edge& v1, const o_edge& v2) {
+      return v1.intercept < v2.intercept;
+    });
+    if (hes2.size() < 10000) {
       for (int j = 0; j < ves2.size(); ++j) {
         auto [p_start, p_end, intercept] = ves2[j];
         auto k =
@@ -374,7 +371,7 @@ void enc_check_par(odrc::core::database&         db,
       }
 
       for (int j = 0; j < hes2.size(); ++j) {
-        auto [p_start, p_end, intercept] = ves2[j];
+        auto [p_start, p_end, intercept] = hes2[j];
         auto k =
             std::lower_bound(hes1.begin(), hes1.end(), intercept - threshold,
                              [](const auto& v1, int intercept) {
@@ -383,7 +380,7 @@ void enc_check_par(odrc::core::database&         db,
         auto kend =
             std::upper_bound(hes1.begin(), hes1.end(), intercept + threshold,
                              [](int intercept, const auto& v1) {
-                               return intercept < v1.intercept;
+                               return v1.intercept > intercept;
                              });
         for (; k < kend; ++k) {
           o_edge& ee = *k;
@@ -394,7 +391,6 @@ void enc_check_par(odrc::core::database&         db,
           }
         }
       }
-      continue;
     } else {
       cudaMemcpyAsync(dh_edges2, hes2.data(), sizeof(o_edge) * hes2.size(),
                       cudaMemcpyHostToDevice, stream1);
@@ -439,12 +435,10 @@ void enc_check_par(odrc::core::database&         db,
           hstart, hend, dh_edges1, dh_edges2, hes2.size(), threshold, dresults);
       vert_check<<<(ves2.size() + bs - 1) / bs, bs, 0, stream2>>>(
           vstart, vend, dv_edges1, dv_edges2, ves2.size(), threshold, dresults);
+      cudaMemcpyAsync(dresults_host, dresults, sizeof(check_result) * 100000,
+                      cudaMemcpyDeviceToHost);
     }
   }
-  check_result* dresults_host;
-  cudaMallocHost((void**)&dresults_host, sizeof(check_result) * 100000);
-  cudaMemcpyAsync(dresults_host, dresults, sizeof(check_result) * 100000,
-                  cudaMemcpyDeviceToHost);
   result_transform(vios, dresults_host,
                    sizeof(dresults_host) / sizeof(check_result));
 }
