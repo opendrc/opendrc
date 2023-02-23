@@ -40,8 +40,7 @@ interval_pairs get_enclosing_ovlpairs(odrc::core::database&   db,
                                       const std::vector<int>& layers,
                                       const int               threshold,
                                       const std::vector<int>& ids) {
-  interval_pairs     ovlpairs1;
-  interval_pairs     ovlpairs2;
+  interval_pairs     ovlpairs;
   std::vector<event> events;
   const auto&        cell_refs = db.get_top_cell().cell_refs;
   events.reserve(ids.size() * 2);
@@ -73,29 +72,26 @@ interval_pairs get_enclosing_ovlpairs(odrc::core::database&   db,
   }
   core::interval_tree<int, int> tree_V;  // interval tree of via
   core::interval_tree<int, int> tree_M;  // interval tree of metal
-  // ovlpairs.reserve(events.size() * 2);
+  ovlpairs.reserve(events.size() * 2);
   for (auto i = 0UL; i < events.size(); ++i) {
     const auto& e = events[i];
     if (e.is_metal) {  // metal
       if (e.is_inevent) {
-        tree_V.get_intervals_pairs(e.intvl, ovlpairs1);
+        tree_V.get_intervals_pairs(e.intvl, ovlpairs);
         tree_M.insert(e.intvl);
       } else {
         tree_M.remove(e.intvl);
       }
     } else {  // via
       if (e.is_inevent) {
-        tree_M.get_intervals_pairs(e.intvl, ovlpairs2);
+        tree_M.get_intervals_pairs(e.intvl, ovlpairs);
         tree_V.insert(e.intvl);
       } else {
         tree_V.remove(e.intvl);
       }
     }
   }
-  for (const auto& ovlp : ovlpairs2) {
-    ovlpairs1.emplace_back(ovlp.second, ovlp.first);
-  }
-  return ovlpairs1;
+  return ovlpairs;
 }
 
 void enclosure_check_seq(odrc::core::database&         db,
