@@ -77,15 +77,21 @@ OvlpPairs<int> get_enclosing_ovlpairs(odrc::core::database&   db,
     const auto& e = events[i];
     if (e.is_metal) {  // metal
       if (e.is_inevent) {
-        tree_V.get_intervals_pairs(e.intvl, ovlpairs);
+        auto ovlps = tree_V.query(e.intvl);
         tree_M.insert(e.intvl);
+        for (const auto& ovlp : ovlps) {
+          ovlpairs.emplace_back(ovlp, e.intvl.v);
+        }
       } else {
         tree_M.remove(e.intvl);
       }
     } else {  // via
       if (e.is_inevent) {
-        tree_M.get_intervals_pairs(e.intvl, ovlpairs);
+        auto ovlps = tree_M.query(e.intvl);
         tree_V.insert(e.intvl);
+        for (const auto& ovlp : ovlps) {
+          ovlpairs.emplace_back(e.intvl.v, ovlp);
+        }
       } else {
         tree_V.remove(e.intvl);
       }

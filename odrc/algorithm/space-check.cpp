@@ -95,8 +95,11 @@ OvlpPairs<int> get_ovlpairs(odrc::core::database& db,
   ovlpairs.reserve(events.size() * 2);
   for (const auto& e : events) {
     if (e.is_inevent) {
-      tree.get_intervals_pairs(e.intvl, ovlpairs);
+      auto ovlps = tree.query(e.intvl);
       tree.insert(e.intvl);
+      for (const auto& ovlp : ovlps) {
+        ovlpairs.emplace_back(ovlp, e.intvl.v);
+      }
     } else {
       tree.remove(e.intvl);
     }
