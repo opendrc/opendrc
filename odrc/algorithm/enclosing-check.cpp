@@ -16,7 +16,7 @@ namespace odrc {
 // vios is <via layer,metal layer>
 void _check(odrc::core::database&         db,
             const std::vector<int>&       layers,
-            const interval_pairs&         ovlpairs,
+            const OvlpPairs<int>&         ovlpairs,
             const int                     threshold,
             std::vector<core::violation>& vios) {
   auto& cell_refs = db.get_top_cell().cell_refs;
@@ -36,11 +36,11 @@ void _check(odrc::core::database&         db,
   }
 }
 
-interval_pairs get_enclosing_ovlpairs(odrc::core::database&   db,
+OvlpPairs<int> get_enclosing_ovlpairs(odrc::core::database&   db,
                                       const std::vector<int>& layers,
                                       const int               threshold,
                                       const std::vector<int>& ids) {
-  interval_pairs     ovlpairs;
+  OvlpPairs<int>     ovlpairs;
   std::vector<event> events;
   const auto&        cell_refs = db.get_top_cell().cell_refs;
   events.reserve(ids.size() * 2);

@@ -16,7 +16,7 @@ namespace odrc {
 // inter-cell violation check
 void _check(odrc::core::database&         db,
             int                           layer,
-            interval_pairs&               ovlpairs,
+            OvlpPairs<int>&               ovlpairs,
             core::rule_type               ruletype,
             int                           threshold,
             std::vector<core::violation>& vios) {
@@ -64,11 +64,11 @@ void _check(odrc::core::database&         db,
   }
 }
 
-interval_pairs get_ovlpairs(odrc::core::database& db,
+OvlpPairs<int> get_ovlpairs(odrc::core::database& db,
                             std::vector<int>&     layers,
                             int                   threshold,
                             std::vector<int>&     ids) {
-  interval_pairs     ovlpairs;
+  OvlpPairs<int>     ovlpairs;
   std::vector<event> events;
   auto&              cell_refs = db.get_top_cell().cell_refs;
   events.reserve(ids.size() * 2);
