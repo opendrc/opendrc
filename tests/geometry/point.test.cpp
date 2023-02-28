@@ -34,6 +34,15 @@ TEST_SUITE("[OpenDRC] odrc::geometry point tests") {
     CHECK_EQ(p.get<0>(), doctest::Approx(double{3.5}));
     CHECK_EQ(p.get<1>(), doctest::Approx(double{5.7}));
   }
+  TEST_CASE("test initializer list constructor") {
+    odrc::geometry::point<int> p{{1, 2}};
+    CHECK_EQ(p.get<0>(), 1);
+    CHECK_EQ(p.get<1>(), 2);
+    odrc::geometry::point<int, 3> p3d{{1, 2, 3}};
+    CHECK_EQ(p3d.get<0>(), 1);
+    CHECK_EQ(p3d.get<1>(), 2);
+    CHECK_EQ(p3d.get<2>(), 3);
+  }
   TEST_CASE("test x/y getter/setter for point2d") {
     odrc::geometry::point2d p;
     p.x(3);
