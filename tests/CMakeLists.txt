@@ -3,6 +3,8 @@ add_executable(tests
   algorithm/layout-partition.test.cpp
   core/sweepline.test.cpp
   core/sweepline.test.cu
+  db/cell.test.cpp
+  db/elem.test.cpp
   gdsii/gdsii.test.cpp
   geometry/point.test.cpp
   geometry/polygon.test.cpp
