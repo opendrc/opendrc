@@ -16,6 +16,9 @@ class point {
   constexpr point() = default;
   constexpr point(const CoordinateType& v0, const CoordinateType& v1)
       : values{v0, v1} {}
+  constexpr point(std::initializer_list<CoordinateType> init) {
+    std::copy(init.begin(), init.end(), values);
+  }
 
   template <std::size_t K>
   constexpr const CoordinateType& get() const {
@@ -38,7 +41,9 @@ class point2d : public point<CoordinateType, 2, cartesian> {
  public:
   constexpr point2d() = default;
   constexpr point2d(const CoordinateType& v0, const CoordinateType& v1)
-      : point<CoordinateType, 2, cartesian>(v0, v1){};
+      : point<CoordinateType>(v0, v1) {}
+  constexpr point2d(std::initializer_list<CoordinateType> init)
+      : point<CoordinateType>{init} {}
 
   constexpr const CoordinateType& x() const { return this->template get<0>(); }
   constexpr const CoordinateType& y() const { return this->template get<1>(); }

@@ -14,9 +14,10 @@ template <typename Point   = point2d<>,
               std::vector,
           template <typename T> typename Allocator = std::allocator>
 class polygon {
+ public:
+  using point_type = Point;
   using point_list = Container<Point, Allocator<Point>>;
 
- public:
   polygon() = default;
   polygon(const point_list& points) : _points(points) {}
   template <typename Iterator>
