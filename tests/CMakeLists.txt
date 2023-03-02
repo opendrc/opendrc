@@ -6,6 +6,7 @@ add_executable(tests
   db/cell.test.cpp
   db/elem.test.cpp
   gdsii/gdsii.test.cpp
+  geometry/box.test.cpp
   geometry/point.test.cpp
   geometry/polygon.test.cpp
   utility/exception.test.cpp

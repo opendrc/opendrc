@@ -50,4 +50,19 @@ TEST_SUITE("[OpenDRC] odrc::geometry point tests") {
     CHECK_EQ(p.x(), 3);
     CHECK_EQ(p.y(), 5);
   }
+  TEST_CASE("test comparison operators") {
+    odrc::geometry::point p1{1, 1};
+    odrc::geometry::point p2{2, 2};
+    CHECK_LT(p1, p2);
+    CHECK_LE(p1, p2);
+    CHECK_GT(p2, p1);
+    CHECK_GE(p2, p2);
+    CHECK_NE(p1, p2);
+    CHECK_FALSE(p1 == p2);
+    p2.set<0>(1);
+    CHECK_FALSE(p1 < p2);
+    p2.set<1>(1);
+    CHECK_EQ(p1, p2);
+    CHECK_FALSE(p1 < p2);
+  }
 }

@@ -32,6 +32,22 @@ class point {
     values[K] = v;
   }
 
+  bool operator<(const point& other) const {
+    for (std::size_t i = 0; i < Dimension; ++i) {
+      if (values[i] >= other.values[i])
+        return false;
+    }
+    return true;
+  }
+  bool operator>(const point& other) const { return other < *this; }
+  bool operator<=(const point& other) const { return !(*this > other); }
+  bool operator>=(const point& other) const { return !(*this < other); }
+  bool operator==(const point& other) const {
+    return std::equal(values, values + Dimension, other.values,
+                      other.values + Dimension);
+  }
+  bool operator!=(const point& other) const { return !(*this == other); }
+
  private:
   CoordinateType values[Dimension];
 };
