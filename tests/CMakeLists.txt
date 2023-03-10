@@ -8,7 +8,7 @@ add_executable(tests
   gdsii/gdsii.test.cpp
   geometry/box.test.cpp
   geometry/point.test.cpp
-  # geometry/polygon.test.cpp
+  geometry/polygon.test.cpp
   # geometry/spatial.test.cpp
   utility/exception.test.cpp
   utility/logger.test.cpp
