@@ -9,7 +9,7 @@ add_executable(tests
   geometry/box.test.cpp
   geometry/point.test.cpp
   geometry/polygon.test.cpp
-  # geometry/spatial.test.cpp
+  geometry/spatial.test.cpp
   utility/exception.test.cpp
   utility/logger.test.cpp
   utility/timer.test.cpp
