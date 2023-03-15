@@ -4,29 +4,32 @@
 #include <memory>
 #include <vector>
 
+#include <odrc/geometry/geometry.hpp>
 #include <odrc/geometry/point.hpp>
 
 namespace odrc::geometry {
 
-template <typename Point   = point2d<>,
-          bool IsClockWise = true,
+template <typename GeoSpace = geometry_space<>,
+          bool IsClockWise  = true,
           template <typename T, typename Allocator> typename Container =
               std::vector,
           template <typename T> typename Allocator = std::allocator>
 class polygon {
+  static_assert(traits::is_valid_geometry_space_v<GeoSpace>);
+
  public:
-  using point_type = Point;
-  using point_list = Container<Point, Allocator<Point>>;
+  using vertex      = point<GeoSpace>;
+  using vertex_list = Container<vertex, Allocator<vertex>>;
 
   polygon() = default;
-  polygon(const point_list& points) : _points(points) {}
-  template <typename Iterator>
-  polygon(Iterator begin, Iterator end) : _points(begin, end) {}
-  polygon(std::initializer_list<Point> init) : _points(init) {}
+  template <typename... Args>
+  polygon(Args&&... args) : _vertices(std::forward<Args>(args)...) {}
+  polygon(std::initializer_list<vertex> init) : _vertices(init) {}
 
-  constexpr std::size_t size() const noexcept { return _points.size(); }
+  constexpr std::size_t size() const noexcept { return _vertices.size(); }
 
  private:
-  point_list _points;
+  vertex_list _vertices;
 };
+
 }  // namespace odrc::geometry
