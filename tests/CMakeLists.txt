@@ -3,14 +3,9 @@ add_executable(tests
   algorithm/layout-partition.test.cpp
   core/sweepline.test.cpp
   core/sweepline.test.cu
-<<<<<<< Updated upstream
-  # db/cell.test.cpp
-  # db/elem.test.cpp
-=======
   db/db.test.cpp
   db/cell.test.cpp
   db/elem.test.cpp
->>>>>>> Stashed changes
   gdsii/gdsii.test.cpp
   geometry/box.test.cpp
   geometry/point.test.cpp
