@@ -7,7 +7,7 @@
 
 TEST_SUITE("[OpenDRC] odrc::util proxy tests") {
   TEST_CASE("test const_container_proxy for vector") {
-    std::vector<int>            v{2, 3, 5, 7};
+    std::vector<int>                  v{2, 3, 5, 7};
     odrc::util::const_container_proxy vp(v);
     CHECK_EQ(vp.begin(), v.begin());
     CHECK_EQ(vp.end(), v.end());
@@ -19,7 +19,7 @@ TEST_SUITE("[OpenDRC] odrc::util proxy tests") {
     CHECK_EQ(v, v2);
   }
   TEST_CASE("test const_container_proxy for list") {
-    std::list<int>              l{2, 3, 5, 7};
+    std::list<int>                    l{2, 3, 5, 7};
     odrc::util::const_container_proxy lp(l);
     CHECK_EQ(lp.begin(), l.begin());
     CHECK_EQ(lp.end(), l.end());
