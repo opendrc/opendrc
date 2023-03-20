@@ -21,12 +21,24 @@ class polygon {
   using vertex      = point<GeoSpace>;
   using vertex_list = Container<vertex, Allocator<vertex>>;
 
-  polygon() = default;
+  constexpr polygon() = default;
   template <typename... Args>
-  polygon(Args&&... args) : _vertices(std::forward<Args>(args)...) {}
-  polygon(std::initializer_list<vertex> init) : _vertices(init) {}
+  constexpr polygon(Args&&... args) : _vertices(std::forward<Args>(args)...) {}
+  constexpr polygon(std::initializer_list<vertex> init) : _vertices(init) {}
 
   constexpr std::size_t size() const noexcept { return _vertices.size(); }
+
+  constexpr const vertex& operator[](std::size_t n) const noexcept {
+    return _vertices[n];
+  }
+
+  constexpr polygon operator+(const vertex& point) const {
+    polygon result;
+    result._vertices.reserve(_vertices.size());
+    std::transform(_vertices.begin(), _vertices.end(), result._vertices.begin(),
+                   [&point](const vertex& v) { return v + point; });
+    return result;
+  }
 
  private:
   vertex_list _vertices;
