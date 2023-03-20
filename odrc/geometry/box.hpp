@@ -2,7 +2,6 @@
 
 #include <any>
 #include <cstddef>
-#include <iostream>
 #include <memory>
 
 #include <odrc/geometry/geometry.hpp>
