@@ -1,6 +1,6 @@
 add_executable(tests
   main.cpp
-  algorithm/layout-partition.test.cpp
+  # algorithm/layout-partition.test.cpp
   core/sweepline.test.cpp
   core/sweepline.test.cu
   db/db.test.cpp

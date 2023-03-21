@@ -17,9 +17,15 @@ class element {
   constexpr element(int layer, Polygon&& poly)
       : _layer(layer), _poly(std::move(poly)) {}
 
+  // attributes
+
   constexpr int            get_layer() const noexcept { return _layer; }
   constexpr Polygon&       get_polygon() noexcept { return _poly; }
   constexpr const Polygon& get_polygon() const noexcept { return _poly; }
+
+  void set_layer(int layer) noexcept { _layer = layer; }
+
+  // operations
 
   constexpr element operator+(const point_t& point) const {
     return element(_layer, _poly + point);

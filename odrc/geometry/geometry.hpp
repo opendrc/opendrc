@@ -64,6 +64,6 @@ struct geo_space_traits<GeoSpace,
   static constexpr size_t dimension = geometry_space_t::dimension;
 };
 
-};  // namespace traits
+}  // namespace traits
 
 }  // namespace odrc::geometry

@@ -78,4 +78,4 @@ struct spatial_traits<spatial_vector<Object>> {
 
 }  // namespace traits
 
-};  // namespace odrc::geometry
+}  // namespace odrc::geometry
