@@ -82,4 +82,12 @@ TEST_SUITE("[OpenDRC] odrc::geometry point tests") {
     CHECK_FALSE(p1 == p2);
     CHECK_NE(p1, p2);
   }
+  TEST_CASE("test point addition") {
+    odrc::geometry::point p1(1, 2);
+    odrc::geometry::point p2(2, 1);
+
+    auto p3 = p1 + p2;
+    CHECK_EQ(p3[0], 3);
+    CHECK_EQ(p3[1], 3);
+  }
 }

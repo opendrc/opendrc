@@ -74,8 +74,15 @@ class point {
     return !(*this == other);
   }
 
+  constexpr point operator+(const point& other) const {
+    point result;
+    std::transform(_values.begin(), _values.end(), other._values.begin(),
+                   result._values.begin(), std::plus<coordinate_type>());
+    return result;
+  }
+
  private:
-  std::array<coordinate_type, dimension> _values;
+  std::array<coordinate_type, dimension> _values{};
 };
 
 }  // namespace odrc::geometry
