@@ -182,31 +182,33 @@ TEST_SUITE("[OpenDRC] odrc::gdsii data parser tests") {
 TEST_SUITE("[OpenDRC] odrc::gdsii library tests") {
   TEST_CASE("read normal gdsii file") {  // results are from gdstk or klayout
     auto db = odrc::gdsii::read("./gcd.gds");
-    CHECK_EQ(db.version, 600);
-    CHECK_EQ(db.dbu_in_meter / db.dbu_in_user_unit, doctest::Approx(1e-6));
-    CHECK_EQ(db.cells.size(), 1442);
+    CHECK_EQ(db.get_version(), 600);
+    CHECK_EQ(db.get_dbu_in_meter() / db.get_dbu_in_user_unit(),
+             doctest::Approx(1e-6));
+    CHECK_EQ(db.cells().size(), 43);
   }
   TEST_CASE("read test gdsii file") {
     auto db = odrc::gdsii::read("./test.gds");
-    CHECK_EQ(db.dbu_in_user_unit, doctest::Approx(1e-3));
-    CHECK_EQ(db.dbu_in_meter / db.dbu_in_user_unit, doctest::Approx(1e-6));
-    CHECK_EQ(db.name, "LIB.DB");
-    CHECK_EQ(db.version, 600);
-    CHECK_EQ(db.mtime.year, 2);  // 02-02-08 18:18:28
-    CHECK_EQ(db.mtime.month, 2);
-    CHECK_EQ(db.mtime.day, 8);
-    CHECK_EQ(db.mtime.hour, 18);
-    CHECK_EQ(db.mtime.minute, 18);
-    CHECK_EQ(db.mtime.second, 28);
-    CHECK_EQ(db.atime.year, 2);  // 02-02-08 18:18:28
-    CHECK_EQ(db.atime.month, 2);
-    CHECK_EQ(db.atime.day, 8);
-    CHECK_EQ(db.atime.hour, 18);
-    CHECK_EQ(db.atime.minute, 18);
-    CHECK_EQ(db.atime.second, 28);
-    CHECK_EQ(std::string(db.cells.at(0).name), "TRANS");
-    CHECK_EQ(std::string(db.cells.at(1).name), "INV2");
-    CHECK_EQ(std::string(db.cells.at(3).name), "polygon0");
+    CHECK_EQ(db.get_dbu_in_user_unit(), doctest::Approx(1e-3));
+    CHECK_EQ(db.get_dbu_in_meter() / db.get_dbu_in_user_unit(),
+             doctest::Approx(1e-6));
+    CHECK_EQ(db.get_name(), "LIB.DB");
+    CHECK_EQ(db.get_version(), 600);
+    CHECK_EQ(db.get_mtime().year, 2);  // 02-02-08 18:18:28
+    CHECK_EQ(db.get_mtime().month, 2);
+    CHECK_EQ(db.get_mtime().day, 8);
+    CHECK_EQ(db.get_mtime().hour, 18);
+    CHECK_EQ(db.get_mtime().minute, 18);
+    CHECK_EQ(db.get_mtime().second, 28);
+    CHECK_EQ(db.get_atime().year, 2);  // 02-02-08 18:18:28
+    CHECK_EQ(db.get_atime().month, 2);
+    CHECK_EQ(db.get_atime().day, 8);
+    CHECK_EQ(db.get_atime().hour, 18);
+    CHECK_EQ(db.get_atime().minute, 18);
+    CHECK_EQ(db.get_atime().second, 28);
+    CHECK_EQ(db.cells().at(0).get_name(), "TRANS");
+    CHECK_EQ(db.cells().at(1).get_name(), "INV2");
+    CHECK_EQ(db.cells().at(2).get_name(), "RINGO");
   }
   TEST_CASE("open gdsii file error") {
     CHECK_THROWS_AS(odrc::gdsii::read("./not_exist.gds"),

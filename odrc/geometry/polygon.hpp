@@ -26,18 +26,26 @@ class polygon {
   constexpr polygon(Args&&... args) : _vertices(std::forward<Args>(args)...) {}
   constexpr polygon(std::initializer_list<vertex> init) : _vertices(init) {}
 
-  constexpr std::size_t size() const noexcept { return _vertices.size(); }
-
+  // member access
   constexpr const vertex& operator[](std::size_t n) const noexcept {
     return _vertices[n];
   }
 
+  // states
+  constexpr std::size_t size() const noexcept { return _vertices.size(); }
+
+  // operations
   constexpr polygon operator+(const vertex& point) const {
     polygon result;
     result._vertices.reserve(_vertices.size());
     std::transform(_vertices.begin(), _vertices.end(), result._vertices.begin(),
                    [&point](const vertex& v) { return v + point; });
     return result;
+  }
+
+  template <typename... Args>
+  constexpr void emplace_back(Args&&... args) {
+    _vertices.emplace_back(std::forward<Args>(args)...);
   }
 
  private:

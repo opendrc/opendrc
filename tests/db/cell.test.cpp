@@ -6,13 +6,17 @@
 #include <doctest/doctest.h>
 
 #include <odrc/db/elem.hpp>
+#include <odrc/geometry/geometry.hpp>
 #include <odrc/geometry/point.hpp>
 #include <odrc/geometry/polygon.hpp>
 
 TEST_SUITE("[OpenDRC] odrc::db cell tests") {
   TEST_CASE("test empty cell") {
-    odrc::db::cell c;
+    odrc::db::cell c(0, "empty_cell");
+    CHECK_EQ(c.get_id(), 0);
+    CHECK_EQ(c.get_name(), "empty_cell");
     CHECK_EQ(c.num_elements(), 0);
+    CHECK_EQ(c.num_cell_refs(), 0);
   }
   TEST_CASE("test add element") {
     odrc::db::cell    c;
@@ -24,8 +28,8 @@ TEST_SUITE("[OpenDRC] odrc::db cell tests") {
     CHECK_EQ(c.num_elements(), 2);
   }
   TEST_CASE("test different element type") {
-    using elem_t = odrc::db::element<
-        odrc::geometry::polygon<odrc::geometry::point<double>>>;
+    using gs     = odrc::geometry::geometry_space<double>;
+    using elem_t = odrc::db::element<odrc::geometry::polygon<gs>>;
     odrc::db::cell<elem_t, std::list> c;
     CHECK_EQ(c.num_elements(), 0);
     elem_t e;
@@ -52,10 +56,9 @@ TEST_SUITE("[OpenDRC] odrc::db cell tests") {
 
 TEST_SUITE("[OpenDRC] odrc::db cell_ref tests") {
   TEST_CASE("test cell_ref") {
-    auto               c = std::make_shared<odrc::db::cell<>>();
-    odrc::db::cell_ref cref(c);
-    CHECK_EQ(cref.get(), c.get());
-    CHECK_EQ(cref->num_elements(), 0);
-    CHECK_EQ((*cref).num_elements(), 0);
+    odrc::geometry::point p(1, 2);
+    odrc::db::cell_ref<>  cref(3, p);
+    CHECK_EQ(cref.get_id(), 3);
+    CHECK_EQ(cref.get_ref_point(), p);
   }
 }
