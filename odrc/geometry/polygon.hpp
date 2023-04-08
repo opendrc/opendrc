@@ -4,29 +4,52 @@
 #include <memory>
 #include <vector>
 
+#include <odrc/geometry/geometry.hpp>
 #include <odrc/geometry/point.hpp>
 
 namespace odrc::geometry {
 
-template <typename Point   = point2d<>,
-          bool IsClockWise = true,
+template <typename GeoSpace = geometry_space<>,
+          bool IsClockWise  = true,
           template <typename T, typename Allocator> typename Container =
               std::vector,
           template <typename T> typename Allocator = std::allocator>
 class polygon {
+  static_assert(traits::is_valid_geometry_space_v<GeoSpace>);
+
  public:
-  using point_type = Point;
-  using point_list = Container<Point, Allocator<Point>>;
+  using vertex      = point<GeoSpace>;
+  using vertex_list = Container<vertex, Allocator<vertex>>;
 
-  polygon() = default;
-  polygon(const point_list& points) : _points(points) {}
-  template <typename Iterator>
-  polygon(Iterator begin, Iterator end) : _points(begin, end) {}
-  polygon(std::initializer_list<Point> init) : _points(init) {}
+  constexpr polygon() = default;
+  template <typename... Args>
+  constexpr polygon(Args&&... args) : _vertices(std::forward<Args>(args)...) {}
+  constexpr polygon(std::initializer_list<vertex> init) : _vertices(init) {}
 
-  constexpr std::size_t size() const noexcept { return _points.size(); }
+  // member access
+  constexpr const vertex& operator[](std::size_t n) const noexcept {
+    return _vertices[n];
+  }
+
+  // states
+  constexpr std::size_t size() const noexcept { return _vertices.size(); }
+
+  // operations
+  constexpr polygon operator+(const vertex& point) const {
+    polygon result;
+    result._vertices.reserve(_vertices.size());
+    std::transform(_vertices.begin(), _vertices.end(), result._vertices.begin(),
+                   [&point](const vertex& v) { return v + point; });
+    return result;
+  }
+
+  template <typename... Args>
+  constexpr void emplace_back(Args&&... args) {
+    _vertices.emplace_back(std::forward<Args>(args)...);
+  }
 
  private:
-  point_list _points;
+  vertex_list _vertices;
 };
+
 }  // namespace odrc::geometry

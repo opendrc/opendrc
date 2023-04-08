@@ -9,7 +9,8 @@
 #include <utility>
 #include <vector>
 
-#include <odrc/core/database.hpp>
+#include <odrc/db/db.hpp>
+#include <odrc/geometry/point.hpp>
 
 namespace odrc::gdsii {
 enum class record_type : std::underlying_type_t<std::byte> {
@@ -66,8 +67,8 @@ int32_t              parse_int32(const std::byte* bytes);
 double               parse_real64(const std::byte* bytes);
 std::string          parse_string(const std::byte* begin, const std::byte* end);
 odrc::util::datetime parse_datetime(const std::byte* bytes);
-odrc::core::coord    parse_coord(const std::byte* bytes);
+odrc::geometry::point<> parse_point(const std::byte* bytes);
 
-odrc::core::database read(const std::filesystem::path& file_path);
+odrc::db::database<> read(const std::filesystem::path& file_path);
 
 }  // namespace odrc::gdsii

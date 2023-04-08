@@ -7,6 +7,8 @@
 #include <fstream>
 #include <vector>
 
+#include <odrc/db/cell.hpp>
+#include <odrc/geometry/polygon.hpp>
 #include <odrc/utility/exception.hpp>
 
 namespace odrc::gdsii {
@@ -186,14 +188,14 @@ odrc::util::datetime parse_datetime(const std::byte* bytes) {
   return dt;
 }
 
-odrc::core::coord parse_coord(const std::byte* bytes) {
-  return odrc::core::coord{parse_int32(&bytes[0]), parse_int32(&bytes[4])};
+odrc::geometry::point<> parse_point(const std::byte* bytes) {
+  return odrc::geometry::point{parse_int32(&bytes[0]), parse_int32(&bytes[4])};
 }
 
-odrc::core::database read(const std::filesystem::path& file_path) {
-  odrc::core::database db;
-  std::byte            buffer[65536];
-  std::ifstream        ifs(file_path, std::ios::in | std::ios::binary);
+odrc::db::database<> read(const std::filesystem::path& file_path) {
+  odrc::db::database db;
+  std::byte          buffer[65536];
+  std::ifstream      ifs(file_path, std::ios::in | std::ios::binary);
   if (not ifs) {
     throw odrc::open_file_error("Cannot open " + file_path.string() + ": " +
                                 std::strerror(errno));
@@ -210,9 +212,9 @@ odrc::core::database read(const std::filesystem::path& file_path) {
   // variables to help track current element
 
   record_type           current_element = record_type::ENDLIB;
-  odrc::core::cell*     cell            = nullptr;
-  odrc::core::polygon*  polygon         = nullptr;
-  odrc::core::cell_ref* cell_ref        = nullptr;
+  odrc::db::cell<>*     cell            = nullptr;
+  odrc::db::element<>*  element         = nullptr;
+  odrc::db::cell_ref<>* cell_ref        = nullptr;
 
   // aliases for datatype
 
@@ -263,21 +265,21 @@ odrc::core::database read(const std::filesystem::path& file_path) {
     switch (rtype) {
       case record_type::HEADER:
         check_dtype(dt_int16);
-        db.version = parse_int16(begin);
+        db.set_version(parse_int16(begin));
         break;
       case record_type::BGNLIB:
         check_dtype(dt_int16);
-        db.mtime = parse_datetime(begin);
-        db.atime = parse_datetime(begin + bytes_per_datetime);
+        db.set_mtime(parse_datetime(begin));
+        db.set_atime(parse_datetime(begin + bytes_per_datetime));
         break;
       case record_type::LIBNAME:
         check_dtype(dt_string);
-        db.name.assign(parse_string(begin, end));
+        db.set_name(parse_string(begin, end));
         break;
       case record_type::UNITS:
         check_dtype(dt_real64);
-        db.dbu_in_user_unit = parse_real64(begin);
-        db.dbu_in_meter     = parse_real64(begin + bytes_per_real64);
+        db.set_dbu_in_user_unit(parse_real64(begin));
+        db.set_dbu_in_meter(parse_real64(begin + bytes_per_real64));
         break;
       case record_type::ENDLIB:
         check_dtype(dt_none);
@@ -287,13 +289,13 @@ odrc::core::database read(const std::filesystem::path& file_path) {
 
       case record_type::BGNSTR:
         check_dtype(dt_int16);
-        cell        = &db.create_cell();
-        cell->mtime = parse_datetime(begin);
-        cell->atime = parse_datetime(begin + bytes_per_datetime);
+        cell = &db.create_cell();
+        cell->set_mtime(parse_datetime(begin));
+        cell->set_atime(parse_datetime(begin + bytes_per_datetime));
         break;
       case record_type::STRNAME:
         check_dtype(dt_string);
-        cell->name.assign(parse_string(begin, end));
+        cell->set_name(parse_string(begin, end));
         db.update_map();  // update map when the name is assigned
         break;
       case record_type::ENDSTR:
@@ -306,7 +308,7 @@ odrc::core::database read(const std::filesystem::path& file_path) {
       case record_type::BOUNDARY:
         check_dtype(dt_none);
         current_element = rtype;
-        polygon         = &cell->create_polygon();
+        element         = &cell->create_element();
         break;
       case record_type::PATH:
         check_dtype(dt_none);
@@ -324,15 +326,14 @@ odrc::core::database read(const std::filesystem::path& file_path) {
       case record_type::LAYER:
         check_dtype(dt_int16);
         if (current_element == record_type::BOUNDARY) {
-          int layer      = parse_int16(begin);
-          polygon->layer = layer;
-          cell->add_layer(layer);
+          int layer = parse_int16(begin);
+          element->set_layer(layer);
         }
         break;
       case record_type::DATATYPE:
         check_dtype(dt_int16);
         if (current_element == record_type::BOUNDARY) {
-          polygon->datatype = parse_int16(begin);
+          [[maybe_unused]] auto datatype = parse_int16(begin);
         }
         break;
       case record_type::WIDTH:
@@ -345,11 +346,9 @@ odrc::core::database read(const std::filesystem::path& file_path) {
           int num_coords =
               (record_length - bytes_per_record_head) / bytes_per_coord;
           for (int i = 0; i < num_coords; ++i) {
-            auto coord = parse_coord(begin + bytes_per_coord * i);
-            polygon->points.emplace_back(coord);
-            polygon->update_mbr();
+            auto point = parse_point(begin + bytes_per_coord * i);
+            element->get_polygon().emplace_back(point);
           }
-          cell->update_mbr(polygon->mbr);
         } else if (current_element == record_type::SREF) {
           // sref contains exactly 1 coordinate
           if (record_length != bytes_per_coord + bytes_per_record_head) {
@@ -359,26 +358,23 @@ odrc::core::database read(const std::filesystem::path& file_path) {
                 " for record XY inside an SREF element, got " +
                 std::to_string(record_length) + "\n");
           }
-          auto coord          = parse_coord(begin);
-          cell_ref->ref_point = coord;
-          auto& the_cell      = db.get_cell(cell_ref->cell_name);
-          cell_ref->update_mbr(the_cell.mbr);
-          cell->update_mbr(the_cell.mbr, coord);
+          auto point = parse_point(begin);
+          cell_ref->set_ref_point(point);
         }
         break;
       case record_type::ENDEL:
         check_dtype(dt_none);
         // invalidate pointers for safety
         current_element = rtype;
-        polygon         = nullptr;
+        element         = nullptr;
         cell_ref        = nullptr;
         break;
+
       case record_type::SNAME:
         check_dtype(dt_string);
         if (current_element == record_type::SREF) {
-          auto name           = parse_string(begin, end);
-          cell_ref->cell_name = name;
-          cell->add_layer_with_mask(db.get_cell(name).layers);
+          auto name = parse_string(begin, end);
+          cell_ref->set_id(db.get_cell_id(name));
         }
         break;
       case record_type::COLROW:
@@ -392,22 +388,25 @@ odrc::core::database read(const std::filesystem::path& file_path) {
       case record_type::STRANS:
         check_dtype(dt_bits);
         if (current_element == record_type::SREF) {
-          auto strans                  = parse_bitarray(begin);
-          cell_ref->trans.is_reflected = strans.test(15);  // 0-th bit from left
-          cell_ref->trans.is_magnified = strans.test(2);  // 13-th bit from left
-          cell_ref->trans.is_rotated   = strans.test(1);  // 14-th bit from left
+          auto strans = parse_bitarray(begin);
+          if (strans.test(15)) {  // 0-th bit from left
+            cell_ref->reflect();
+          }
+          // 13-th bit from left (i.e. test(2)) indicates magnification
+          // 14-th bit from left (i.e. test(1)) indicates rotation
+          // they are set when reading MAG and ANGLE records
         }
         break;
       case record_type::MAG:
         check_dtype(dt_real64);
         if (current_element == record_type::SREF) {
-          cell_ref->trans.mag = parse_real64(begin);
+          cell_ref->magnify(parse_real64(begin));
         }
         break;
       case record_type::ANGLE:
         check_dtype(dt_real64);
         if (current_element == record_type::SREF) {
-          cell_ref->trans.angle = parse_real64(begin);
+          cell_ref->rotate(parse_real64(begin));
         }
         break;
       case record_type::PATHTYPE:
@@ -438,8 +437,6 @@ odrc::core::database read(const std::filesystem::path& file_path) {
         break;
     }
     if (rtype == record_type::ENDLIB) {
-      db.convert_polygon_to_cell();
-      db.update_edges();
       break;
     }
   }
