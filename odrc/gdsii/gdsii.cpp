@@ -211,10 +211,10 @@ odrc::db::database<> read(const std::filesystem::path& file_path) {
 
   // variables to help track current element
 
-  record_type           current_element = record_type::ENDLIB;
-  odrc::db::cell<>*     cell            = nullptr;
-  odrc::db::element<>*  element         = nullptr;
-  odrc::db::cell_ref<>* cell_ref        = nullptr;
+  record_type          current_element = record_type::ENDLIB;
+  odrc::db::cell<>*    cell            = nullptr;
+  odrc::db::element<>  element;
+  odrc::db::cell_ref<> cell_ref;
 
   // aliases for datatype
 
@@ -308,7 +308,7 @@ odrc::db::database<> read(const std::filesystem::path& file_path) {
       case record_type::BOUNDARY:
         check_dtype(dt_none);
         current_element = rtype;
-        element         = &cell->create_element();
+        element.clear();
         break;
       case record_type::PATH:
         check_dtype(dt_none);
@@ -317,7 +317,7 @@ odrc::db::database<> read(const std::filesystem::path& file_path) {
       case record_type::SREF:
         check_dtype(dt_none);
         current_element = rtype;
-        cell_ref        = &cell->create_cell_ref();
+        cell_ref.clear();
         break;
       case record_type::AREF:
         check_dtype(dt_none);
@@ -327,7 +327,7 @@ odrc::db::database<> read(const std::filesystem::path& file_path) {
         check_dtype(dt_int16);
         if (current_element == record_type::BOUNDARY) {
           int layer = parse_int16(begin);
-          element->set_layer(layer);
+          element.set_layer(layer);
         }
         break;
       case record_type::DATATYPE:
@@ -347,7 +347,7 @@ odrc::db::database<> read(const std::filesystem::path& file_path) {
               (record_length - bytes_per_record_head) / bytes_per_coord;
           for (int i = 0; i < num_coords; ++i) {
             auto point = parse_point(begin + bytes_per_coord * i);
-            element->get_polygon().emplace_back(point);
+            element.get_polygon().emplace_back(point);
           }
         } else if (current_element == record_type::SREF) {
           // sref contains exactly 1 coordinate
@@ -359,22 +359,24 @@ odrc::db::database<> read(const std::filesystem::path& file_path) {
                 std::to_string(record_length) + "\n");
           }
           auto point = parse_point(begin);
-          cell_ref->set_ref_point(point);
+          cell_ref.set_ref_point(point);
         }
         break;
       case record_type::ENDEL:
         check_dtype(dt_none);
-        // invalidate pointers for safety
+        if (current_element == record_type::BOUNDARY) {
+          cell->insert(std::move(element));
+        } else if (current_element == record_type::SREF) {
+          cell->insert(std::move(cell_ref));
+        }
         current_element = rtype;
-        element         = nullptr;
-        cell_ref        = nullptr;
         break;
 
       case record_type::SNAME:
         check_dtype(dt_string);
         if (current_element == record_type::SREF) {
           auto name = parse_string(begin, end);
-          cell_ref->set_id(db.get_cell_id(name));
+          cell_ref.set_id(db.get_cell_id(name));
         }
         break;
       case record_type::COLROW:
@@ -390,7 +392,7 @@ odrc::db::database<> read(const std::filesystem::path& file_path) {
         if (current_element == record_type::SREF) {
           auto strans = parse_bitarray(begin);
           if (strans.test(15)) {  // 0-th bit from left
-            cell_ref->reflect();
+            cell_ref.reflect();
           }
           // 13-th bit from left (i.e. test(2)) indicates magnification
           // 14-th bit from left (i.e. test(1)) indicates rotation
@@ -400,13 +402,13 @@ odrc::db::database<> read(const std::filesystem::path& file_path) {
       case record_type::MAG:
         check_dtype(dt_real64);
         if (current_element == record_type::SREF) {
-          cell_ref->magnify(parse_real64(begin));
+          cell_ref.magnify(parse_real64(begin));
         }
         break;
       case record_type::ANGLE:
         check_dtype(dt_real64);
         if (current_element == record_type::SREF) {
-          cell_ref->rotate(parse_real64(begin));
+          cell_ref.rotate(parse_real64(begin));
         }
         break;
       case record_type::PATHTYPE:

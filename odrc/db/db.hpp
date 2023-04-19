@@ -89,13 +89,14 @@ class database {
   void construct_layers(int top_cell_id = -1) {
     Cell& top_cell = top_cell_id == -1 ? _cells.back() : _cells.at(top_cell_id);
 
-    for (auto& elem : top_cell.elements()) {
-      int  l    = elem.get_layer();
+    for (const auto [l, elems] : top_cell.elements()) {
       auto iter = _layers.find(l);
       if (iter == _layers.end()) {
-        _layers.emplace(l, Layer(l));
+        iter = _layers.emplace(l, Layer(l)).first;
       }
-      _layers.at(l).add(elem);
+      for (const auto& elem : elems) {
+        iter->second.insert(elem);
+      }
     }
 
     for (auto& cell_ref : top_cell.cell_refs()) {
@@ -105,13 +106,14 @@ class database {
         throw odrc::invalid_file(
             "Hierarchy with more than two layers is not supported");
       }
-      for (auto& elem : cell.elements()) {
-        int  l    = elem.get_layer();
+      for (const auto [l, elems] : top_cell.elements()) {
         auto iter = _layers.find(l);
         if (iter == _layers.end()) {
-          _layers.emplace(l, Layer(l));
+          iter = _layers.emplace(l, Layer(l)).first;
         }
-        _layers.at(l).add(elem + ref_point);
+        for (const auto& elem : elems) {
+          iter->second.insert(elem + ref_point);
+        }
       }
     }
   }

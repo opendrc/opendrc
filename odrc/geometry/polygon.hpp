@@ -35,6 +35,8 @@ class polygon {
   constexpr std::size_t size() const noexcept { return _vertices.size(); }
 
   // operations
+  void clear() { _vertices.clear(); }
+
   constexpr polygon operator+(const vertex& point) const {
     polygon result;
     result._vertices.reserve(_vertices.size());

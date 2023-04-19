@@ -21,35 +21,35 @@ TEST_SUITE("[OpenDRC] odrc::db cell tests") {
   TEST_CASE("test add element") {
     odrc::db::cell    c;
     odrc::db::element e1;
-    c.add(e1);
+    e1.set_layer(1);
+    c.insert(e1);
+    CHECK_EQ(c.num_layers(), 1);
+    CHECK(c.has_layer(1));
+    CHECK_FALSE(c.has_layer(2));
     CHECK_EQ(c.num_elements(), 1);
+    CHECK_EQ(c.num_elements_on_layer(1), 1);
+    CHECK_EQ(c.num_elements_on_layer(2), 0);
+    CHECK_EQ(c.num_cell_refs(), 0);
+    CHECK_EQ(c.num_objects(), 1);
     odrc::db::element e2;
-    c.add(e2);
+    e2.set_layer(2);
+    c.insert(e2);
+    CHECK_EQ(c.num_layers(), 2);
+    CHECK(c.has_layer(1));
+    CHECK(c.has_layer(2));
     CHECK_EQ(c.num_elements(), 2);
+    CHECK_EQ(c.num_elements_on_layer(1), 1);
+    CHECK_EQ(c.num_elements_on_layer(2), 1);
+    CHECK_EQ(c.num_cell_refs(), 0);
+    CHECK_EQ(c.num_objects(), 2);
   }
   TEST_CASE("test different element type") {
     using gs     = odrc::geometry::geometry_space<double>;
     using elem_t = odrc::db::element<odrc::geometry::polygon<gs>>;
-    odrc::db::cell<elem_t, std::list> c;
+    odrc::db::cell<elem_t> c;
     CHECK_EQ(c.num_elements(), 0);
     elem_t e;
-    c.add(e);
-    CHECK_EQ(c.num_elements(), 1);
-  }
-  TEST_CASE("test list container") {
-    using elem_t = odrc::db::element<>;
-    odrc::db::cell<elem_t, std::list> c;
-    CHECK_EQ(c.num_elements(), 0);
-    elem_t e;
-    c.add(e);
-    CHECK_EQ(c.num_elements(), 1);
-  }
-  TEST_CASE("test deque container") {
-    using elem_t = odrc::db::element<>;
-    odrc::db::cell<elem_t, std::deque> c;
-    CHECK_EQ(c.num_elements(), 0);
-    elem_t e;
-    c.add(e);
+    c.insert(e);
     CHECK_EQ(c.num_elements(), 1);
   }
 }
