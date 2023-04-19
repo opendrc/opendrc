@@ -1,6 +1,5 @@
 #pragma once
 
-#include <memory>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -15,10 +14,7 @@
 namespace odrc::db {
 
 // forward declaration
-template <typename Element = element<>,
-          template <typename T, typename Allocator> typename Container =
-              std::vector,
-          template <typename T> typename Allocator = std::allocator>
+template <typename Element = element<>>
 class cell;
 
 template <typename Cell = cell<>>
@@ -61,11 +57,23 @@ class cell_ref {
   }
 
   // operations
+  void clear() {
+    _ref_cell_id            = -1;
+    _ref_point              = point_t{};
+    _transform.is_reflected = false;
+    _transform.is_magnified = false;
+    _transform.is_rotated   = false;
+    _transform.mag          = 1.0;
+    _transform.angle        = 0.0;
+  }
+
   void reflect() { _transform.is_reflected = true; }
+
   void magnify(double mag) {
     _transform.is_magnified = true;
     _transform.mag          = mag;
   }
+
   void rotate(double angle) {
     _transform.is_rotated = true;
     _transform.angle      = angle;
@@ -77,35 +85,14 @@ class cell_ref {
   transform _transform   = transform{false, false, false, 1.0, 0.0};
 };
 
-namespace traits {
-
-template <typename T, typename V, typename = void>
-struct has_emplace_back : std::false_type {};
-
-template <typename T, typename V>
-struct has_emplace_back<
-    T,
-    V,
-    std::void_t<decltype(std::declval<T>().emplace_back(std::declval<V>()))>>
-    : std::true_type {};
-
-template <typename T, typename V>
-inline constexpr bool has_emplace_back_v = has_emplace_back<T, V>::value;
-
-}  // namespace traits
-
-template <typename Element,
-          template <typename T, typename Allocator>
-          typename Container,
-          template <typename T>
-          typename Allocator>
+template <typename Element>
 class cell {
  public:
-  using element_t     = Element;
-  using element_list  = Container<Element, Allocator<Element>>;
-  using cell_ref_t    = cell_ref<cell>;
-  using cell_ref_list = Container<cell_ref_t, Allocator<cell_ref_t>>;
-  using layer_index_t = std::unordered_map<int, std::vector<std::size_t>>;
+  using element_t    = Element;
+  using cell_ref_t   = cell_ref<cell>;
+  using elements_t   = std::vector<element_t>;
+  using cell_refs_t  = std::vector<cell_ref_t>;
+  using layer_view_t = std::unordered_map<int, elements_t>;
 
   constexpr cell() = default;
   constexpr cell(int id) noexcept : _id(id) {}
@@ -134,67 +121,94 @@ class cell {
   // member access
 
   [[nodiscard]] constexpr const element_t& get_element(
+      int         layer,
       std::size_t index) const noexcept {
-    return _elements.at(index);
+    return _layer_view.at(layer).first.at(index);
   }
   [[nodiscard]] constexpr const cell_ref_t& get_cell_ref(
+      int         layer,
       std::size_t index) const noexcept {
-    return _cell_refs.at(index);
-  }
-
-  element_t& create_element() {
-    if constexpr (traits::has_emplace_back_v<element_list, element_t>) {
-      _elements.emplace_back();
-    } else {
-      _elements.insert(_elements.end(), element_t{});
-    }
-    return _elements.back();
-  }
-
-  cell_ref_t& create_cell_ref() {
-    if constexpr (traits::has_emplace_back_v<cell_ref_list, cell_ref_t>) {
-      _cell_refs.emplace_back();
-    } else {
-      _cell_refs.insert(_cell_refs.end(), cell_ref_t{});
-    }
-    return _cell_refs.back();
+    return _layer_view.at(layer).second.at(index);
   }
 
   // iterators
 
-  [[nodiscard]] auto elements() const {
-    return odrc::util::const_container_proxy(_elements);
+  [[nodiscard]] auto elements() const noexcept {
+    return odrc::util::const_container_proxy(_layer_view);
   }
-  [[nodiscard]] auto cell_refs() const {
+  [[nodiscard]] auto elements_on_layer(int layer) const {
+    return odrc::util::const_container_proxy(_layer_view.at(layer).first);
+  }
+  [[nodiscard]] auto cell_refs() const noexcept {
     return odrc::util::const_container_proxy(_cell_refs);
   }
 
   // states
 
-  [[nodiscard]] constexpr std::size_t num_elements() const noexcept {
-    return _elements.size();
+  [[nodiscard]] constexpr std::size_t num_layers() const noexcept {
+    return _layer_view.size();
   }
+
+  [[nodiscard]] constexpr bool has_layer(int layer) const noexcept {
+    return _layer_view.find(layer) != _layer_view.end();
+  }
+
+  // Note: the cost of the function is O(#layer)
+  [[nodiscard]] constexpr std::size_t num_elements() const noexcept {
+    std::size_t num = 0;
+    for (const auto& [layer, objects] : _layer_view) {
+      num += objects.size();
+    }
+    return num;
+  }
+
   [[nodiscard]] constexpr std::size_t num_cell_refs() const noexcept {
     return _cell_refs.size();
   }
 
+  // Note: the cost of the function is O(#layer)
+  [[nodiscard]] constexpr std::size_t num_objects() const noexcept {
+    return num_elements() + num_cell_refs();
+  }
+
+  [[nodiscard]] constexpr std::size_t num_elements_on_layer(
+      int layer) const noexcept {
+    auto iter = _layer_view.find(layer);
+    if (iter == _layer_view.end()) {
+      return 0;
+    }
+    return iter->second.size();
+  }
+
   // modifiers
 
-  void add(const Element& elem) {
-    int  layer = elem.get_layer();
-    auto iter  = _layer_index.find(layer);
-    if (iter == _layer_index.end()) {
-      _layer_index.emplace(layer, std::vector{_elements.size()});
-    } else {
-      iter->second.emplace_back(layer);
-    }
-
-    if constexpr (traits::has_emplace_back_v<element_list, element_t>) {
-      _elements.emplace_back(elem);
-    } else {
-      _elements.insert(_elements.end(), elem);
-    }
+  void clear() {
+    _layer_view.clear();
+    _id   = -1;
+    _name = "";
   }
+
+  void insert(const Element& elem) {
+    int  layer = elem.get_layer();
+    auto iter  = _layer_view.find(layer);
+    if (iter == _layer_view.end()) {
+      iter = _layer_view.emplace(layer, elements_t{}).first;
+    }
+    iter->second.emplace_back(elem);
+  }
+
+  void insert(Element&& elem) {
+    int  layer = elem.get_layer();
+    auto iter  = _layer_view.find(layer);
+    if (iter == _layer_view.end()) {
+      iter = _layer_view.emplace(layer, elements_t{}).first;
+    }
+    iter->second.emplace_back(std::move(elem));
+  }
+
+  void insert(const cell_ref_t& cref) { _cell_refs.emplace_back(cref); }
+
+  void insert(cell_ref_t&& cref) { _cell_refs.emplace_back(std::move(cref)); }
 
  private:
   // meta info
@@ -204,24 +218,8 @@ class cell {
   odrc::util::datetime _atime;
 
   // data
-  element_list  _elements;
-  cell_ref_list _cell_refs;
-
-  // reverse index
-  layer_index_t _layer_index;
+  layer_view_t _layer_view;
+  cell_refs_t  _cell_refs;
 };
 
-// TODO: a cell_view returns objects within a specific layer
-// c++20 filter_view
-template <typename Cell>
-class cell_layer_view {
- public:
-  cell_layer_view(const Cell& cell, int layer)
-      : _cell(cell), _layer(layer), _cached(false) {}
-
- private:
-  const Cell& _cell;
-  int         _layer  = -1;
-  bool        _cached = false;
-};
 }  // namespace odrc::db

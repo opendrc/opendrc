@@ -9,10 +9,10 @@ TEST_SUITE("[OpenDRC] odrc::db db tests") {
     odrc::db::database db;
 
     auto& cell = db.create_cell("");
-    cell.add(odrc::db::element{1, {}});
-    cell.add(odrc::db::element{2, {}});
-    cell.add(odrc::db::element{2, {}});
-    cell.add(odrc::db::element{3, {}});
+    cell.insert(odrc::db::element{1, {}});
+    cell.insert(odrc::db::element{2, {}});
+    cell.insert(odrc::db::element{2, {}});
+    cell.insert(odrc::db::element{3, {}});
     db.construct_layers();
     CHECK_EQ(db.layers().size(), 3);
     CHECK_EQ(db.layers().at(1).size(), 1);

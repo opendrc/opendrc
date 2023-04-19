@@ -27,6 +27,11 @@ class element {
 
   // operations
 
+  void clear() {
+    _layer = -1;
+    _poly.clear();
+  }
+
   constexpr element operator+(const point_t& point) const {
     return element(_layer, _poly + point);
   }

@@ -14,7 +14,7 @@ class layer {
  public:
   constexpr layer(int l) noexcept : _layer_id(l) {}
 
-  void add(const element_t& elem) { _spatial.insert(elem); }
+  void insert(const element_t& elem) { _spatial.insert(elem); }
 
   auto size() const noexcept { return _spatial.size(); }
 
