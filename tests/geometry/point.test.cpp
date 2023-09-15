@@ -1,5 +1,7 @@
 #include <odrc/geometry/point.hpp>
 
+#include <stdexcept>
+
 #include <doctest/doctest.h>
 
 #include <odrc/geometry/geometry.hpp>
